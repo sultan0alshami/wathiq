@@ -1,0 +1,200 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Wathiq Design System - All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL. RTL support enabled.
+*/
+
+@layer base {
+  :root {
+    /* Wathiq Brand Colors */
+    --wathiq-primary: 184 82% 20%; /* #105962 - Dark Teal */
+    --wathiq-accent: 47 65% 51%; /* #d2a736 - Gold */
+    --wathiq-primary-light: 184 45% 35%; /* Lighter teal */
+    --wathiq-accent-light: 47 55% 65%; /* Lighter gold */
+    
+    /* Background System */
+    --background: 0 0% 100%;
+    --foreground: 184 35% 15%;
+    --background-secondary: 184 15% 98%;
+    --background-muted: 184 20% 96%;
+
+    /* Card System */
+    --card: 0 0% 100%;
+    --card-foreground: 184 35% 15%;
+    --card-header: 184 15% 98%;
+
+    /* Navigation System */
+    --nav-background: 184 82% 20%; /* Wathiq Primary */
+    --nav-foreground: 0 0% 100%;
+    --nav-hover: 184 45% 35%;
+    --nav-active: 47 65% 51%; /* Wathiq Accent */
+
+    /* Primary System - Wathiq Teal */
+    --primary: 184 82% 20%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 184 70% 25%;
+
+    /* Secondary System */
+    --secondary: 184 15% 96%;
+    --secondary-foreground: 184 35% 15%;
+    --secondary-hover: 184 25% 90%;
+
+    /* Accent System - Wathiq Gold */
+    --accent: 47 65% 51%;
+    --accent-foreground: 0 0% 100%;
+    --accent-hover: 47 55% 45%;
+
+    /* Muted System */
+    --muted: 184 15% 96%;
+    --muted-foreground: 184 15% 45%;
+
+    /* Status Colors */
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+    --warning: 43 96% 56%;
+    --warning-foreground: 0 0% 15%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Border System */
+    --border: 184 20% 90%;
+    --border-strong: 184 30% 80%;
+    --input: 184 20% 90%;
+    --ring: 184 82% 20%;
+
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--wathiq-primary)), hsl(var(--wathiq-primary-light)));
+    --gradient-accent: linear-gradient(135deg, hsl(var(--wathiq-accent)), hsl(var(--wathiq-accent-light)));
+    --gradient-hero: linear-gradient(135deg, hsl(var(--wathiq-primary)), hsl(var(--wathiq-accent)));
+
+    /* Shadows */
+    --shadow-soft: 0 2px 8px hsl(var(--wathiq-primary) / 0.08);
+    --shadow-medium: 0 4px 12px hsl(var(--wathiq-primary) / 0.12);
+    --shadow-strong: 0 8px 24px hsl(var(--wathiq-primary) / 0.16);
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 240 5.3% 26.1%;
+
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  /* RTL Support */
+  [dir="rtl"] {
+    direction: rtl;
+  }
+
+  /* Arabic Typography */
+  .font-arabic {
+    font-family: 'Noto Sans Arabic', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-feature-settings: 'liga' 1, 'kern' 1;
+  }
+
+  /* Custom Utility Classes */
+  .gradient-primary {
+    background: var(--gradient-primary);
+  }
+
+  .gradient-accent {
+    background: var(--gradient-accent);
+  }
+
+  .gradient-hero {
+    background: var(--gradient-hero);
+  }
+
+  .shadow-wathiq-soft {
+    box-shadow: var(--shadow-soft);
+  }
+
+  .shadow-wathiq-medium {
+    box-shadow: var(--shadow-medium);
+  }
+
+  .shadow-wathiq-strong {
+    box-shadow: var(--shadow-strong);
+  }
+
+  /* Hover Animations */
+  .animate-hover {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .animate-hover:hover {
+    transform: translateY(-2px);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-arabic;
+    direction: rtl;
+  }
+
+  /* RTL-specific adjustments */
+  [dir="rtl"] .ml-auto {
+    margin-left: 0;
+    margin-right: auto;
+  }
+
+  [dir="rtl"] .mr-auto {
+    margin-right: 0;
+    margin-left: auto;
+  }
+}
