@@ -1,0 +1,126 @@
+import React from 'react';
+import { AlertTriangle, CheckCircle, Info } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+export interface ValidationRule {
+  validate: (value: any) => boolean;
+  message: string;
+  type?: 'error' | 'warning' | 'info';
+}
+
+export interface ValidationResult {
+  isValid: boolean;
+  messages: Array<{ message: string; type: 'error' | 'warning' | 'info' }>;
+}
+
+export function useFormValidation() {
+  const validateField = (value: any, rules: ValidationRule[]): ValidationResult => {
+    const messages: Array<{ message: string; type: 'error' | 'warning' | 'info' }> = [];
+    let isValid = true;
+
+    rules.forEach(rule => {
+      if (!rule.validate(value)) {
+        messages.push({
+          message: rule.message,
+          type: rule.type || 'error'
+        });
+        if (rule.type !== 'warning' && rule.type !== 'info') {
+          isValid = false;
+        }
+      }
+    });
+
+    return { isValid, messages };
+  };
+
+  const validateForm = (fields: Record<string, { value: any; rules: ValidationRule[] }>): boolean => {
+    let formIsValid = true;
+    
+    Object.values(fields).forEach(field => {
+      const result = validateField(field.value, field.rules);
+      if (!result.isValid) {
+        formIsValid = false;
+      }
+    });
+
+    return formIsValid;
+  };
+
+  return { validateField, validateForm };
+}
+
+interface ValidationMessageProps {
+  result: ValidationResult;
+  className?: string;
+}
+
+export const ValidationMessage: React.FC<ValidationMessageProps> = ({ result, className }) => {
+  if (result.messages.length === 0) return null;
+
+  return (
+    <div className={cn("space-y-1", className)}>
+      {result.messages.map((msg, index) => (
+        <div
+          key={index}
+          className={cn(
+            "flex items-center gap-2 text-sm",
+            {
+              "text-destructive": msg.type === 'error',
+              "text-warning": msg.type === 'warning',
+              "text-muted-foreground": msg.type === 'info'
+            }
+          )}
+        >
+          {msg.type === 'error' && <AlertTriangle className="w-3 h-3" />}
+          {msg.type === 'warning' && <AlertTriangle className="w-3 h-3" />}
+          {msg.type === 'info' && <Info className="w-3 h-3" />}
+          <span>{msg.message}</span>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// Common validation rules
+export const ValidationRules = {
+  required: (message = 'هذا الحقل مطلوب'): ValidationRule => ({
+    validate: (value) => value !== null && value !== undefined && value !== '',
+    message
+  }),
+
+  minLength: (min: number, message?: string): ValidationRule => ({
+    validate: (value) => typeof value === 'string' && value.length >= min,
+    message: message || `يجب أن يحتوي على ${min} أحرف على الأقل`
+  }),
+
+  maxLength: (max: number, message?: string): ValidationRule => ({
+    validate: (value) => typeof value === 'string' && value.length <= max,
+    message: message || `يجب أن لا يزيد عن ${max} حرف`
+  }),
+
+  number: (message = 'يجب أن يكون رقم صالح'): ValidationRule => ({
+    validate: (value) => !isNaN(Number(value)) && isFinite(Number(value)),
+    message
+  }),
+
+  positiveNumber: (message = 'يجب أن يكون رقم موجب'): ValidationRule => ({
+    validate: (value) => !isNaN(Number(value)) && Number(value) > 0,
+    message
+  }),
+
+  email: (message = 'البريد الإلكتروني غير صالح'): ValidationRule => ({
+    validate: (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value),
+    message
+  }),
+
+  arabicText: (message = 'يجب أن يحتوي على نص عربي'): ValidationRule => ({
+    validate: (value) => /[\u0600-\u06FF]/.test(value),
+    message,
+    type: 'warning'
+  }),
+
+  noSpecialChars: (message = 'لا يسمح بالرموز الخاصة'): ValidationRule => ({
+    validate: (value) => /^[a-zA-Z0-9\u0600-\u06FF\s]*$/.test(value),
+    message
+  })
+};

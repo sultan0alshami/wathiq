@@ -1,28 +1,30 @@
 import React from 'react';
-import { Bell, User, Search } from 'lucide-react';
+import { Bell, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { DateTabs } from '@/components/ui/date-tabs';
+import { SearchInput } from '@/components/ui/search-input';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 export const Header: React.FC = () => {
   return (
     <header className="bg-card border-b border-border-strong px-6 py-4 space-y-4">
       {/* Top Row - Search and User Actions */}
       <div className="flex items-center justify-between">
-        {/* Search */}
+        {/* Global Search */}
         <div className="flex-1 max-w-md">
-          <div className="relative">
-            <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-            <Input
-              type="search"
-              placeholder="البحث..."
-              className="pl-4 pr-10 bg-background-muted border-border"
-            />
-          </div>
+          <SearchInput
+            value=""
+            onChange={() => {}}
+            placeholder="البحث العام..."
+            className="w-full"
+          />
         </div>
 
         {/* Actions */}
         <div className="flex items-center space-x-4 space-x-reverse">
+          {/* Theme Toggle */}
+          <ThemeToggle />
+          
           {/* Notifications */}
           <Button variant="ghost" size="sm" className="relative">
             <Bell className="w-5 h-5" />
