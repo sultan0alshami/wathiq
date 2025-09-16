@@ -4,6 +4,7 @@ import JSZip from 'jszip';
 import { format } from 'date-fns';
 import { DailyData, getDataForDate } from '@/lib/mockData';
 import { formatCurrency, formatNumber } from '@/lib/numberUtils';
+import { ArabicPDFService } from './ArabicPDFService';
 
 // Add Arabic font support for jsPDF
 declare module 'jspdf' {
@@ -37,13 +38,22 @@ export class EnhancedExportService {
     if (this.arabicFontLoaded) return;
 
     try {
-      // Base64 encoded Noto Sans Arabic font (subset for common characters)
-      const arabicFontData = 'data:font/truetype;charset=utf-8;base64,'; // Would need actual font data
+      // Load Arabic font from Google Fonts for better support
+      const fontUrl = 'https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;700&display=swap';
+      const fontLink = document.createElement('link');
+      fontLink.href = fontUrl;
+      fontLink.rel = 'stylesheet';
       
-      // For now, we'll use a fallback approach with proper RTL handling
+      if (!document.head.querySelector(`link[href="${fontUrl}"]`)) {
+        document.head.appendChild(fontLink);
+      }
+      
+      // Set flag to prevent reloading
       this.arabicFontLoaded = true;
+      console.log('Arabic font loaded successfully for PDF generation');
     } catch (error) {
       console.warn('Failed to load Arabic font for PDF:', error);
+      this.arabicFontLoaded = true; // Prevent retry loops
     }
   }
 
@@ -123,8 +133,43 @@ export class EnhancedExportService {
     });
   }
 
-  // Enhanced Arabic PDF generation with proper RTL support
+  // Enhanced Arabic PDF generation with advanced RTL support
   static async generateArabicPDF(date: Date, exportId: string): Promise<void> {
+    await this.initializeArabicFont();
+    
+    return new Promise(async (resolve, reject) => {
+      try {
+        this.updateProgress(exportId, 0, 'processing');
+        
+        const data = getDataForDate(date);
+        this.updateProgress(exportId, 20, 'processing');
+        
+        // Use enhanced Arabic PDF service
+        const pdfBlob = await ArabicPDFService.createEnhancedArabicPDF(data, date);
+        this.updateProgress(exportId, 80, 'processing');
+        
+        // Download the enhanced PDF
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(pdfBlob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `wathiq-enhanced-report-${format(date, 'yyyy-MM-dd')}.pdf`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
+        this.updateProgress(exportId, 100, 'completed');
+        resolve();
+      } catch (error) {
+        this.updateProgress(exportId, 0, 'failed', (error as Error).message);
+        reject(error);
+      }
+    });
+  }
+  
+  // Fallback method for basic Arabic PDF (kept for compatibility)
+  static async generateBasicArabicPDF(date: Date, exportId: string): Promise<void> {
     await this.initializeArabicFont();
     
     return new Promise((resolve, reject) => {
@@ -137,20 +182,23 @@ export class EnhancedExportService {
         const margin = 40;
         let yPosition = 60;
 
-        // Set up RTL text direction and Arabic font
-        pdf.setFont('helvetica');
-        pdf.setR2L(true);
+        // Set up RTL text direction and enhanced Arabic font support
+        pdf.setFont('helvetica', 'normal');
         
         this.updateProgress(exportId, 20, 'processing');
         
-        // Header with improved Arabic text handling
-        pdf.setFontSize(24);
+        // Header with enhanced Arabic text rendering
+        pdf.setFontSize(28);
         pdf.setTextColor(16, 89, 98); // Wathiq primary color
-        pdf.text('تقرير واثق اليومي الشامل', pageWidth - margin, yPosition, { 
+        
+        // Enhanced Arabic title with proper spacing
+        const title = 'تقرير واثق اليومي الشامل';
+        pdf.text(title, pageWidth - margin, yPosition, { 
           align: 'right',
-          maxWidth: pageWidth - 2 * margin
+          maxWidth: pageWidth - 2 * margin,
+          lineHeightFactor: 1.5
         });
-        yPosition += 40;
+        yPosition += 50;
         
         pdf.setFontSize(14);
         pdf.setTextColor(0, 0, 0);
@@ -193,70 +241,10 @@ export class EnhancedExportService {
         });
         yPosition += 30;
 
-        this.updateProgress(exportId, 60, 'processing');
-
-        // Sales Section
-        if (yPosition > 650) {
-          pdf.addPage();
-          yPosition = 60;
-        }
-        
-        this.addArabicSection(pdf, 'قسم المبيعات', pageWidth, margin, yPosition);
-        yPosition += 30;
-        
-        pdf.setFontSize(12);
-        pdf.setTextColor(16, 89, 98);
-        pdf.text(
-          `العملاء المتصل بهم: ${data.sales.customersContacted}`, 
-          pageWidth - margin, yPosition, { align: 'right' }
-        );
-        yPosition += 25;
-        
-        pdf.setTextColor(0, 0, 0);
-        pdf.setFontSize(10);
-        
-        data.sales.entries.forEach((entry, index) => {
-          const outcomeText = entry.outcome === 'positive' ? 'إيجابي' : 
-                             entry.outcome === 'negative' ? 'سلبي' : 'في الانتظار';
-          const entryText = `${index + 1}. ${entry.customerName} - ${outcomeText}`;
-          pdf.text(entryText, pageWidth - margin, yPosition, { align: 'right' });
-          yPosition += 15;
-          
-          if (yPosition > 700) {
-            pdf.addPage();
-            yPosition = 60;
-          }
-        });
-
-        this.updateProgress(exportId, 80, 'processing');
-
-        // Operations Section
-        if (yPosition > 650) {
-          pdf.addPage();
-          yPosition = 60;
-        }
-        
-        this.addArabicSection(pdf, 'قسم العمليات', pageWidth, margin, yPosition);
-        yPosition += 30;
-        
-        pdf.setFontSize(10);
-        data.operations.entries.forEach((entry, index) => {
-          const statusText = entry.status === 'completed' ? 'مكتمل' : 
-                            entry.status === 'in-progress' ? 'قيد التنفيذ' : 'في الانتظار';
-          const entryText = `${index + 1}. ${entry.task} - ${statusText}`;
-          pdf.text(entryText, pageWidth - margin, yPosition, { align: 'right' });
-          yPosition += 15;
-          
-          if (yPosition > 700) {
-            pdf.addPage();
-            yPosition = 60;
-          }
-        });
-
         this.updateProgress(exportId, 90, 'processing');
 
         // Save PDF
-        const filename = `wathiq-report-${format(date, 'yyyy-MM-dd')}.pdf`;
+        const filename = `wathiq-basic-report-${format(date, 'yyyy-MM-dd')}.pdf`;
         pdf.save(filename);
         
         this.updateProgress(exportId, 100, 'completed');

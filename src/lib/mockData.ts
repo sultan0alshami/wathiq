@@ -114,20 +114,47 @@ export const generateMockDataForDate = (date: Date): DailyData => {
         {
           id: `fin-${dateStr}-1`,
           type: 'income',
-          title: 'مبيعات منتجات',
+          title: 'مبيعات منتجات تقنية متطورة للشركات الناشئة',
           amount: parseFloat((15000 + Math.random() * 5000).toFixed(2)),
           category: 'sales',
           date: date,
-          description: 'إيرادات من بيع المنتجات الأساسية'
+          description: 'إيرادات من بيع المنتجات التقنية المتطورة والحلول الرقمية المبتكرة للشركات الناشئة والمؤسسات الصغيرة والمتوسطة في المملكة العربية السعودية'
         },
         {
           id: `fin-${dateStr}-2`,
           type: 'expense',
-          title: 'مصاريف المكتب',
+          title: 'مصاريف المكتب والمرافق التشغيلية',
           amount: parseFloat((2000 + Math.random() * 1000).toFixed(2)),
           category: 'office',
           date: date,
-          description: 'مصاريف تشغيلية يومية'
+          description: 'مصاريف تشغيلية يومية تشمل الكهرباء والماء والإنترنت وصيانة المعدات والمكاتب الإدارية'
+        },
+        {
+          id: `fin-${dateStr}-3`,
+          type: 'income',
+          title: 'خدمات استشارية وتدريبية متخصصة',
+          amount: parseFloat((8000 + Math.random() * 3000).toFixed(2)),
+          category: 'consulting',
+          date: date,
+          description: 'إيرادات من تقديم الخدمات الاستشارية والتدريبية في مجال التكنولوجيا والإدارة للعملاء'
+        },
+        {
+          id: `fin-${dateStr}-4`,
+          type: 'expense',
+          title: 'رواتب ومكافآت الموظفين والفريق',
+          amount: parseFloat((12000 + Math.random() * 2000).toFixed(2)),
+          category: 'salaries',
+          date: date,
+          description: 'رواتب شهرية ومكافآت أداء للموظفين والمطورين والمستشارين العاملين في الشركة'
+        },
+        {
+          id: `fin-${dateStr}-5`,
+          type: 'deposit',
+          title: 'إيداع من العميل الذهبي الرئيسي',
+          amount: parseFloat((25000 + Math.random() * 5000).toFixed(2)),
+          category: 'client-deposit',
+          date: date,
+          description: 'إيداع مقدم من العميل الذهبي لتمويل المشروع الجديد والخدمات المستقبلية'
         }
       ]
     },
@@ -136,16 +163,36 @@ export const generateMockDataForDate = (date: Date): DailyData => {
       entries: [
         {
           id: `sales-${dateStr}-1`,
-          customerName: 'شركة الأمل التجارية',
+          customerName: 'شركة الأمل التجارية للحلول التقنية المتقدمة',
           contactNumber: '+966501234567',
           meetingDate: date,
           meetingTime: '10:00',
           outcome: 'positive',
-          notes: 'اجتماع ناجح مع إمكانية التعاون',
+          notes: 'اجتماع ناجح ومثمر مع إمكانية التعاون طويل المدى في مشاريع التحول الرقمي والحلول التقنية المبتكرة. العميل مهتم بالحلول الشاملة.',
+          attachments: ['عرض-تقديمي-شركة-الأمل.pdf', 'اتفاقية-تعاون-مبدئية.docx']
+        },
+        {
+          id: `sales-${dateStr}-2`,
+          customerName: 'مؤسسة الرياض للتطوير والاستثمار',
+          contactNumber: '+966502345678',
+          meetingDate: date,
+          meetingTime: '14:30',
+          outcome: 'pending',
+          notes: 'اجتماع أولي لمناقشة إمكانية تطوير منصة رقمية متكاملة لإدارة الاستثمارات. يحتاج متابعة خلال أسبوع.',
+          attachments: ['دراسة-جدوى-أولية.pdf']
+        },
+        {
+          id: `sales-${dateStr}-3`,
+          customerName: 'شركة النخيل الذكية للتكنولوجيا',
+          contactNumber: '+966503456789',
+          meetingDate: date,
+          meetingTime: '16:00',
+          outcome: 'negative',
+          notes: 'العميل غير مهتم حالياً بسبب الميزانية المحدودة، لكن أبدى اهتماماً مستقبلياً. يُنصح بالمتابعة خلال ٦ أشهر.',
           attachments: []
         }
       ],
-      dailySummary: `تم الاتصال ب${Math.floor(Math.random() * 15) + 5} عميل جديد اليوم مع نتائج إيجابية`
+      dailySummary: `تم الاتصال بـ ${Math.floor(Math.random() * 15) + 5} عميل جديد اليوم مع نتائج متنوعة. ركزنا على العملاء المهتمين بالحلول التقنية والتحول الرقمي. هناك فرص واعدة مع الشركات الكبيرة والمؤسسات الحكومية.`
     },
     operations: {
       totalOperations: Math.floor(Math.random() * 10) + 5,
@@ -204,24 +251,47 @@ export const generateMockDataForDate = (date: Date): DailyData => {
     customers: [
       {
         id: `cust-${dateStr}-1`,
-        name: 'خالد أحمد المطيري',
+        name: 'خالد أحمد المطيري التميمي',
         phone: '+966501234567',
-        email: 'khalid@example.com',
+        email: 'khalid.almutairi@almumayyiztech.com',
         arrivalDate: date,
         contacted: true,
         cameBack: false,
-        notes: 'عميل مهتم بالمنتجات الأساسية',
+        notes: 'عميل مهتم بالمنتجات التقنية المتطورة وحلول الذكاء الاصطناعي للشركات الناشئة. لديه خبرة واسعة في التكنولوجيا المالية.',
         source: 'website'
       },
       {
         id: `cust-${dateStr}-2`,
-        name: 'فاطمة محمد السعيد',
+        name: 'فاطمة محمد السعيد الأحمدي',
         phone: '+966507654321',
+        email: 'fatima.alsaeed@riyadhinvest.sa',
         arrivalDate: date,
         contacted: false,
         cameBack: true,
-        notes: 'عميل سابق، زيارة متابعة',
+        notes: 'عميل سابق، زيارة متابعة لمناقشة توسيع نطاق التعاون في مشاريع التحول الرقمي للمؤسسات المالية الكبيرة.',
         source: 'referral'
+      },
+      {
+        id: `cust-${dateStr}-3`,
+        name: 'عبدالرحمن سعود الغامدي',
+        phone: '+966508765432',
+        email: 'abdulrahman@smartsolutions.sa',
+        arrivalDate: date,
+        contacted: true,
+        cameBack: false,
+        notes: 'مدير تقني مهتم بحلول إنترنت الأشياء والمدن الذكية. يبحث عن شراكة استراتيجية طويلة المدى.',
+        source: 'linkedin'
+      },
+      {
+        id: `cust-${dateStr}-4`,
+        name: 'نورا عبدالله الدوسري',
+        phone: '+966509876543',
+        email: 'nora.aldosari@innovatehub.sa',
+        arrivalDate: date,
+        contacted: true,
+        cameBack: true,
+        notes: 'رائدة أعمال في مجال التقنية النسائية، مهتمة بالاستثمار في منصات التجارة الإلكترونية والحلول المبتكرة للمرأة العاملة.',
+        source: 'event'
       }
     ],
     suppliers: [

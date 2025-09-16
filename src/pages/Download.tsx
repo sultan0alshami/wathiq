@@ -165,8 +165,8 @@ export const Download: React.FC = () => {
     });
 
     try {
-      if (item.type === 'pdf' && item.section === 'إدارة') {
-        // Use enhanced Arabic PDF export
+      if (item.type === 'pdf') {
+        // Use enhanced Arabic PDF export for all PDF types
         await EnhancedExportService.generateArabicPDF(currentDate, exportId);
       } else {
         // Use existing export methods with progress tracking
@@ -200,7 +200,7 @@ export const Download: React.FC = () => {
       
       toast({
         title: "تم التحميل بنجاح",
-        description: `تم تحميل ${item.name} بنجاح`,
+        description: `تم تحميل ${item.name} بنجاح مع دعم محسن للنصوص العربية`,
       });
     } catch (error) {
       console.error('Download error:', error);
@@ -212,7 +212,7 @@ export const Download: React.FC = () => {
       
       toast({
         title: "خطأ في التحميل",
-        description: "حدث خطأ أثناء تحميل الملف",
+        description: `حدث خطأ أثناء تحميل ${item.name}. يرجى المحاولة مرة أخرى.`,
         variant: "destructive",
       });
     }
