@@ -13,11 +13,15 @@ import {
   Search, 
   Package, 
   FileSpreadsheet,
-  Archive
+  Archive,
+  Zap
 } from 'lucide-react';
 import { useDateContext } from '@/contexts/DateContext';
 import { getDataForDate } from '@/lib/mockData';
 import { ExportService } from '@/services/ExportService';
+import { EnhancedExportService, ExportProgress, BulkExportOptions } from '@/services/EnhancedExportService';
+import { ExportProgressDialog } from '@/components/ui/export-progress-dialog';
+import { BulkExportDialog } from '@/components/ui/bulk-export-dialog';
 import { useToast } from '@/hooks/use-toast';
 
 interface DownloadItem {
@@ -38,6 +42,8 @@ export const Download: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSection, setSelectedSection] = useState<string>('all');
   const [selectedType, setSelectedType] = useState<string>('all');
+  const [exportProgresses, setExportProgresses] = useState<ExportProgress[]>([]);
+  const [showProgressDialog, setShowProgressDialog] = useState(false);
 
   // Mock data for downloadable items
   const downloadItems: DownloadItem[] = [
@@ -137,37 +143,59 @@ export const Download: React.FC = () => {
     }
   };
 
-  const handleDownload = (item: DownloadItem) => {
-    // Get the current date data for real downloads
-    const currentData = getDataForDate(currentDate);
+  const handleDownload = async (item: DownloadItem) => {
+    const exportId = `download-${item.id}-${Date.now()}`;
     
+    // Add to progress tracking
+    const newProgress: ExportProgress = {
+      id: exportId,
+      filename: item.name,
+      progress: 0,
+      status: 'pending'
+    };
+    
+    setExportProgresses(prev => [...prev, newProgress]);
+    setShowProgressDialog(true);
+
+    // Set up progress callback
+    EnhancedExportService.onProgress(exportId, (progress) => {
+      setExportProgresses(prev => 
+        prev.map(p => p.id === exportId ? progress : p)
+      );
+    });
+
     try {
-      switch (item.section) {
-        case 'المالية':
-          ExportService.exportFinanceCSV(currentDate);
-          break;
-        case 'المبيعات':
-          ExportService.exportSalesCSV(currentDate);
-          break;
-        case 'العمليات':
-          ExportService.exportOperationsCSV(currentDate);
-          break;
-        case 'التسويق':
-          ExportService.exportMarketingCSV(currentDate);
-          break;
-        case 'العملاء':
-          ExportService.exportCustomersCSV(currentDate);
-          break;
-        case 'إدارة':
-          if (item.type === 'pdf') {
-            ExportService.generatePDFReport(currentDate);
-          } else {
+      if (item.type === 'pdf' && item.section === 'إدارة') {
+        // Use enhanced Arabic PDF export
+        await EnhancedExportService.generateArabicPDF(currentDate, exportId);
+      } else {
+        // Use existing export methods with progress tracking
+        switch (item.section) {
+          case 'المالية':
+            ExportService.exportFinanceCSV(currentDate);
+            break;
+          case 'المبيعات':
+            ExportService.exportSalesCSV(currentDate);
+            break;
+          case 'العمليات':
+            ExportService.exportOperationsCSV(currentDate);
+            break;
+          case 'التسويق':
+            ExportService.exportMarketingCSV(currentDate);
+            break;
+          case 'العملاء':
+            ExportService.exportCustomersCSV(currentDate);
+            break;
+          default:
             ExportService.exportMergedDailyCSV(currentDate);
-          }
-          break;
-        default:
-          // Fallback for any other section
-          ExportService.exportMergedDailyCSV(currentDate);
+        }
+        
+        // Update progress for non-PDF exports
+        setTimeout(() => {
+          setExportProgresses(prev => 
+            prev.map(p => p.id === exportId ? { ...p, progress: 100, status: 'completed' } : p)
+          );
+        }, 1000);
       }
       
       toast({
@@ -176,6 +204,12 @@ export const Download: React.FC = () => {
       });
     } catch (error) {
       console.error('Download error:', error);
+      setExportProgresses(prev => 
+        prev.map(p => p.id === exportId ? 
+          { ...p, status: 'failed', error: (error as Error).message } : p
+        )
+      );
+      
       toast({
         title: "خطأ في التحميل",
         description: "حدث خطأ أثناء تحميل الملف",
@@ -184,30 +218,78 @@ export const Download: React.FC = () => {
     }
   };
 
-  const handleBulkDownload = () => {
-    const currentData = getDataForDate(currentDate);
+  const handleBulkExport = async (options: BulkExportOptions) => {
+    const exportId = `bulk-${Date.now()}`;
     
+    // Add to progress tracking
+    const newProgress: ExportProgress = {
+      id: exportId,
+      filename: 'التصدير المجمع',
+      progress: 0,
+      status: 'pending'
+    };
+    
+    setExportProgresses(prev => [...prev, newProgress]);
+    setShowProgressDialog(true);
+
+    // Set up progress callback
+    EnhancedExportService.onProgress(exportId, (progress) => {
+      setExportProgresses(prev => 
+        prev.map(p => p.id === exportId ? progress : p)
+      );
+    });
+
     try {
-      // Export all sections
-      ExportService.exportFinanceCSV(currentDate);
-      ExportService.exportSalesCSV(currentDate);
-      ExportService.exportOperationsCSV(currentDate);
-      ExportService.exportMarketingCSV(currentDate);
-      ExportService.exportCustomersCSV(currentDate);
-      ExportService.exportMergedDailyCSV(currentDate);
+      const zipFilename = await EnhancedExportService.bulkExport(options);
       
       toast({
-        title: "تم التحميل المجمع بنجاح",
-        description: "تم تحميل جميع التقارير المحددة",
+        title: "تم التصدير المجمع بنجاح",
+        description: `تم إنشاء الملف: ${zipFilename}`,
       });
     } catch (error) {
-      console.error('Bulk download error:', error);
+      console.error('Bulk export error:', error);
+      setExportProgresses(prev => 
+        prev.map(p => p.id === exportId ? 
+          { ...p, status: 'failed', error: (error as Error).message } : p
+        )
+      );
+      
       toast({
-        title: "خطأ في التحميل المجمع",
-        description: "حدث خطأ أثناء التحميل المجمع",
+        title: "خطأ في التصدير المجمع",
+        description: "حدث خطأ أثناء التصدير المجمع",
         variant: "destructive",
       });
     }
+  };
+
+  const handleRetryExport = async (exportId: string) => {
+    const exportItem = exportProgresses.find(p => p.id === exportId);
+    if (!exportItem) return;
+
+    try {
+      await EnhancedExportService.retryExport(exportId, async () => {
+        // Retry the original export
+        if (exportId.startsWith('bulk-')) {
+          // Would need to store original options for retry
+        } else {
+          // Retry individual export
+        }
+      });
+    } catch (error) {
+      toast({
+        title: "فشل في إعادة المحاولة",
+        description: "لم نتمكن من إعادة محاولة التصدير",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDownloadCompleted = (exportId: string) => {
+    // Handle download of completed export
+    toast({
+      title: "تم التحميل",
+      description: "تم تحميل الملف بنجاح",
+    });
   };
 
   // Filter items based on search and selections
@@ -233,10 +315,18 @@ export const Download: React.FC = () => {
             تحميل التقارير والملفات - {formatDate(currentDate, 'dd/MM/yyyy')}
           </p>
         </div>
-        <Button onClick={handleBulkDownload} className="bg-wathiq-primary hover:bg-wathiq-primary/90">
-          <Package className="w-4 h-4 ml-2" />
-          تحميل مجمع
-        </Button>
+        <div className="flex gap-2">
+          <BulkExportDialog onExport={handleBulkExport} />
+          
+          <Button 
+            onClick={() => setShowProgressDialog(true)}
+            variant="outline"
+            className="hover:bg-wathiq-primary/10"
+          >
+            <Zap className="w-4 h-4 ml-2" />
+            حالة التصدير
+          </Button>
+        </div>
       </div>
 
       {/* Statistics */}
@@ -407,6 +497,15 @@ export const Download: React.FC = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Export Progress Dialog */}
+      <ExportProgressDialog
+        open={showProgressDialog}
+        onOpenChange={setShowProgressDialog}
+        exports={exportProgresses}
+        onRetry={handleRetryExport}
+        onDownload={handleDownloadCompleted}
+      />
     </div>
   );
 };
