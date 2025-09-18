@@ -3,23 +3,30 @@
  * Ensures consistent English number format throughout the application
  */
 
+// A global number formatter for Arabic locale with English numerals
+const arabicNumberFormatter = new Intl.NumberFormat('ar-SA', { useGrouping: true });
+
 // Format number to English digits with specified decimal places
 export const formatNumber = (value: number, decimals: number = 0): string => {
   if (isNaN(value) || value === null || value === undefined) {
     return '0';
   }
-  
-  return value.toFixed(decimals).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return arabicNumberFormatter.format(Number(value.toFixed(decimals)));
 };
 
-// Format currency with exactly 2 decimal places in English
-export const formatCurrency = (value: number, currency: string = 'ريال'): string => {
+// Format currency with exactly 2 decimal places in Arabic
+export const formatCurrency = (value: number, currency: string = 'ر.س'): string => {
   if (isNaN(value) || value === null || value === undefined) {
     return `0.00 ${currency}`;
   }
-  
-  const formattedNumber = formatNumber(value, 2);
-  return `${formattedNumber} ${currency}`;
+  const formatter = new Intl.NumberFormat('ar-SA', {
+    style: 'currency',
+    currency: 'SAR',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  // Remove SAR currency symbol and append custom Arabic currency symbol
+  return formatter.format(value).replace('SAR', '').trim() + ' ' + currency;
 };
 
 // Format percentage with 1 decimal place
@@ -27,20 +34,37 @@ export const formatPercentage = (value: number): string => {
   if (isNaN(value) || value === null || value === undefined) {
     return '0.0%';
   }
-  
-  return `${formatNumber(value, 1)}%`;
+  const formatter = new Intl.NumberFormat('ar-SA', {
+    style: 'percent',
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  });
+  return formatter.format(value / 100); // Divide by 100 as Intl.NumberFormat expects a fraction for percentage
 };
 
-// Parse input to ensure English numbers only
-export const parseEnglishNumber = (input: string): number => {
-  // Remove any Arabic numerals and convert to English
-  const englishInput = input
+// Private helper function to convert Arabic numerals to English and remove non-numeric characters
+const convertAndCleanNumerals = (input: string): string => {
+  return input
     .replace(/[٠-٩]/g, (match) => {
       return String.fromCharCode(match.charCodeAt(0) - '٠'.charCodeAt(0) + '0'.charCodeAt(0));
     })
     .replace(/[^\d.-]/g, ''); // Keep only digits, dots, and minus signs
-  
+};
+
+// Parse input to ensure English numbers only.
+// Note: JavaScript's standard `number` type (double-precision floating-point) has limitations
+// regarding precision for very large or very small numbers (beyond 2^53 or below -2^53).
+// For financial applications requiring arbitrary precision, consider using a dedicated
+// library like `decimal.js` or `big.js`. This function also handles `Infinity` and `-Infinity`.
+export const parseEnglishNumber = (input: string): number => {
+  const englishInput = convertAndCleanNumerals(input);
   const parsed = parseFloat(englishInput);
+  
+  if (!isFinite(parsed)) {
+    // Handle cases where parseFloat results in Infinity or -Infinity
+    return 0;
+  }
+  
   return isNaN(parsed) ? 0 : parsed;
 };
 
@@ -49,13 +73,7 @@ export const formatInputNumber = (value: string | number): string => {
   if (typeof value === 'number') {
     return value.toString();
   }
-  
-  // Convert Arabic numerals to English and remove non-numeric characters except . and -
-  return value
-    .replace(/[٠-٩]/g, (match) => {
-      return String.fromCharCode(match.charCodeAt(0) - '٠'.charCodeAt(0) + '0'.charCodeAt(0));
-    })
-    .replace(/[^\d.-]/g, '');
+  return convertAndCleanNumerals(value);
 };
 
 // Validate that input contains only English numbers
@@ -65,32 +83,26 @@ export const isValidEnglishNumber = (input: string): boolean => {
   return englishNumberPattern.test(convertedInput);
 };
 
-// Format large numbers with K, M suffixes
-export const formatCompactNumber = (value: number): string => {
+// Formats a number into a compact, human-readable string (e.g., 1.2K, 5M)
+// It can be used for both general compact number formatting and chart-specific formatting.
+export const formatCompactNumber = (value: number, decimals: number = 0): string => {
   if (isNaN(value) || value === null || value === undefined) {
     return '0';
   }
-  
-  if (Math.abs(value) >= 1000000) {
-    return formatNumber(value / 1000000, 1) + 'M';
+
+  const absValue = Math.abs(value);
+  const sign = value < 0 ? '-' : '';
+
+  if (absValue >= 1_000_000) {
+    return sign + arabicNumberFormatter.format(Number((absValue / 1_000_000).toFixed(1))) + 'M';
   }
-  
-  if (Math.abs(value) >= 1000) {
-    return formatNumber(value / 1000, 1) + 'K';
+  if (absValue >= 1_000) {
+    return sign + arabicNumberFormatter.format(Number((absValue / 1_000).toFixed(decimals))) + 'K';
   }
-  
-  return formatNumber(value, 0);
+  return sign + arabicNumberFormatter.format(Number(absValue.toFixed(decimals)));
 };
 
-// Format number for display in charts (compact format)
+// This function now just calls formatCompactNumber with default decimals for charts.
 export const formatChartNumber = (value: number): string => {
-  if (Math.abs(value) >= 1000000) {
-    return formatNumber(value / 1000000, 1) + 'M';
-  }
-  
-  if (Math.abs(value) >= 1000) {
-    return formatNumber(value / 1000, 0) + 'K';
-  }
-  
-  return formatNumber(value, 0);
+  return formatCompactNumber(value);
 };

@@ -5,6 +5,7 @@ import { format } from 'date-fns';
 import { DailyData, getDataForDate } from '@/lib/mockData';
 import { formatCurrency, formatNumber } from '@/lib/numberUtils';
 import { ArabicPDFService } from './ArabicPDFService';
+import { DownloadItem } from '@/pages/Download';
 
 // Add Arabic font support for jsPDF
 declare module 'jspdf' {
@@ -20,6 +21,8 @@ export interface ExportProgress {
   progress: number;
   status: 'pending' | 'processing' | 'completed' | 'failed';
   error?: string;
+  originalItem?: DownloadItem; // Store original item for retry
+  originalOptions?: BulkExportOptions; // Store original options for bulk retry
 }
 
 export interface BulkExportOptions {

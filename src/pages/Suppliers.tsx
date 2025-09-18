@@ -27,6 +27,10 @@ import { useDataWithDate } from '@/hooks/useLocalStorage';
 import { useToast } from '@/hooks/use-toast';
 import { Supplier, SupplierDocument } from '@/lib/mockData';
 import { format } from 'date-fns';
+import { useFormValidation, ValidationMessage, ValidationRules } from '@/components/ui/enhanced-form-validation';
+import { DeleteConfirmationDialog } from '@/components/ui/confirmation-dialog';
+import { CardSkeleton, TableSkeleton } from '@/components/ui/loading-skeleton';
+import { ARABIC_SUPPLIERS_MESSAGES } from '@/lib/arabicSuppliersMessages';
 
 export const Suppliers: React.FC = () => {
   const { currentDate } = useDateContext();
@@ -34,12 +38,16 @@ export const Suppliers: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
+  const [isDeleteConfirmationOpen, setIsDeleteConfirmationOpen] = useState(false);
+  const [supplierToDelete, setSupplierToDelete] = useState<string | null>(null);
+  const [dataLoading, setDataLoading] = useState(true); // New state for data loading
 
   // Use localStorage for suppliers data
   const { value: suppliers, setValue: setSuppliers } = useDataWithDate<Supplier[]>(
     'suppliers',
     currentDate,
-    []
+    [],
+    setDataLoading // Pass setDataLoading to useDataWithDate
   );
 
   // Form state
@@ -56,6 +64,14 @@ export const Suppliers: React.FC = () => {
 
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
 
+  const { validate, isValid, errors, resetForm: resetFormValidation } = useFormValidation({
+    name: { required: true, minLength: 3, arabicText: true },
+    contactPerson: { required: true, minLength: 3, arabicText: true },
+    phone: { pattern: ValidationRules.phone(ARABIC_SUPPLIERS_MESSAGES.VALIDATION_PHONE_INVALID) },
+    email: { pattern: ValidationRules.email(ARABIC_SUPPLIERS_MESSAGES.VALIDATION_EMAIL_INVALID) },
+    category: { required: true, arabicText: true, message: ARABIC_SUPPLIERS_MESSAGES.VALIDATION_CATEGORY_REQUIRED },
+  }, formData);
+
   const resetForm = () => {
     setFormData({
       name: '',
@@ -69,13 +85,15 @@ export const Suppliers: React.FC = () => {
     });
     setUploadedFiles([]);
     setEditingSupplier(null);
+    resetFormValidation();
   };
 
   const handleAddSupplier = async () => {
-    if (!formData.name.trim() || !formData.contactPerson.trim()) {
+    validate();
+    if (!isValid) {
       toast({
-        title: "خطأ في البيانات",
-        description: "يرجى ملء الحقول المطلوبة",
+        title: ARABIC_SUPPLIERS_MESSAGES.FORM_VALIDATION_ERROR_TITLE,
+        description: ARABIC_SUPPLIERS_MESSAGES.FORM_VALIDATION_ERROR_DESCRIPTION,
         variant: "destructive",
       });
       return;
@@ -114,14 +132,14 @@ export const Suppliers: React.FC = () => {
         );
         setSuppliers(updatedSuppliers);
         toast({
-          title: "تم تحديث المورد",
-          description: "تم تحديث بيانات المورد بنجاح",
+          title: ARABIC_SUPPLIERS_MESSAGES.TOAST_UPDATE_SUCCESS_TITLE,
+          description: ARABIC_SUPPLIERS_MESSAGES.TOAST_UPDATE_SUCCESS_DESCRIPTION,
         });
       } else {
         setSuppliers([...suppliers, newSupplier]);
         toast({
-          title: "تم إضافة المورد",
-          description: "تم إضافة المورد الجديد بنجاح",
+          title: ARABIC_SUPPLIERS_MESSAGES.TOAST_ADD_SUCCESS_TITLE,
+          description: ARABIC_SUPPLIERS_MESSAGES.TOAST_ADD_SUCCESS_DESCRIPTION,
         });
       }
 
@@ -130,8 +148,8 @@ export const Suppliers: React.FC = () => {
     } catch (error) {
       console.error('Error adding supplier:', error);
       toast({
-        title: "خطأ",
-        description: "حدث خطأ أثناء إضافة المورد",
+        title: ARABIC_SUPPLIERS_MESSAGES.TOAST_ERROR_TITLE,
+        description: ARABIC_SUPPLIERS_MESSAGES.TOAST_ADD_ERROR_DESCRIPTION,
         variant: "destructive",
       });
     } finally {
@@ -155,12 +173,21 @@ export const Suppliers: React.FC = () => {
   };
 
   const handleDeleteSupplier = (supplierId: string) => {
-    const updatedSuppliers = suppliers.filter(sup => sup.id !== supplierId);
+    setSupplierToDelete(supplierId);
+    setIsDeleteConfirmationOpen(true);
+  };
+
+  const confirmDeleteSupplier = () => {
+    if (!supplierToDelete) return;
+
+    const updatedSuppliers = suppliers.filter(sup => sup.id !== supplierToDelete);
     setSuppliers(updatedSuppliers);
     toast({
-      title: "تم حذف المورد",
-      description: "تم حذف المورد بنجاح",
+      title: ARABIC_SUPPLIERS_MESSAGES.TOAST_DELETE_SUCCESS_TITLE,
+      description: ARABIC_SUPPLIERS_MESSAGES.TOAST_DELETE_SUCCESS_DESCRIPTION,
     });
+    setIsDeleteConfirmationOpen(false);
+    setSupplierToDelete(null);
   };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -179,10 +206,10 @@ export const Suppliers: React.FC = () => {
         <div>
           <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
             <Building2 className="w-8 h-8 text-wathiq-primary" />
-            إدارة الموردين
+            {ARABIC_SUPPLIERS_MESSAGES.PAGE_TITLE}
           </h1>
           <p className="text-muted-foreground mt-1">
-            إدارة الموردين ومستنداتهم - {format(currentDate, 'dd/MM/yyyy')}
+            {ARABIC_SUPPLIERS_MESSAGES.PAGE_DESCRIPTION(format(currentDate, 'dd/MM/yyyy'))}
           </p>
         </div>
         
@@ -193,113 +220,125 @@ export const Suppliers: React.FC = () => {
               className="bg-wathiq-primary hover:bg-wathiq-primary/90"
             >
               <Plus className="w-4 h-4 ml-2" />
-              إضافة مورد جديد
+              {ARABIC_SUPPLIERS_MESSAGES.ADD_NEW_SUPPLIER_BUTTON}
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>
-                {editingSupplier ? 'تعديل المورد' : 'إضافة مورد جديد'}
+                {editingSupplier ? ARABIC_SUPPLIERS_MESSAGES.EDIT_SUPPLIER_DIALOG_TITLE : ARABIC_SUPPLIERS_MESSAGES.ADD_SUPPLIER_DIALOG_TITLE}
               </DialogTitle>
               <DialogDescription>
-                {editingSupplier ? 'تحديث بيانات المورد' : 'أدخل بيانات المورد الجديد ومستنداته'}
+                {editingSupplier ? ARABIC_SUPPLIERS_MESSAGES.EDIT_SUPPLIER_DIALOG_DESCRIPTION : ARABIC_SUPPLIERS_MESSAGES.ADD_SUPPLIER_DIALOG_DESCRIPTION}
               </DialogDescription>
             </DialogHeader>
             
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="name">اسم المورد *</Label>
+                <Label htmlFor="name">{ARABIC_SUPPLIERS_MESSAGES.FORM_NAME_LABEL}</Label>
                 <Input
                   id="name"
                   value={formData.name}
                   onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  placeholder="اسم الشركة أو المورد"
+                  placeholder={ARABIC_SUPPLIERS_MESSAGES.FORM_NAME_PLACEHOLDER}
+                  className={errors.name ? "border-destructive" : ""}
                 />
+                {errors.name && <ValidationMessage message={errors.name} />}
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="contactPerson">الشخص المسؤول *</Label>
+                <Label htmlFor="contactPerson">{ARABIC_SUPPLIERS_MESSAGES.FORM_CONTACT_PERSON_LABEL}</Label>
                 <Input
                   id="contactPerson"
                   value={formData.contactPerson}
                   onChange={(e) => setFormData({...formData, contactPerson: e.target.value})}
-                  placeholder="اسم الشخص المسؤول"
+                  placeholder={ARABIC_SUPPLIERS_MESSAGES.FORM_CONTACT_PERSON_PLACEHOLDER}
+                  className={errors.contactPerson ? "border-destructive" : ""}
                 />
+                {errors.contactPerson && <ValidationMessage message={errors.contactPerson} />}
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="phone">رقم الهاتف</Label>
+                <Label htmlFor="phone">{ARABIC_SUPPLIERS_MESSAGES.FORM_PHONE_LABEL}</Label>
                 <Input
                   id="phone"
                   value={formData.phone}
                   onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                  placeholder="+966501234567"
+                  placeholder={ARABIC_SUPPLIERS_MESSAGES.FORM_PHONE_PLACEHOLDER}
+                  className={errors.phone ? "border-destructive" : ""}
                 />
+                {errors.phone && <ValidationMessage message={errors.phone} />}
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="email">البريد الإلكتروني</Label>
+                <Label htmlFor="email">{ARABIC_SUPPLIERS_MESSAGES.FORM_EMAIL_LABEL}</Label>
                 <Input
                   id="email"
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({...formData, email: e.target.value})}
-                  placeholder="supplier@example.com"
+                  placeholder={ARABIC_SUPPLIERS_MESSAGES.FORM_EMAIL_PLACEHOLDER}
+                  className={errors.email ? "border-destructive" : ""}
                 />
+                {errors.email && <ValidationMessage message={errors.email} />}
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="category">التصنيف</Label>
-                <Select value={formData.category} onValueChange={(value) => setFormData({...formData, category: value})}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="اختر التصنيف" />
+                <Label htmlFor="category">{ARABIC_SUPPLIERS_MESSAGES.FORM_CATEGORY_LABEL}</Label>
+                <Select 
+                  value={formData.category} 
+                  onValueChange={(value) => setFormData({...formData, category: value})} 
+                >
+                  <SelectTrigger className={errors.category ? "border-destructive" : ""}>
+                    <SelectValue placeholder={ARABIC_SUPPLIERS_MESSAGES.FORM_CATEGORY_PLACEHOLDER} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="مواد خام">مواد خام</SelectItem>
-                    <SelectItem value="معدات">معدات</SelectItem>
-                    <SelectItem value="خدمات">خدمات</SelectItem>
-                    <SelectItem value="تقنية">تقنية</SelectItem>
-                    <SelectItem value="أخرى">أخرى</SelectItem>
+                    <SelectItem value="مواد خام">{ARABIC_SUPPLIERS_MESSAGES.FORM_CATEGORY_RAW_MATERIALS}</SelectItem>
+                    <SelectItem value="معدات">{ARABIC_SUPPLIERS_MESSAGES.FORM_CATEGORY_EQUIPMENT}</SelectItem>
+                    <SelectItem value="خدمات">{ARABIC_SUPPLIERS_MESSAGES.FORM_CATEGORY_SERVICES}</SelectItem>
+                    <SelectItem value="تقنية">{ARABIC_SUPPLIERS_MESSAGES.FORM_CATEGORY_TECHNOLOGY}</SelectItem>
+                    <SelectItem value="أخرى">{ARABIC_SUPPLIERS_MESSAGES.FORM_CATEGORY_OTHER}</SelectItem>
                   </SelectContent>
                 </Select>
+                {errors.category && <ValidationMessage message={errors.category} />}
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="status">الحالة</Label>
+                <Label htmlFor="status">{ARABIC_SUPPLIERS_MESSAGES.FORM_STATUS_LABEL}</Label>
                 <Select value={formData.status} onValueChange={(value: 'active' | 'inactive') => setFormData({...formData, status: value})}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="active">نشط</SelectItem>
-                    <SelectItem value="inactive">غير نشط</SelectItem>
+                    <SelectItem value="active">{ARABIC_SUPPLIERS_MESSAGES.FORM_STATUS_ACTIVE}</SelectItem>
+                    <SelectItem value="inactive">{ARABIC_SUPPLIERS_MESSAGES.FORM_STATUS_INACTIVE}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               
               <div className="col-span-2 space-y-2">
-                <Label htmlFor="address">العنوان</Label>
+                <Label htmlFor="address">{ARABIC_SUPPLIERS_MESSAGES.FORM_ADDRESS_LABEL}</Label>
                 <Input
                   id="address"
                   value={formData.address}
                   onChange={(e) => setFormData({...formData, address: e.target.value})}
-                  placeholder="العنوان الكامل"
+                  placeholder={ARABIC_SUPPLIERS_MESSAGES.FORM_ADDRESS_PLACEHOLDER}
                 />
               </div>
               
               <div className="col-span-2 space-y-2">
-                <Label htmlFor="notes">ملاحظات</Label>
+                <Label htmlFor="notes">{ARABIC_SUPPLIERS_MESSAGES.FORM_NOTES_LABEL}</Label>
                 <Textarea
                   id="notes"
                   value={formData.notes}
                   onChange={(e) => setFormData({...formData, notes: e.target.value})}
-                  placeholder="أي ملاحظات إضافية"
+                  placeholder={ARABIC_SUPPLIERS_MESSAGES.FORM_NOTES_PLACEHOLDER}
                   rows={3}
                 />
               </div>
               
               <div className="col-span-2 space-y-2">
-                <Label htmlFor="documents">المستندات</Label>
+                <Label htmlFor="documents">{ARABIC_SUPPLIERS_MESSAGES.FORM_DOCUMENTS_LABEL}</Label>
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
                   <input
                     type="file"
@@ -314,8 +353,8 @@ export const Suppliers: React.FC = () => {
                     className="flex flex-col items-center justify-center cursor-pointer"
                   >
                     <Upload className="w-8 h-8 text-gray-400 mb-2" />
-                    <span className="text-sm text-gray-600">اسحب الملفات هنا أو انقر للرفع</span>
-                    <span className="text-xs text-gray-400 mt-1">PDF, DOC, JPG, PNG</span>
+                    <span className="text-sm text-gray-600">{ARABIC_SUPPLIERS_MESSAGES.FORM_DOCUMENTS_DROP_AREA_TEXT}</span>
+                    <span className="text-xs text-gray-400 mt-1">{ARABIC_SUPPLIERS_MESSAGES.FORM_DOCUMENTS_SUPPORTED_FORMATS}</span>
                   </label>
                 </div>
                 
@@ -339,167 +378,184 @@ export const Suppliers: React.FC = () => {
             </div>
             
             <div className="flex justify-end gap-2 mt-4">
-              <Button variant="outline" onClick={() => setDialogOpen(false)}>
-                إلغاء
-              </Button>
-              <Button onClick={handleAddSupplier} disabled={isLoading}>
-                {isLoading ? 'جاري الحفظ...' : (editingSupplier ? 'تحديث' : 'إضافة')}
-              </Button>
+              <Button variant="outline" onClick={() => setDialogOpen(false)}>{ARABIC_SUPPLIERS_MESSAGES.FORM_CANCEL_BUTTON}</Button>
+              <Button onClick={handleAddSupplier} disabled={isLoading || !isValid}>{isLoading ? ARABIC_SUPPLIERS_MESSAGES.FORM_SAVING_BUTTON : (editingSupplier ? ARABIC_SUPPLIERS_MESSAGES.FORM_UPDATE_BUTTON : ARABIC_SUPPLIERS_MESSAGES.FORM_ADD_BUTTON)}</Button>
             </div>
           </DialogContent>
         </Dialog>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">إجمالي الموردين</p>
-                <p className="text-2xl font-bold text-wathiq-primary">{suppliers.length}</p>
+      {dataLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">{ARABIC_SUPPLIERS_MESSAGES.TOTAL_SUPPLIERS_CARD_TITLE}</p>
+                  <p className="text-2xl font-bold text-wathiq-primary">{suppliers.length}</p>
+                </div>
+                <Users className="w-8 h-8 text-wathiq-primary" />
               </div>
-              <Users className="w-8 h-8 text-wathiq-primary" />
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">الموردين النشطين</p>
-                <p className="text-2xl font-bold text-success">
-                  {suppliers.filter(s => s.status === 'active').length}
-                </p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">{ARABIC_SUPPLIERS_MESSAGES.ACTIVE_SUPPLIERS_CARD_TITLE}</p>
+                  <p className="text-2xl font-bold text-success">
+                    {suppliers.filter(s => s.status === 'active').length}
+                  </p>
+                </div>
+                <Building2 className="w-8 h-8 text-success" />
               </div>
-              <Building2 className="w-8 h-8 text-success" />
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">المستندات</p>
-                <p className="text-2xl font-bold text-wathiq-accent">
-                  {suppliers.reduce((total, supplier) => total + supplier.documents.length, 0)}
-                </p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">{ARABIC_SUPPLIERS_MESSAGES.DOCUMENTS_CARD_TITLE}</p>
+                  <p className="text-2xl font-bold text-wathiq-accent">
+                    {suppliers.reduce((total, supplier) => total + supplier.documents.length, 0)}
+                  </p>
+                </div>
+                <FileText className="w-8 h-8 text-wathiq-accent" />
               </div>
-              <FileText className="w-8 h-8 text-wathiq-accent" />
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">التصنيفات</p>
-                <p className="text-2xl font-bold text-foreground">
-                  {new Set(suppliers.map(s => s.category).filter(Boolean)).size}
-                </p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">{ARABIC_SUPPLIERS_MESSAGES.CATEGORIES_CARD_TITLE}</p>
+                  <p className="text-2xl font-bold text-foreground">
+                    {new Set(suppliers.map(s => s.category).filter(Boolean)).size}
+                  </p>
+                </div>
+                <MapPin className="w-8 h-8 text-foreground" />
               </div>
-              <Calendar className="w-8 h-8 text-foreground" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Suppliers Table */}
       <Card>
         <CardHeader>
-          <CardTitle>قائمة الموردين</CardTitle>
+          <CardTitle>{ARABIC_SUPPLIERS_MESSAGES.TABLE_HEADER_SUPPLIER}</CardTitle>
           <CardDescription>
-            إدارة جميع الموردين ومعلوماتهم
+            {ARABIC_SUPPLIERS_MESSAGES.PAGE_DESCRIPTION(format(currentDate, 'dd/MM/yyyy'))}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="text-right">المورد</TableHead>
-                <TableHead className="text-right">الشخص المسؤول</TableHead>
-                <TableHead className="text-right">التصنيف</TableHead>
-                <TableHead className="text-right">الحالة</TableHead>
-                <TableHead className="text-right">المستندات</TableHead>
-                <TableHead className="text-right">الإجراءات</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {suppliers.length === 0 ? (
+          {dataLoading ? (
+            <TableSkeleton />
+          ) : (
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                    لا توجد موردين مضافين بعد
-                  </TableCell>
+                  <TableHead className="text-right">{ARABIC_SUPPLIERS_MESSAGES.TABLE_HEADER_SUPPLIER}</TableHead>
+                  <TableHead className="text-right">{ARABIC_SUPPLIERS_MESSAGES.TABLE_HEADER_CONTACT_PERSON}</TableHead>
+                  <TableHead className="text-right">{ARABIC_SUPPLIERS_MESSAGES.TABLE_HEADER_CATEGORY}</TableHead>
+                  <TableHead className="text-right">{ARABIC_SUPPLIERS_MESSAGES.TABLE_HEADER_STATUS}</TableHead>
+                  <TableHead className="text-right">{ARABIC_SUPPLIERS_MESSAGES.TABLE_HEADER_DOCUMENTS}</TableHead>
+                  <TableHead className="text-right">{ARABIC_SUPPLIERS_MESSAGES.TABLE_HEADER_ACTIONS}</TableHead>
                 </TableRow>
-              ) : (
-                suppliers.map((supplier) => (
-                  <TableRow key={supplier.id}>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{supplier.name}</div>
-                        <div className="text-sm text-muted-foreground flex items-center gap-1">
-                          {supplier.phone && (
-                            <>
-                              <Phone className="w-3 h-3" />
-                              {supplier.phone}
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <div>{supplier.contactPerson}</div>
-                        {supplier.email && (
-                          <div className="text-sm text-muted-foreground flex items-center gap-1">
-                            <Mail className="w-3 h-3" />
-                            {supplier.email}
-                          </div>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{supplier.category || 'غير محدد'}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={supplier.status === 'active' ? 'default' : 'secondary'}>
-                        {supplier.status === 'active' ? 'نشط' : 'غير نشط'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <FileText className="w-4 h-4" />
-                        {supplier.documents.length}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEditSupplier(supplier)}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteSupplier(supplier.id)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
+              </TableHeader>
+              <TableBody>
+                {suppliers.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                      {ARABIC_SUPPLIERS_MESSAGES.TABLE_NO_SUPPLIERS}
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                ) : (
+                  suppliers.map((supplier) => (
+                    <TableRow key={supplier.id}>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{supplier.name}</div>
+                          <div className="text-sm text-muted-foreground flex items-center gap-1">
+                            {supplier.phone && (
+                              <>
+                                <Phone className="w-3 h-3" />
+                                {supplier.phone}
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          <div>{supplier.contactPerson}</div>
+                          {supplier.email && (
+                            <div className="text-sm text-muted-foreground flex items-center gap-1">
+                              <Mail className="w-3 h-3" />
+                              {supplier.email}
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600">{supplier.category || ARABIC_SUPPLIERS_MESSAGES.CATEGORY_UNDEFINED}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={supplier.status === 'active' ? 'default' : 'secondary'}
+                               className={supplier.status === 'active' ? "dark:bg-green-700 dark:text-green-100" : "dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600"}>
+                          {supplier.status === 'active' ? ARABIC_SUPPLIERS_MESSAGES.FORM_STATUS_ACTIVE : ARABIC_SUPPLIERS_MESSAGES.FORM_STATUS_INACTIVE}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <FileText className="w-4 h-4" />
+                          {supplier.documents.length}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditSupplier(supplier)}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteSupplier(supplier.id)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
+
+      <DeleteConfirmationDialog
+        open={isDeleteConfirmationOpen}
+        onOpenChange={setIsDeleteConfirmationOpen}
+        onConfirm={confirmDeleteSupplier}
+        itemName={ARABIC_SUPPLIERS_MESSAGES.DELETE_CONFIRMATION_ITEM_NAME}
+      />
     </div>
   );
 };

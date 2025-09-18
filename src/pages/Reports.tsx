@@ -9,66 +9,136 @@ import { ReportViewerDialog } from '@/components/ui/report-viewer-dialog';
 import { ExportService } from '@/services/ExportService';
 import { getDataForDate, DailyData } from '@/lib/mockData';
 import { useToast } from '@/hooks/use-toast';
+import { format } from 'date-fns'; // Import format from date-fns
+import { useMemo } from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import ar from '@/localization/ar.json';
 
 export const Reports: React.FC = () => {
   const { currentDate, formatDate } = useDateContext();
   const { toast } = useToast();
   const [viewerOpen, setViewerOpen] = useState(false);
   const [selectedReport, setSelectedReport] = useState<{ data: DailyData; section: string } | null>(null);
+  const [filterStatus, setFilterStatus] = useState<'all' | 'مكتمل' | 'معلق'>('all');
+  const [filterSection, setFilterSection] = useState<string[]>([]);
 
   // Get real data for reports
   const dailyData = getDataForDate(currentDate);
-  
+
+  // Helper function to estimate report size
+  const calculateReportSize = (data: any[]): string => {
+    const sizeInKB = data.length * 0.15; // Estimate 0.15 KB per entry
+    if (sizeInKB < 1) return '< 1 KB';
+    if (sizeInKB < 1024) return `${sizeInKB.toFixed(1)} KB`;
+    return `${(sizeInKB / 1024).toFixed(1)} MB`;
+  };
+
+  // Helper function to get dynamic submitted by
+  const getSubmittedBy = (section: string): string => {
+    switch (section) {
+      case 'المالية': return 'النظام المالي';
+      case 'المبيعات': return 'نظام المبيعات';
+      case 'العمليات': return 'نظام العمليات';
+      case 'التسويق': return 'نظام التسويق';
+      default: return 'النظام';
+    }
+  };
+
+  // Helper function to get dynamic submitted at (random time between 9:00 and 17:00)
+  const getSubmittedAt = (): string => {
+    const hour = Math.floor(Math.random() * (17 - 9 + 1)) + 9; // Random hour between 9 and 17
+    const minute = Math.floor(Math.random() * 60);
+    return format(new Date().setHours(hour, minute), 'HH:mm');
+  };
+
+  // Helper to trigger download with progress and toast
+  const triggerDownloadWithProgress = async (
+    exportFunction: (date: Date) => void,
+    filename: string,
+    reportTitle: string
+  ) => {
+    toast({
+      title: `${ar.reports.toast.downloadStart} ${reportTitle}`,
+      description: ar.reports.toast.downloadInProgress,
+      variant: "default",
+      duration: 3000,
+    });
+    try {
+      exportFunction(currentDate);
+      toast({
+        title: ar.reports.toast.downloadSuccess,
+        description: ar.reports.toast.downloadSuccessDescription.replace('{reportTitle}', reportTitle),
+        duration: 3000,
+      });
+    } catch (error) {
+      toast({
+        title: ar.reports.toast.downloadError,
+        description: ar.reports.toast.downloadErrorDescription.replace('{reportTitle}', reportTitle),
+        variant: "destructive",
+        duration: 5000,
+      });
+    }
+  };
+
   const reports = [
     {
       id: 1,
-      title: 'تقرير المالية اليومي',
-      section: 'المالية',
+      title: ar.reports.reportTitles.finance,
+      section: ar.reports.reportSections.finance,
       date: currentDate,
-      status: dailyData.finance.entries.length > 0 ? 'مكتمل' : 'معلق',
+      status: dailyData.finance.entries.length > 0 ? ar.reports.status.completed : ar.reports.status.pending,
       type: 'daily',
-      size: dailyData.finance.entries.length > 0 ? '2.3 MB' : '-',
-      submittedBy: dailyData.finance.entries.length > 0 ? 'النظام المالي' : '-',
-      submittedAt: dailyData.finance.entries.length > 0 ? '09:30' : '-'
+      size: calculateReportSize(dailyData.finance.entries),
+      submittedBy: getSubmittedBy(ar.reports.reportSections.finance),
+      submittedAt: getSubmittedAt()
     },
     {
       id: 2,
-      title: 'تقرير المبيعات اليومي',
-      section: 'المبيعات',
+      title: ar.reports.reportTitles.sales,
+      section: ar.reports.reportSections.sales,
       date: currentDate,
-      status: dailyData.sales.entries.length > 0 ? 'مكتمل' : 'معلق',
+      status: dailyData.sales.entries.length > 0 ? ar.reports.status.completed : ar.reports.status.pending,
       type: 'daily',
-      size: dailyData.sales.entries.length > 0 ? '1.8 MB' : '-',
-      submittedBy: dailyData.sales.entries.length > 0 ? 'نظام المبيعات' : '-',
-      submittedAt: dailyData.sales.entries.length > 0 ? '10:15' : '-'
+      size: calculateReportSize(dailyData.sales.entries),
+      submittedBy: getSubmittedBy(ar.reports.reportSections.sales),
+      submittedAt: getSubmittedAt()
     },
     {
       id: 3,
-      title: 'تقرير العمليات اليومي',
-      section: 'العمليات',
+      title: ar.reports.reportTitles.operations,
+      section: ar.reports.reportSections.operations,
       date: currentDate,
-      status: dailyData.operations.entries.length > 0 ? 'مكتمل' : 'معلق',
+      status: dailyData.operations.entries.length > 0 ? ar.reports.status.completed : ar.reports.status.pending,
       type: 'daily',
-      size: dailyData.operations.entries.length > 0 ? '1.2 MB' : '-',
-      submittedBy: dailyData.operations.entries.length > 0 ? 'نظام العمليات' : '-',
-      submittedAt: dailyData.operations.entries.length > 0 ? '11:00' : '-'
+      size: calculateReportSize(dailyData.operations.entries),
+      submittedBy: getSubmittedBy(ar.reports.reportSections.operations),
+      submittedAt: getSubmittedAt()
     },
     {
       id: 4,
-      title: 'تقرير التسويق اليومي',
-      section: 'التسويق',
+      title: ar.reports.reportTitles.marketing,
+      section: ar.reports.reportSections.marketing,
       date: currentDate,
-      status: dailyData.marketing.tasks.length > 0 ? 'مكتمل' : 'معلق',
+      status: dailyData.marketing.tasks.length > 0 ? ar.reports.status.completed : ar.reports.status.pending,
       type: 'daily',
-      size: dailyData.marketing.tasks.length > 0 ? '1.5 MB' : '-',
-      submittedBy: dailyData.marketing.tasks.length > 0 ? 'نظام التسويق' : '-',
-      submittedAt: dailyData.marketing.tasks.length > 0 ? '11:30' : '-'
+      size: calculateReportSize(dailyData.marketing.tasks),
+      submittedBy: getSubmittedBy(ar.reports.reportSections.marketing),
+      submittedAt: getSubmittedAt()
     },
   ];
 
+  const filteredReports = useMemo(() => {
+    return reports.filter(report => {
+      const statusMatch = filterStatus === 'all' || report.status === filterStatus;
+      const sectionMatch = filterSection.length === 0 || filterSection.includes(report.section);
+      return statusMatch && sectionMatch;
+    });
+  }, [reports, filterStatus, filterSection]);
+
   const handleViewReport = (reportId: number) => {
     const report = reports.find(r => r.id === reportId);
-    if (report && report.status === 'مكتمل') {
+    if (report && report.status === ar.reports.status.completed) {
       setSelectedReport({ data: dailyData, section: report.section });
       setViewerOpen(true);
     }
@@ -76,75 +146,132 @@ export const Reports: React.FC = () => {
 
   const handleDownloadReport = (reportId: number) => {
     const report = reports.find(r => r.id === reportId);
-    if (report && report.status === 'مكتمل') {
-      try {
-        switch (report.section) {
-          case 'المالية':
-            ExportService.exportFinanceCSV(currentDate);
-            break;
-          case 'المبيعات':
-            ExportService.exportSalesCSV(currentDate);
-            break;
-          case 'العمليات':
-            ExportService.exportOperationsCSV(currentDate);
-            break;
-          case 'التسويق':
-            ExportService.exportMarketingCSV(currentDate);
-            break;
-        }
-        toast({
-          title: "تم التحميل بنجاح",
-          description: `تم تحميل ${report.title} بنجاح`,
-        });
-      } catch (error) {
-        toast({
-          title: "خطأ في التحميل",
-          description: "حدث خطأ أثناء تحميل التقرير",
-          variant: "destructive",
-        });
+    if (report && report.status === ar.reports.status.completed) {
+      switch (report.section) {
+        case ar.reports.reportSections.finance:
+          triggerDownloadWithProgress(ExportService.exportFinanceCSV, `finance-${formatDate(currentDate, 'yyyy-MM-dd')}.csv`, report.title);
+          break;
+        case ar.reports.reportSections.sales:
+          triggerDownloadWithProgress(ExportService.exportSalesCSV, `sales-${formatDate(currentDate, 'yyyy-MM-dd')}.csv`, report.title);
+          break;
+        case ar.reports.reportSections.operations:
+          triggerDownloadWithProgress(ExportService.exportOperationsCSV, `operations-${formatDate(currentDate, 'yyyy-MM-dd')}.csv`, report.title);
+          break;
+        case ar.reports.reportSections.marketing:
+          triggerDownloadWithProgress(ExportService.exportMarketingCSV, `marketing-${formatDate(currentDate, 'yyyy-MM-dd')}.csv`, report.title);
+          break;
       }
     }
   };
 
   const handleBulkDownload = () => {
-    try {
-      ExportService.exportMergedDailyCSV(currentDate);
-      toast({
-        title: "تم التحميل بنجاح",
-        description: "تم تحميل التقرير المجمع بنجاح",
-      });
-    } catch (error) {
-      toast({
-        title: "خطأ في التحميل",
-        description: "حدث خطأ أثناء تحميل التقرير المجمع",
-        variant: "destructive",
-      });
-    }
+    triggerDownloadWithProgress(ExportService.exportMergedDailyCSV, `merged-daily-report-${formatDate(currentDate, 'yyyy-MM-dd')}.csv`, ar.reports.reportTitles.merged);
   };
 
   const getStatusBadge = (status: string) => {
-    const variant = status === 'مكتمل' ? 'default' : status === 'معلق' ? 'secondary' : 'destructive';
-    return <Badge variant={variant}>{status}</Badge>;
+    const variant = status === ar.reports.status.completed ? 'default' : status === ar.reports.status.pending ? 'secondary' : 'destructive';
+    
+    // Add dark mode specific classes
+    let className = '';
+    if (status === ar.reports.status.completed) {
+      className = 'bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-200 dark:border-green-700';
+    } else if (status === ar.reports.status.pending) {
+      className = 'bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-950 dark:text-yellow-200 dark:border-yellow-700';
+    } else {
+      className = 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-200 dark:border-red-700';
+    }
+
+    return <Badge variant={variant} className={className}>{status}</Badge>;
   };
+
+  // Helper to convert size string to KB
+  const parseSizeStringToKB = (sizeStr: string): number => {
+    if (sizeStr === '-') return 0;
+    const [valueStr, unit] = sizeStr.split(' ');
+    const value = parseFloat(valueStr);
+    if (isNaN(value)) return 0;
+
+    switch (unit) {
+      case ar.reports.statsCards.kb:
+        return value;
+      case ar.reports.statsCards.mb:
+        return value * 1024;
+      default:
+        return 0;
+    }
+  };
+
+  const totalCompletedReportsSizeKB = reports
+    .filter(report => report.status === ar.reports.status.completed)
+    .reduce((sum, report) => sum + parseSizeStringToKB(report.size), 0);
+
+  const totalSizeDisplay = totalCompletedReportsSizeKB < 1024
+    ? `${totalCompletedReportsSizeKB.toFixed(1)} ${ar.reports.statsCards.kb}`
+    : `${(totalCompletedReportsSizeKB / 1024).toFixed(1)} ${ar.reports.statsCards.mb}`;
+  
+  const totalSizeUnit = totalCompletedReportsSizeKB < 1024 ? ar.reports.statsCards.kb : ar.reports.statsCards.mb;
+
+  const allSections = useMemo(() => {
+    const sections = new Set<string>();
+    reports.forEach(report => sections.add(report.section));
+    return Array.from(sections);
+  }, [reports]);
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">التقارير</h1>
+          <h1 className="text-3xl font-bold text-foreground">{ar.reports.title}</h1>
           <p className="text-muted-foreground mt-1">
-            إدارة وعرض التقارير اليومية - {formatDate(currentDate, 'dd/MM/yyyy')}
+            {ar.reports.description} - {formatDate(currentDate, 'dd/MM/yyyy')}
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm">
-            <Filter className="w-4 h-4 ml-2" />
-            فلترة
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Filter className="w-4 h-4 ml-2" />
+                {ar.reports.header.filterSection} ({filterSection.length > 0 ? filterSection.length : ar.reports.header.allSections})
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-48">
+              {allSections.map(section => (
+                <DropdownMenuCheckboxItem
+                  key={section}
+                  checked={filterSection.includes(section)}
+                  onCheckedChange={(checked) => {
+                    setFilterSection(prev =>
+                      checked ? [...prev, section] : prev.filter(s => s !== section)
+                    );
+                  }}
+                >
+                  {section}
+                </DropdownMenuCheckboxItem>
+              ))}
+              <DropdownMenuCheckboxItem
+                checked={filterSection.length === 0}
+                onCheckedChange={() => setFilterSection([])}
+              >
+                {ar.reports.header.allSections}
+              </DropdownMenuCheckboxItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <Select value={filterStatus} onValueChange={(value: 'all' | 'مكتمل' | 'معلق') => setFilterStatus(value)}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder={ar.reports.header.filterStatus} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{ar.reports.header.allStatuses}</SelectItem>
+              <SelectItem value={ar.reports.status.completed}>{ar.reports.header.completed}</SelectItem>
+              <SelectItem value={ar.reports.status.pending}>{ar.reports.header.pending}</SelectItem>
+            </SelectContent>
+          </Select>
+
           <Button variant="default" size="sm" onClick={handleBulkDownload}>
             <Download className="w-4 h-4 ml-2" />
-            تحميل مجمع
+            {ar.reports.header.bulkDownload}
           </Button>
         </div>
       </div>
@@ -153,41 +280,41 @@ export const Reports: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">إجمالي التقارير</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{ar.reports.statsCards.totalReports}</CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
-            <div className="text-2xl font-bold text-foreground">{reports.length}</div>
-            <p className="text-xs text-muted-foreground">لهذا اليوم</p>
+            <div className="text-2xl font-bold text-foreground">{filteredReports.length}</div>
+            <p className="text-xs text-muted-foreground">{ar.reports.statsCards.today}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">المكتملة</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{ar.reports.statsCards.completed}</CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
-            <div className="text-2xl font-bold text-success">{reports.filter(r => r.status === 'مكتمل').length}</div>
-            <p className="text-xs text-muted-foreground">{Math.round((reports.filter(r => r.status === 'مكتمل').length / reports.length) * 100)}% معدل الإنجاز</p>
+            <div className="text-2xl font-bold text-success">{filteredReports.filter(r => r.status === ar.reports.status.completed).length}</div>
+            <p className="text-xs text-muted-foreground">{Math.round((filteredReports.filter(r => r.status === ar.reports.status.completed).length / (filteredReports.length || 1)) * 100)}% {ar.reports.statsCards.completionRate}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">المعلقة</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{ar.reports.statsCards.pending}</CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
-            <div className="text-2xl font-bold text-warning">{reports.filter(r => r.status === 'معلق').length}</div>
-            <p className="text-xs text-muted-foreground">{Math.round((reports.filter(r => r.status === 'معلق').length / reports.length) * 100)}% متبقية</p>
+            <div className="text-2xl font-bold text-warning">{filteredReports.filter(r => r.status === ar.reports.status.pending).length}</div>
+            <p className="text-xs text-muted-foreground">{Math.round((filteredReports.filter(r => r.status === ar.reports.status.pending).length / (filteredReports.length || 1)) * 100)}% {ar.reports.statsCards.remaining}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">حجم البيانات</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{ar.reports.statsCards.dataSize}</CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
-            <div className="text-2xl font-bold text-foreground">{reports.filter(r => r.status === 'مكتمل').length * 1.8}</div>
-            <p className="text-xs text-muted-foreground">ميجابايت</p>
+            <div className="text-2xl font-bold text-foreground">{totalSizeDisplay}</div>
+            <p className="text-xs text-muted-foreground">{totalSizeUnit}</p>
           </CardContent>
         </Card>
       </div>
@@ -197,58 +324,66 @@ export const Reports: React.FC = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileText className="w-5 h-5" />
-            تقارير اليوم
+            {ar.reports.reportsTable.title}
           </CardTitle>
           <CardDescription>
-            قائمة بجميع التقارير المقدمة لهذا اليوم
+            {ar.reports.reportsTable.description}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="text-right">اسم التقرير</TableHead>
-                <TableHead className="text-right">القسم</TableHead>
-                <TableHead className="text-right">الحالة</TableHead>
-                <TableHead className="text-right">مقدم بواسطة</TableHead>
-                <TableHead className="text-right">وقت التسليم</TableHead>
-                <TableHead className="text-right">الحجم</TableHead>
-                <TableHead className="text-right">الإجراءات</TableHead>
+                <TableHead className="text-right">{ar.reports.reportsTable.tableHeaders.reportName}</TableHead>
+                <TableHead className="text-right">{ar.reports.reportsTable.tableHeaders.section}</TableHead>
+                <TableHead className="text-right">{ar.reports.reportsTable.tableHeaders.status}</TableHead>
+                <TableHead className="text-right">{ar.reports.reportsTable.tableHeaders.submittedBy}</TableHead>
+                <TableHead className="text-right">{ar.reports.reportsTable.tableHeaders.submissionTime}</TableHead>
+                <TableHead className="text-right">{ar.reports.reportsTable.tableHeaders.size}</TableHead>
+                <TableHead className="text-right">{ar.reports.reportsTable.tableHeaders.actions}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {reports.map((report) => (
-                <TableRow key={report.id}>
-                  <TableCell className="font-medium">{report.title}</TableCell>
-                  <TableCell>{report.section}</TableCell>
-                  <TableCell>{getStatusBadge(report.status)}</TableCell>
-                  <TableCell>{report.submittedBy}</TableCell>
-                  <TableCell>{report.submittedAt}</TableCell>
-                  <TableCell>{report.size}</TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      {report.status === 'مكتمل' && (
-                        <>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleViewReport(report.id)}
-                          >
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDownloadReport(report.id)}
-                          >
-                            <Download className="w-4 h-4" />
-                          </Button>
-                        </>
-                      )}
-                    </div>
+              {filteredReports.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                    {ar.reports.reportsTable.noReports}
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                filteredReports.map((report) => (
+                  <TableRow key={report.id}>
+                    <TableCell className="font-medium">{report.title}</TableCell>
+                    <TableCell>{report.section}</TableCell>
+                    <TableCell>{getStatusBadge(report.status)}</TableCell>
+                    <TableCell>{report.submittedBy}</TableCell>
+                    <TableCell>{report.submittedAt}</TableCell>
+                    <TableCell>{report.size}</TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        {report.status === ar.reports.status.completed && (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleViewReport(report.id)}
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDownloadReport(report.id)}
+                            >
+                              <Download className="w-4 h-4" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardContent>
@@ -258,9 +393,11 @@ export const Reports: React.FC = () => {
         open={viewerOpen}
         onOpenChange={setViewerOpen}
         data={selectedReport?.data || null}
-        section={selectedReport?.section || ''}
+        section={selectedReport?.section || (ar.reports.reportSections.finance as ReportSectionType)}
         date={currentDate}
       />
     </div>
   );
 };
+
+type ReportSectionType = keyof typeof ar.reports.reportSections;

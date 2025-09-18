@@ -18,6 +18,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { ExportProgress } from '@/services/EnhancedExportService';
+import { ARABIC_EXPORT_PROGRESS_DIALOG_MESSAGES } from '@/lib/arabicExportProgressDialogMessages';
 
 interface ExportProgressDialogProps {
   open: boolean;
@@ -52,13 +53,13 @@ export const ExportProgressDialog: React.FC<ExportProgressDialogProps> = ({
   const getStatusBadge = (status: ExportProgress['status']) => {
     switch (status) {
       case 'completed':
-        return <Badge className="bg-success text-success-foreground">مكتمل</Badge>;
+        return <Badge className="bg-success text-success-foreground">{ARABIC_EXPORT_PROGRESS_DIALOG_MESSAGES.STATUS_COMPLETED}</Badge>;
       case 'failed':
-        return <Badge variant="destructive">فشل</Badge>;
+        return <Badge variant="destructive">{ARABIC_EXPORT_PROGRESS_DIALOG_MESSAGES.STATUS_FAILED}</Badge>;
       case 'processing':
-        return <Badge className="bg-wathiq-primary text-white">قيد المعالجة</Badge>;
+        return <Badge className="bg-wathiq-primary text-white">{ARABIC_EXPORT_PROGRESS_DIALOG_MESSAGES.STATUS_PROCESSING}</Badge>;
       case 'pending':
-        return <Badge variant="secondary">في الانتظار</Badge>;
+        return <Badge variant="secondary">{ARABIC_EXPORT_PROGRESS_DIALOG_MESSAGES.STATUS_PENDING}</Badge>;
       default:
         return null;
     }
@@ -67,6 +68,7 @@ export const ExportProgressDialog: React.FC<ExportProgressDialogProps> = ({
   const allCompleted = exports.every(exp => exp.status === 'completed');
   const hasFailures = exports.some(exp => exp.status === 'failed');
   const inProgress = exports.some(exp => exp.status === 'processing' || exp.status === 'pending');
+  const failedCount = exports.filter(exp => exp.status === 'failed').length;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -74,10 +76,10 @@ export const ExportProgressDialog: React.FC<ExportProgressDialogProps> = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Download className="w-5 h-5" />
-            حالة التصدير
+            {ARABIC_EXPORT_PROGRESS_DIALOG_MESSAGES.DIALOG_TITLE}
           </DialogTitle>
           <DialogDescription>
-            تتبع تقدم عمليات التصدير والتحميل
+            {ARABIC_EXPORT_PROGRESS_DIALOG_MESSAGES.DIALOG_DESCRIPTION}
           </DialogDescription>
         </DialogHeader>
 
@@ -102,7 +104,7 @@ export const ExportProgressDialog: React.FC<ExportProgressDialogProps> = ({
               {(exportItem.status === 'processing' || exportItem.status === 'pending') && (
                 <div className="space-y-1">
                   <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>التقدم</span>
+                    <span>{ARABIC_EXPORT_PROGRESS_DIALOG_MESSAGES.PROGRESS_LABEL}</span>
                     <span>{exportItem.progress}%</span>
                   </div>
                   <Progress 
@@ -129,7 +131,7 @@ export const ExportProgressDialog: React.FC<ExportProgressDialogProps> = ({
                     className="text-xs"
                   >
                     <RefreshCw className="w-3 h-3 ml-1" />
-                    إعادة المحاولة
+                    {ARABIC_EXPORT_PROGRESS_DIALOG_MESSAGES.RETRY_BUTTON}
                   </Button>
                 )}
                 
@@ -141,7 +143,7 @@ export const ExportProgressDialog: React.FC<ExportProgressDialogProps> = ({
                     className="text-xs hover:bg-success/10 hover:text-success hover:border-success"
                   >
                     <Download className="w-3 h-3 ml-1" />
-                    تحميل
+                    {ARABIC_EXPORT_PROGRESS_DIALOG_MESSAGES.DOWNLOAD_BUTTON}
                   </Button>
                 )}
               </div>
@@ -154,29 +156,29 @@ export const ExportProgressDialog: React.FC<ExportProgressDialogProps> = ({
           <div className="flex items-center justify-between">
             <div className="text-sm text-muted-foreground">
               {allCompleted ? (
-                <span className="text-success">تم إكمال جميع العمليات بنجاح</span>
+                <span className="text-success">{ARABIC_EXPORT_PROGRESS_DIALOG_MESSAGES.SUMMARY_ALL_COMPLETED}</span>
               ) : hasFailures ? (
                 <span className="text-destructive">
-                  بعض العمليات فشلت - يمكنك إعادة المحاولة
+                  {ARABIC_EXPORT_PROGRESS_DIALOG_MESSAGES.SUMMARY_HAS_FAILURES(failedCount)}
                 </span>
               ) : inProgress ? (
-                <span className="text-wathiq-primary">جاري المعالجة...</span>
+                <span className="text-wathiq-primary">{ARABIC_EXPORT_PROGRESS_DIALOG_MESSAGES.SUMMARY_IN_PROGRESS}</span>
               ) : (
-                <span>جاهز للبدء</span>
+                <span>{ARABIC_EXPORT_PROGRESS_DIALOG_MESSAGES.SUMMARY_READY_TO_START}</span>
               )}
             </div>
             
             <div className="flex gap-2">
-              {allCompleted && !hasFailures && (
-                <Button
-                  size="sm"
-                  onClick={() => onOpenChange(false)}
-                  className="bg-success hover:bg-success/90"
-                >
-                  <CheckCircle className="w-4 h-4 ml-1" />
-                  إغلاق
-                </Button>
-              )}
+              {/* Always show a close button */}
+              <Button
+                size="sm"
+                onClick={() => onOpenChange(false)}
+                variant={allCompleted && !hasFailures ? "default" : "secondary"} // Different variant if not all completed successfully
+                className={allCompleted && !hasFailures ? "bg-success hover:bg-success/90" : ""}
+              >
+                <CheckCircle className="w-4 h-4 ml-1" />
+                {ARABIC_EXPORT_PROGRESS_DIALOG_MESSAGES.CLOSE_BUTTON}
+              </Button>
             </div>
           </div>
         </div>

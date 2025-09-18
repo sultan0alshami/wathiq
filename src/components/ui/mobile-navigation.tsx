@@ -1,17 +1,18 @@
 import React, { useState } from 'react';
-import { Menu, X, Home, DollarSign, Users, Settings, BarChart3, Package } from 'lucide-react';
+import { Menu, X, Home, DollarSign, Users, Settings, BarChart3, Package, MoreHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import { useLocation, Link } from 'react-router-dom';
+import { ARABIC_MOBILE_NAVIGATION_MESSAGES } from '@/lib/arabicMobileNavigationMessages';
 
 const navigationItems = [
-  { icon: Home, label: 'لوحة التحكم', path: '/' },
-  { icon: DollarSign, label: 'المالية', path: '/finance' },
-  { icon: Users, label: 'المبيعات', path: '/sales' },
-  { icon: Settings, label: 'العمليات', path: '/operations' },
-  { icon: BarChart3, label: 'التسويق', path: '/marketing' },
-  { icon: Package, label: 'التقارير', path: '/reports' },
+  { icon: Home, label: ARABIC_MOBILE_NAVIGATION_MESSAGES.DASHBOARD, path: '/' },
+  { icon: DollarSign, label: ARABIC_MOBILE_NAVIGATION_MESSAGES.FINANCE, path: '/finance' },
+  { icon: Users, label: ARABIC_MOBILE_NAVIGATION_MESSAGES.SALES, path: '/sales' },
+  { icon: Settings, label: ARABIC_MOBILE_NAVIGATION_MESSAGES.OPERATIONS, path: '/operations' },
+  { icon: BarChart3, label: ARABIC_MOBILE_NAVIGATION_MESSAGES.MARKETING, path: '/marketing' },
+  { icon: Package, label: ARABIC_MOBILE_NAVIGATION_MESSAGES.REPORTS, path: '/reports' },
 ];
 
 export const MobileNavigation: React.FC = () => {
@@ -33,7 +34,7 @@ export const MobileNavigation: React.FC = () => {
               {/* Header */}
               <div className="p-4 border-b border-border">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-semibold text-primary">القائمة</h2>
+                  <h2 className="text-lg font-semibold text-primary">{ARABIC_MOBILE_NAVIGATION_MESSAGES.MENU_TITLE}</h2>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -77,7 +78,7 @@ export const MobileNavigation: React.FC = () => {
       {/* Bottom Navigation for Mobile */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border z-50">
         <div className="flex justify-around items-center py-2">
-          {navigationItems.slice(0, 5).map((item) => {
+          {navigationItems.slice(0, 4).map((item) => {
             const isActive = location.pathname === item.path;
             return (
               <Link
@@ -86,7 +87,7 @@ export const MobileNavigation: React.FC = () => {
                 className={cn(
                   "flex flex-col items-center gap-1 p-2 rounded-lg transition-colors min-w-0",
                   "hover:bg-accent hover:text-accent-foreground",
-                  isActive && "text-primary font-medium"
+                  isActive && "bg-primary text-primary-foreground"
                 )}
               >
                 <item.icon className="w-5 h-5" />
@@ -94,6 +95,21 @@ export const MobileNavigation: React.FC = () => {
               </Link>
             );
           })}
+          {navigationItems.length > 4 && (
+            <SheetTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className={cn(
+                  "flex flex-col items-center gap-1 p-2 rounded-lg transition-colors min-w-0",
+                  "hover:bg-accent hover:text-accent-foreground"
+                )}
+              >
+                <MoreHorizontal className="w-5 h-5" />
+                <span className="text-xs truncate">{ARABIC_MOBILE_NAVIGATION_MESSAGES.MORE_BUTTON}</span>
+              </Button>
+            </SheetTrigger>
+          )}
         </div>
       </div>
     </>

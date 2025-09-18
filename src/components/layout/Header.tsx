@@ -6,6 +6,15 @@ import { SearchInput } from '@/components/ui/search-input';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 export const Header: React.FC = () => {
+  const [searchTerm, setSearchTerm] = React.useState('');
+
+  // TODO: Implement global search functionality when a search context or service is available.
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    // Placeholder for actual search logic
+    console.log("Search term:", value);
+  };
+
   return (
     <header className="bg-card border-b border-border-strong px-6 py-4 space-y-4">
       {/* Top Row - Search and User Actions */}
@@ -13,8 +22,8 @@ export const Header: React.FC = () => {
         {/* Global Search */}
         <div className="flex-1 max-w-md">
           <SearchInput
-            value=""
-            onChange={() => {}}
+            value={searchTerm}
+            onChange={handleSearchChange}
             placeholder="البحث العام..."
             className="w-full"
           />
@@ -35,7 +44,7 @@ export const Header: React.FC = () => {
 
           {/* User Menu */}
           <div className="flex items-center space-x-3 space-x-reverse">
-            <div className="text-left">
+            <div className="text-right">
               <p className="text-sm font-medium">أحمد محمد</p>
               <p className="text-xs text-muted-foreground">المدير</p>
             </div>

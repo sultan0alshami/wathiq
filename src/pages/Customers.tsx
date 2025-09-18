@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,9 +6,13 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Trash2, Plus, Users, Phone, Mail, Calendar, Search, Filter } from 'lucide-react';
+import { Trash2, Plus, Users, Phone, Mail, Calendar, Search, Filter, Award, UserPlus } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { formatCurrency, formatInputNumber, parseEnglishNumber, isValidEnglishNumber } from '@/lib/numberUtils';
+import { formatCurrency, formatInputNumber, isValidEnglishNumber } from '@/lib/numberUtils';
+import { useFormValidation, ValidationRules, ValidationMessage } from '@/components/ui/enhanced-form-validation';
+import { DeleteConfirmationDialog } from '@/components/ui/confirmation-dialog';
+import { ARABIC_CUSTOMERS_MESSAGES } from '@/lib/arabicCustomersMessages';
+import { TableSkeleton } from '@/components/ui/loading-skeleton';
 
 interface Customer {
   id: string;
@@ -18,8 +22,8 @@ interface Customer {
   company?: string;
   status: 'new' | 'contacted' | 'interested' | 'converted' | 'inactive';
   source: 'website' | 'referral' | 'social_media' | 'direct' | 'other';
-  registrationDate: string;
-  lastContactDate?: string;
+  registrationDate: Date;
+  lastContactDate?: Date;
   notes: string;
   estimatedValue?: number;
 }
@@ -29,6 +33,16 @@ export const Customers: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [sourceFilter, setSourceFilter] = useState<string>('all');
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Simulate fetching data
+    const timer = setTimeout(() => {
+      setCustomers([]); // Initially empty for demo
+      setIsLoading(false);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Form states
   const [newName, setNewName] = useState('');
@@ -39,9 +53,23 @@ export const Customers: React.FC = () => {
   const [newSource, setNewSource] = useState<Customer['source']>('website');
   const [newNotes, setNewNotes] = useState('');
   const [newEstimatedValue, setNewEstimatedValue] = useState('');
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [customerToDelete, setCustomerToDelete] = useState<string | null>(null);
+
+  const { validateField, validateForm } = useFormValidation();
+
+  const [nameValidation, setNameValidation] = useState(validateField('', [ValidationRules.required()]));
+  const [emailValidation, setEmailValidation] = useState(validateField('', [ValidationRules.required(), ValidationRules.email()]));
+  const [phoneValidation, setPhoneValidation] = useState(validateField('', [])); // No specific phone validation rule yet
 
   const addCustomer = () => {
-    if (newName && newEmail) {
+    const isFormValid = validateForm({
+      newName: { value: newName, rules: [ValidationRules.required()] },
+      newEmail: { value: newEmail, rules: [ValidationRules.required(), ValidationRules.email()] },
+      newPhone: { value: newPhone, rules: [] },
+    });
+
+    if (isFormValid) {
       const customer: Customer = {
         id: Date.now().toString(),
         name: newName,
@@ -50,7 +78,7 @@ export const Customers: React.FC = () => {
         company: newCompany,
         status: newStatus,
         source: newSource,
-        registrationDate: new Date().toISOString(),
+        registrationDate: new Date(),
         notes: newNotes,
         estimatedValue: newEstimatedValue ? parseEnglishNumber(newEstimatedValue) : undefined,
       };
@@ -69,13 +97,22 @@ export const Customers: React.FC = () => {
   };
 
   const removeCustomer = (id: string) => {
-    setCustomers(customers.filter(customer => customer.id !== id));
+    setCustomerToDelete(id);
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDeleteCustomer = () => {
+    if (customerToDelete) {
+      setCustomers(customers.filter(customer => customer.id !== customerToDelete));
+      setCustomerToDelete(null);
+      setShowDeleteDialog(false);
+    }
   };
 
   const updateCustomerStatus = (id: string, status: Customer['status']) => {
     setCustomers(customers.map(customer => 
       customer.id === id 
-        ? { ...customer, status, lastContactDate: new Date().toISOString() }
+        ? { ...customer, status, lastContactDate: new Date() }
         : customer
     ));
   };
@@ -83,35 +120,35 @@ export const Customers: React.FC = () => {
   const getStatusColor = (status: Customer['status']) => {
     switch (status) {
       case 'new':
-        return 'bg-blue-50 text-blue-700 border-blue-200';
+        return 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900 dark:text-blue-200 dark:border-blue-700';
       case 'contacted':
-        return 'bg-yellow-50 text-yellow-700 border-yellow-200';
+        return 'bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-900 dark:text-yellow-200 dark:border-yellow-700';
       case 'interested':
-        return 'bg-purple-50 text-purple-700 border-purple-200';
+        return 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900 dark:text-purple-200 dark:border-purple-700';
       case 'converted':
-        return 'bg-green-50 text-green-700 border-green-200';
+        return 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900 dark:text-green-200 dark:border-green-700';
       case 'inactive':
-        return 'bg-gray-50 text-gray-700 border-gray-200';
+        return 'bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-900 dark:text-gray-200 dark:border-gray-700';
     }
   };
 
   const getStatusLabel = (status: Customer['status']) => {
     switch (status) {
-      case 'new': return 'جديد';
-      case 'contacted': return 'تم التواصل';
-      case 'interested': return 'مهتم';
-      case 'converted': return 'تم التحويل';
-      case 'inactive': return 'غير نشط';
+      case 'new': return ARABIC_CUSTOMERS_MESSAGES.STATUS_NEW;
+      case 'contacted': return ARABIC_CUSTOMERS_MESSAGES.STATUS_CONTACTED;
+      case 'interested': return ARABIC_CUSTOMERS_MESSAGES.STATUS_INTERESTED;
+      case 'converted': return ARABIC_CUSTOMERS_MESSAGES.STATUS_CONVERTED;
+      case 'inactive': return ARABIC_CUSTOMERS_MESSAGES.STATUS_INACTIVE;
     }
   };
 
   const getSourceLabel = (source: Customer['source']) => {
     switch (source) {
-      case 'website': return 'الموقع الإلكتروني';
-      case 'referral': return 'إحالة';
-      case 'social_media': return 'وسائل التواصل';
-      case 'direct': return 'مباشر';
-      case 'other': return 'أخرى';
+      case 'website': return ARABIC_CUSTOMERS_MESSAGES.SOURCE_WEBSITE;
+      case 'referral': return ARABIC_CUSTOMERS_MESSAGES.SOURCE_REFERRAL;
+      case 'social_media': return ARABIC_CUSTOMERS_MESSAGES.SOURCE_SOCIAL_MEDIA;
+      case 'direct': return ARABIC_CUSTOMERS_MESSAGES.SOURCE_DIRECT;
+      case 'other': return ARABIC_CUSTOMERS_MESSAGES.SOURCE_OTHER;
     }
   };
 
@@ -136,9 +173,9 @@ export const Customers: React.FC = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-primary">العملاء</h1>
+        <h1 className="text-3xl font-bold text-primary">{ARABIC_CUSTOMERS_MESSAGES.PAGE_TITLE}</h1>
         <Badge variant="outline" className="text-lg px-4 py-2">
-          اليوم: {new Date().toLocaleDateString('ar-EG')}
+          {ARABIC_CUSTOMERS_MESSAGES.TODAY_DATE} {new Date().toLocaleDateString('ar-EG')}
         </Badge>
       </div>
 
@@ -149,7 +186,7 @@ export const Customers: React.FC = () => {
             <div className="flex items-center gap-2">
               <Users className="w-5 h-5 text-blue-600" />
               <div>
-                <p className="text-sm text-blue-600">إجمالي العملاء</p>
+                <p className="text-sm text-blue-600">{ARABIC_CUSTOMERS_MESSAGES.TOTAL_CUSTOMERS}</p>
                 <p className="text-2xl font-bold text-blue-700">{totalCustomers}</p>
               </div>
             </div>
@@ -159,9 +196,9 @@ export const Customers: React.FC = () => {
         <Card className="border-green-200 bg-green-50">
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <Plus className="w-5 h-5 text-green-600" />
+              <UserPlus className="w-5 h-5 text-green-600" />
               <div>
-                <p className="text-sm text-green-600">عملاء جدد</p>
+                <p className="text-sm text-green-600">{ARABIC_CUSTOMERS_MESSAGES.NEW_CUSTOMERS}</p>
                 <p className="text-2xl font-bold text-green-700">{newCustomers}</p>
               </div>
             </div>
@@ -171,9 +208,9 @@ export const Customers: React.FC = () => {
         <Card className="border-purple-200 bg-purple-50">
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-purple-600" />
+              <Award className="w-5 h-5 text-purple-600" />
               <div>
-                <p className="text-sm text-purple-600">عملاء محولين</p>
+                <p className="text-sm text-purple-600">{ARABIC_CUSTOMERS_MESSAGES.CONVERTED_CUSTOMERS}</p>
                 <p className="text-2xl font-bold text-purple-700">{convertedCustomers}</p>
               </div>
             </div>
@@ -183,9 +220,9 @@ export const Customers: React.FC = () => {
         <Card className="border-primary/20 bg-primary/5">
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <Mail className="w-5 h-5 text-primary" />
+              <Award className="w-5 h-5 text-primary" />
               <div>
-                <p className="text-sm text-muted-foreground">القيمة المقدرة</p>
+                <p className="text-sm text-muted-foreground">{ARABIC_CUSTOMERS_MESSAGES.ESTIMATED_VALUE}</p>
                 <p className="text-2xl font-bold text-primary">{formatCurrency(totalEstimatedValue)}</p>
               </div>
             </div>
@@ -196,78 +233,90 @@ export const Customers: React.FC = () => {
       {/* Add New Customer */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-primary">إضافة عميل جديد</CardTitle>
+          <CardTitle className="text-primary">{ARABIC_CUSTOMERS_MESSAGES.ADD_CUSTOMER_TITLE}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>الاسم *</Label>
+              <Label>{ARABIC_CUSTOMERS_MESSAGES.NAME_LABEL}</Label>
               <Input
-                placeholder="اسم العميل الكامل"
+                placeholder={ARABIC_CUSTOMERS_MESSAGES.NAME_PLACEHOLDER}
                 value={newName}
-                onChange={(e) => setNewName(e.target.value)}
+                onChange={(e) => {
+                  setNewName(e.target.value);
+                  setNameValidation(validateField(e.target.value, [ValidationRules.required()]));
+                }}
               />
+              <ValidationMessage result={nameValidation} />
             </div>
             <div className="space-y-2">
-              <Label>البريد الإلكتروني *</Label>
+              <Label>{ARABIC_CUSTOMERS_MESSAGES.EMAIL_LABEL}</Label>
               <Input
                 type="email"
-                placeholder="example@domain.com"
+                placeholder={ARABIC_CUSTOMERS_MESSAGES.EMAIL_PLACEHOLDER}
                 value={newEmail}
-                onChange={(e) => setNewEmail(e.target.value)}
+                onChange={(e) => {
+                  setNewEmail(e.target.value);
+                  setEmailValidation(validateField(e.target.value, [ValidationRules.required(), ValidationRules.email()]));
+                }}
               />
+              <ValidationMessage result={emailValidation} />
             </div>
             <div className="space-y-2">
-              <Label>رقم الهاتف</Label>
+              <Label>{ARABIC_CUSTOMERS_MESSAGES.PHONE_LABEL}</Label>
               <Input
-                placeholder="05xxxxxxxx"
+                placeholder={ARABIC_CUSTOMERS_MESSAGES.PHONE_PLACEHOLDER}
                 value={newPhone}
-                onChange={(e) => setNewPhone(e.target.value)}
+                onChange={(e) => {
+                  setNewPhone(e.target.value);
+                  setPhoneValidation(validateField(e.target.value, []));
+                }}
               />
+              <ValidationMessage result={phoneValidation} />
             </div>
             <div className="space-y-2">
-              <Label>الشركة</Label>
+              <Label>{ARABIC_CUSTOMERS_MESSAGES.COMPANY_LABEL}</Label>
               <Input
-                placeholder="اسم الشركة (اختياري)"
+                placeholder={ARABIC_CUSTOMERS_MESSAGES.COMPANY_PLACEHOLDER}
                 value={newCompany}
                 onChange={(e) => setNewCompany(e.target.value)}
               />
             </div>
             <div className="space-y-2">
-              <Label>الحالة</Label>
+              <Label>{ARABIC_CUSTOMERS_MESSAGES.STATUS_LABEL}</Label>
               <Select value={newStatus} onValueChange={(value: Customer['status']) => setNewStatus(value)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="new">جديد</SelectItem>
-                  <SelectItem value="contacted">تم التواصل</SelectItem>
-                  <SelectItem value="interested">مهتم</SelectItem>
-                  <SelectItem value="converted">تم التحويل</SelectItem>
-                  <SelectItem value="inactive">غير نشط</SelectItem>
+                  <SelectItem value="new">{ARABIC_CUSTOMERS_MESSAGES.STATUS_NEW}</SelectItem>
+                  <SelectItem value="contacted">{ARABIC_CUSTOMERS_MESSAGES.STATUS_CONTACTED}</SelectItem>
+                  <SelectItem value="interested">{ARABIC_CUSTOMERS_MESSAGES.STATUS_INTERESTED}</SelectItem>
+                  <SelectItem value="converted">{ARABIC_CUSTOMERS_MESSAGES.STATUS_CONVERTED}</SelectItem>
+                  <SelectItem value="inactive">{ARABIC_CUSTOMERS_MESSAGES.STATUS_INACTIVE}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>المصدر</Label>
+              <Label>{ARABIC_CUSTOMERS_MESSAGES.SOURCE_LABEL}</Label>
               <Select value={newSource} onValueChange={(value: Customer['source']) => setNewSource(value)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="website">الموقع الإلكتروني</SelectItem>
-                  <SelectItem value="referral">إحالة</SelectItem>
-                  <SelectItem value="social_media">وسائل التواصل</SelectItem>
-                  <SelectItem value="direct">مباشر</SelectItem>
-                  <SelectItem value="other">أخرى</SelectItem>
+                  <SelectItem value="website">{ARABIC_CUSTOMERS_MESSAGES.SOURCE_WEBSITE}</SelectItem>
+                  <SelectItem value="referral">{ARABIC_CUSTOMERS_MESSAGES.SOURCE_REFERRAL}</SelectItem>
+                  <SelectItem value="social_media">{ARABIC_CUSTOMERS_MESSAGES.SOURCE_SOCIAL_MEDIA}</SelectItem>
+                  <SelectItem value="direct">{ARABIC_CUSTOMERS_MESSAGES.SOURCE_DIRECT}</SelectItem>
+                  <SelectItem value="other">{ARABIC_CUSTOMERS_MESSAGES.SOURCE_OTHER}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>القيمة المقدرة (ريال)</Label>
+              <Label>{ARABIC_CUSTOMERS_MESSAGES.ESTIMATED_VALUE_LABEL}</Label>
               <Input
                 type="text"
-                placeholder="0"
+                placeholder={ARABIC_CUSTOMERS_MESSAGES.ESTIMATED_VALUE_PLACEHOLDER}
                 value={newEstimatedValue}
                 onChange={(e) => {
                   const value = formatInputNumber(e.target.value);
@@ -278,18 +327,22 @@ export const Customers: React.FC = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label>ملاحظات</Label>
+              <Label>{ARABIC_CUSTOMERS_MESSAGES.NOTES_LABEL}</Label>
               <Textarea
-                placeholder="ملاحظات إضافية عن العميل..."
+                placeholder={ARABIC_CUSTOMERS_MESSAGES.NOTES_PLACEHOLDER}
                 value={newNotes}
                 onChange={(e) => setNewNotes(e.target.value)}
                 rows={3}
               />
             </div>
             <div className="md:col-span-2">
-              <Button onClick={addCustomer} className="bg-primary hover:bg-primary/90">
+              <Button
+                onClick={addCustomer}
+                className="bg-primary hover:bg-primary/90"
+                disabled={!nameValidation.isValid || !emailValidation.isValid}
+              >
                 <Plus className="w-4 h-4 ml-2" />
-                إضافة عميل
+                {ARABIC_CUSTOMERS_MESSAGES.ADD_CUSTOMER_BUTTON}
               </Button>
             </div>
           </div>
@@ -303,7 +356,7 @@ export const Customers: React.FC = () => {
             <div className="flex-1 relative">
               <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
               <Input
-                placeholder="البحث في العملاء..."
+                placeholder={ARABIC_CUSTOMERS_MESSAGES.SEARCH_PLACEHOLDER}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pr-10"
@@ -312,28 +365,28 @@ export const Customers: React.FC = () => {
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-full md:w-48">
                 <Filter className="w-4 h-4 ml-2" />
-                <SelectValue placeholder="فلترة بالحالة" />
+                <SelectValue placeholder={ARABIC_CUSTOMERS_MESSAGES.FILTER_BY_STATUS_PLACEHOLDER} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">جميع الحالات</SelectItem>
-                <SelectItem value="new">جديد</SelectItem>
-                <SelectItem value="contacted">تم التواصل</SelectItem>
-                <SelectItem value="interested">مهتم</SelectItem>
-                <SelectItem value="converted">تم التحويل</SelectItem>
-                <SelectItem value="inactive">غير نشط</SelectItem>
+                <SelectItem value="all">{ARABIC_CUSTOMERS_MESSAGES.ALL_STATUSES}</SelectItem>
+                <SelectItem value="new">{ARABIC_CUSTOMERS_MESSAGES.STATUS_NEW}</SelectItem>
+                <SelectItem value="contacted">{ARABIC_CUSTOMERS_MESSAGES.STATUS_CONTACTED}</SelectItem>
+                <SelectItem value="interested">{ARABIC_CUSTOMERS_MESSAGES.STATUS_INTERESTED}</SelectItem>
+                <SelectItem value="converted">{ARABIC_CUSTOMERS_MESSAGES.STATUS_CONVERTED}</SelectItem>
+                <SelectItem value="inactive">{ARABIC_CUSTOMERS_MESSAGES.STATUS_INACTIVE}</SelectItem>
               </SelectContent>
             </Select>
             <Select value={sourceFilter} onValueChange={setSourceFilter}>
               <SelectTrigger className="w-full md:w-48">
-                <SelectValue placeholder="فلترة بالمصدر" />
+                <SelectValue placeholder={ARABIC_CUSTOMERS_MESSAGES.FILTER_BY_SOURCE_PLACEHOLDER} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">جميع المصادر</SelectItem>
-                <SelectItem value="website">الموقع الإلكتروني</SelectItem>
-                <SelectItem value="referral">إحالة</SelectItem>
-                <SelectItem value="social_media">وسائل التواصل</SelectItem>
-                <SelectItem value="direct">مباشر</SelectItem>
-                <SelectItem value="other">أخرى</SelectItem>
+                <SelectItem value="all">{ARABIC_CUSTOMERS_MESSAGES.ALL_SOURCES}</SelectItem>
+                <SelectItem value="website">{ARABIC_CUSTOMERS_MESSAGES.SOURCE_WEBSITE}</SelectItem>
+                <SelectItem value="referral">{ARABIC_CUSTOMERS_MESSAGES.SOURCE_REFERRAL}</SelectItem>
+                <SelectItem value="social_media">{ARABIC_CUSTOMERS_MESSAGES.SOURCE_SOCIAL_MEDIA}</SelectItem>
+                <SelectItem value="direct">{ARABIC_CUSTOMERS_MESSAGES.SOURCE_DIRECT}</SelectItem>
+                <SelectItem value="other">{ARABIC_CUSTOMERS_MESSAGES.SOURCE_OTHER}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -343,13 +396,15 @@ export const Customers: React.FC = () => {
       {/* Customers List */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-primary">قائمة العملاء ({filteredCustomers.length})</CardTitle>
+          <CardTitle className="text-primary">{ARABIC_CUSTOMERS_MESSAGES.CUSTOMERS_LIST_TITLE(filteredCustomers.length)}</CardTitle>
         </CardHeader>
         <CardContent>
-          {filteredCustomers.length === 0 ? (
+          {isLoading ? (
+            <TableSkeleton />
+          ) : filteredCustomers.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p>{customers.length === 0 ? 'لا توجد عملاء مضافين بعد' : 'لم يتم العثور على عملاء مطابقين للفلاتر'}</p>
+              <p>{customers.length === 0 ? ARABIC_CUSTOMERS_MESSAGES.NO_CUSTOMERS_ADDED : ARABIC_CUSTOMERS_MESSAGES.NO_MATCHING_CUSTOMERS}</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -387,17 +442,17 @@ export const Customers: React.FC = () => {
                           )}
                           <div className="flex items-center gap-2">
                             <Calendar className="w-4 h-4" />
-                            <span>مسجل: {new Date(customer.registrationDate).toLocaleDateString('ar-EG')}</span>
+                            <span>{ARABIC_CUSTOMERS_MESSAGES.REGISTERED_ON} {new Date(customer.registrationDate).toLocaleDateString('ar-EG')}</span>
                           </div>
                           {customer.lastContactDate && (
                             <div className="flex items-center gap-2">
                               <Phone className="w-4 h-4" />
-                              <span>آخر اتصال: {new Date(customer.lastContactDate).toLocaleDateString('ar-EG')}</span>
+                              <span>{ARABIC_CUSTOMERS_MESSAGES.LAST_CONTACT} {new Date(customer.lastContactDate).toLocaleDateString('ar-EG')}</span>
                             </div>
                           )}
                           {customer.estimatedValue && (
                             <div className="flex items-center gap-2">
-                              <span>القيمة المقدرة: {customer.estimatedValue.toLocaleString('ar-EG')} ريال</span>
+                              <span>{ARABIC_CUSTOMERS_MESSAGES.ESTIMATED_VALUE_DISPLAY(customer.estimatedValue.toLocaleString('ar-EG'))}</span>
                             </div>
                           )}
                         </div>
@@ -417,11 +472,11 @@ export const Customers: React.FC = () => {
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="new">جديد</SelectItem>
-                              <SelectItem value="contacted">تم التواصل</SelectItem>
-                              <SelectItem value="interested">مهتم</SelectItem>
-                              <SelectItem value="converted">تم التحويل</SelectItem>
-                              <SelectItem value="inactive">غير نشط</SelectItem>
+                              <SelectItem value="new">{ARABIC_CUSTOMERS_MESSAGES.STATUS_NEW}</SelectItem>
+                              <SelectItem value="contacted">{ARABIC_CUSTOMERS_MESSAGES.STATUS_CONTACTED}</SelectItem>
+                              <SelectItem value="interested">{ARABIC_CUSTOMERS_MESSAGES.STATUS_INTERESTED}</SelectItem>
+                              <SelectItem value="converted">{ARABIC_CUSTOMERS_MESSAGES.STATUS_CONVERTED}</SelectItem>
+                              <SelectItem value="inactive">{ARABIC_CUSTOMERS_MESSAGES.STATUS_INACTIVE}</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -447,9 +502,19 @@ export const Customers: React.FC = () => {
       {/* Save Note */}
       <Alert>
         <AlertDescription>
-          📝 ملاحظة: لحفظ البيانات بشكل دائم، يتطلب ربط قاعدة البيانات. البيانات الحالية محفوظة مؤقتاً في الجلسة فقط.
+          {ARABIC_CUSTOMERS_MESSAGES.SAVE_NOTE_ALERT}
         </AlertDescription>
       </Alert>
+
+      <DeleteConfirmationDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        onConfirm={confirmDeleteCustomer}
+        itemName={customerToDelete ? customers.find(c => c.id === customerToDelete)?.name : ARABIC_CUSTOMERS_MESSAGES.DELETE_CONFIRM_ITEM_NAME}
+      />
     </div>
   );
 };
+
+// Add displayName to the component
+Customers.displayName = 'Customers';

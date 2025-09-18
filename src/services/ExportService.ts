@@ -1,8 +1,8 @@
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 import { format } from 'date-fns';
 import { DailyData, FinanceEntry, SalesEntry, OperationEntry, MarketingTask, Customer, getDataForDate } from '@/lib/mockData';
 import { formatCurrency, formatNumber } from '@/lib/numberUtils';
+import { ArabicPDFService } from './ArabicPDFService'; // Import the ArabicPDFService
+import { ARABIC_NOTES } from '@/lib/arabicConstants';
 
 export class ExportService {
   // Convert data to CSV format
@@ -48,7 +48,7 @@ export class ExportService {
       date: format(entry.date, 'yyyy-MM-dd')
     }));
 
-    const csv = this.toCSV(csvData, Object.keys(csvData[0] || {}));
+    const csv = this.toCSV(csvData, headers);
     const filename = `finance-${format(date, 'yyyy-MM-dd')}.csv`;
     this.downloadCSV(filename, csv);
   }
@@ -65,7 +65,8 @@ export class ExportService {
       notes: entry.notes
     }));
 
-    const csv = this.toCSV(csvData, Object.keys(csvData[0] || {}));
+    const headers = ['customerName', 'contactNumber', 'meetingDate', 'meetingTime', 'outcome', 'notes'];
+    const csv = this.toCSV(csvData, headers);
     const filename = `sales-${format(date, 'yyyy-MM-dd')}.csv`;
     this.downloadCSV(filename, csv);
   }
@@ -81,7 +82,8 @@ export class ExportService {
       notes: entry.notes
     }));
 
-    const csv = this.toCSV(csvData, Object.keys(csvData[0] || {}));
+    const headers = ['task', 'status', 'owner', 'priority', 'notes'];
+    const csv = this.toCSV(csvData, headers);
     const filename = `operations-${format(date, 'yyyy-MM-dd')}.csv`;
     this.downloadCSV(filename, csv);
   }
@@ -98,7 +100,8 @@ export class ExportService {
       description: task.description
     }));
 
-    const csv = this.toCSV(csvData, Object.keys(csvData[0] || {}));
+    const headers = ['title', 'status', 'assignee', 'dueDate', 'priority', 'description'];
+    const csv = this.toCSV(csvData, headers);
     const filename = `marketing-${format(date, 'yyyy-MM-dd')}.csv`;
     this.downloadCSV(filename, csv);
   }
@@ -117,81 +120,29 @@ export class ExportService {
       notes: customer.notes
     }));
 
-    const csv = this.toCSV(csvData, Object.keys(csvData[0] || {}));
+    const headers = ['name', 'phone', 'email', 'arrivalDate', 'contacted', 'cameBack', 'source', 'notes'];
+    const csv = this.toCSV(csvData, headers);
     const filename = `customers-${format(date, 'yyyy-MM-dd')}.csv`;
     this.downloadCSV(filename, csv);
   }
 
   // Generate comprehensive PDF report
   static async generatePDFReport(date: Date) {
-    const data = getDataForDate(date);
-    const pdf = new jsPDF('p', 'pt', 'a4');
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const margin = 40;
-    let yPosition = 60;
-
-    // Add Arabic font support (basic Latin characters)
-    pdf.setFont('helvetica');
-    
-    // Header
-    pdf.setFontSize(20);
-    pdf.text('تقرير واثق اليومي', pageWidth - margin, yPosition, { align: 'right' });
-    yPosition += 30;
-    
-    pdf.setFontSize(12);
-    pdf.text(`التاريخ: ${format(date, 'yyyy-MM-dd')}`, pageWidth - margin, yPosition, { align: 'right' });
-    yPosition += 40;
-
-    // Finance Section
-    pdf.setFontSize(16);
-    pdf.text('القسم المالي', pageWidth - margin, yPosition, { align: 'right' });
-    yPosition += 25;
-    
-    pdf.setFontSize(10);
-    pdf.text(`السيولة الحالية: ${formatCurrency(data.finance.currentLiquidity)}`, pageWidth - margin, yPosition, { align: 'right' });
-    yPosition += 20;
-    
-    data.finance.entries.forEach(entry => {
-      const entryText = `${entry.title}: ${formatCurrency(entry.amount)} (${entry.type})`;
-      pdf.text(entryText, pageWidth - margin, yPosition, { align: 'right' });
-      yPosition += 15;
-    });
-    yPosition += 20;
-
-    // Sales Section
-    pdf.setFontSize(16);
-    pdf.text('قسم المبيعات', pageWidth - margin, yPosition, { align: 'right' });
-    yPosition += 25;
-    
-    pdf.setFontSize(10);
-    pdf.text(`العملاء المتصل بهم: ${data.sales.customersContacted}`, pageWidth - margin, yPosition, { align: 'right' });
-    yPosition += 20;
-    
-    data.sales.entries.forEach(entry => {
-      pdf.text(`${entry.customerName} - ${entry.outcome}`, pageWidth - margin, yPosition, { align: 'right' });
-      yPosition += 15;
-    });
-    yPosition += 20;
-
-    // Operations Section
-    if (yPosition > 700) {
-      pdf.addPage();
-      yPosition = 60;
+    try {
+      const pdfBlob = await ArabicPDFService.createEnhancedArabicPDF(getDataForDate(date), date);
+      const filename = `wathiq-report-${format(date, 'yyyy-MM-dd')}.pdf`;
+      const url = URL.createObjectURL(pdfBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Failed to generate PDF report:', error);
+      throw new Error('فشل في إنشاء تقرير PDF');
     }
-    
-    pdf.setFontSize(16);
-    pdf.text('قسم العمليات', pageWidth - margin, yPosition, { align: 'right' });
-    yPosition += 25;
-    
-    pdf.setFontSize(10);
-    data.operations.entries.forEach(entry => {
-      pdf.text(`${entry.task} - ${entry.status}`, pageWidth - margin, yPosition, { align: 'right' });
-      yPosition += 15;
-    });
-
-    // Save PDF
-    const filename = `wathiq-report-${format(date, 'yyyy-MM-dd')}.pdf`;
-    pdf.save(filename);
   }
 
   // Export merged daily report (CSV format)
@@ -200,23 +151,23 @@ export class ExportService {
     const mergedData = [
       // Finance summary
       { section: 'المالية', field: 'السيولة الحالية', value: formatCurrency(data.finance.currentLiquidity), notes: '' },
-      { section: 'المالية', field: 'عدد العمليات المالية', value: data.finance.entries.length, notes: 'عملية' },
+      { section: 'المالية', field: 'عدد العمليات المالية', value: data.finance.entries.length, notes: ARABIC_NOTES.OPERATION },
       
       // Sales summary
-      { section: 'المبيعات', field: 'العملاء المتصل بهم', value: data.sales.customersContacted, notes: 'عميل' },
-      { section: 'المبيعات', field: 'عدد الاجتماعات', value: data.sales.entries.length, notes: 'اجتماع' },
+      { section: 'المبيعات', field: 'العملاء المتصل بهم', value: data.sales.customersContacted, notes: ARABIC_NOTES.CUSTOMER },
+      { section: 'المبيعات', field: 'عدد الاجتماعات', value: data.sales.entries.length, notes: ARABIC_NOTES.MEETING },
       
       // Operations summary
-      { section: 'العمليات', field: 'إجمالي العمليات', value: data.operations.totalOperations, notes: 'عملية' },
-      { section: 'العمليات', field: 'العمليات المتوقعة غداً', value: data.operations.expectedNextDay, notes: 'عملية' },
+      { section: 'العمليات', field: 'إجمالي العمليات', value: data.operations.totalOperations, notes: ARABIC_NOTES.OPERATION },
+      { section: 'العمليات', field: 'العمليات المتوقعة غداً', value: data.operations.expectedNextDay, notes: ARABIC_NOTES.OPERATION },
       
       // Marketing summary
-      { section: 'التسويق', field: 'عدد المهام', value: data.marketing.tasks.length, notes: 'مهمة' },
-      { section: 'التسويق', field: 'المهام المكتملة', value: data.marketing.tasks.filter(t => t.status === 'completed').length, notes: 'مهمة' },
+      { section: 'التسويق', field: 'عدد المهام', value: data.marketing.tasks.length, notes: ARABIC_NOTES.TASK },
+      { section: 'التسويق', field: 'المهام المكتملة', value: data.marketing.tasks.filter(t => t.status === 'completed').length, notes: ARABIC_NOTES.TASK },
       
       // Customers summary
-      { section: 'العملاء', field: 'إجمالي العملاء', value: data.customers.length, notes: 'عميل' },
-      { section: 'العملاء', field: 'العملاء المتصل بهم', value: data.customers.filter(c => c.contacted).length, notes: 'عميل' }
+      { section: 'العملاء', field: 'إجمالي العملاء', value: data.customers.length, notes: ARABIC_NOTES.CUSTOMER },
+      { section: 'العملاء', field: 'العملاء المتصل بهم', value: data.customers.filter(c => c.contacted).length, notes: ARABIC_NOTES.CUSTOMER }
     ];
 
     const csv = this.toCSV(mergedData, ['section', 'field', 'value', 'notes']);

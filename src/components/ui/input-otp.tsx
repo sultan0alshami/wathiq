@@ -28,6 +28,9 @@ const InputOTPSlot = React.forwardRef<
   const inputOTPContext = React.useContext(OTPInputContext);
   const { char, hasFakeCaret, isActive } = inputOTPContext.slots[index];
 
+  // NOTE: The `key` prop warning in React usually applies when items in a list can be reordered, added, or removed.
+  // For `InputOTPSlot`, `index` is acceptable as `OTPInput` typically has a fixed number of slots
+  // and their order does not change dynamically.
   return (
     <div
       ref={ref}

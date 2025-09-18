@@ -14,7 +14,7 @@ export interface ValidationResult {
 }
 
 export function useFormValidation() {
-  const validateField = (value: any, rules: ValidationRule[]): ValidationResult => {
+  const validateField = React.useCallback((value: any, rules: ValidationRule[]): ValidationResult => {
     const messages: Array<{ message: string; type: 'error' | 'warning' | 'info' }> = [];
     let isValid = true;
 
@@ -31,7 +31,7 @@ export function useFormValidation() {
     });
 
     return { isValid, messages };
-  };
+  }, []); // Empty dependency array as rules are passed directly.
 
   const validateForm = (fields: Record<string, { value: any; rules: ValidationRule[] }>): boolean => {
     let formIsValid = true;
@@ -72,7 +72,7 @@ export const ValidationMessage: React.FC<ValidationMessageProps> = ({ result, cl
           )}
         >
           {msg.type === 'error' && <AlertTriangle className="w-3 h-3" />}
-          {msg.type === 'warning' && <AlertTriangle className="w-3 h-3" />}
+          {msg.type === 'warning' && <Info className="w-3 h-3" />}
           {msg.type === 'info' && <Info className="w-3 h-3" />}
           <span>{msg.message}</span>
         </div>
@@ -99,7 +99,13 @@ export const ValidationRules = {
   }),
 
   number: (message = 'يجب أن يكون رقم صالح'): ValidationRule => ({
-    validate: (value) => !isNaN(Number(value)) && isFinite(Number(value)),
+    // This rule validates if the value is a finite number. 
+    // It's recommended to use this in conjunction with `ValidationRules.required`
+    // if empty strings or pure whitespace should not be considered valid.
+    validate: (value) => {
+      if (typeof value === 'string' && value.trim() === '') return false;
+      return !isNaN(Number(value)) && isFinite(Number(value));
+    },
     message
   }),
 
@@ -114,12 +120,17 @@ export const ValidationRules = {
   }),
 
   arabicText: (message = 'يجب أن يحتوي على نص عربي'): ValidationRule => ({
+    // Enforces that the field must contain at least one Arabic character.
+    // Changed default type to 'error' for strict enforcement of Arabic text input.
     validate: (value) => /[\u0600-\u06FF]/.test(value),
     message,
-    type: 'warning'
+    type: 'error'
   }),
 
   noSpecialChars: (message = 'لا يسمح بالرموز الخاصة'): ValidationRule => ({
+    // This rule allows English letters (a-z, A-Z), numbers (0-9), Arabic characters (\u0600-\u06FF), and spaces.
+    // If other characters (e.g., hyphens, apostrophes, periods) are needed for specific input types,
+    // the regex should be extended or a more specific validation rule should be created.
     validate: (value) => /^[a-zA-Z0-9\u0600-\u06FF\s]*$/.test(value),
     message
   })

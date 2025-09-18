@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 
-type Theme = 'light' | 'dark';
+type Theme = 'light' | 'dark' | 'system';
 
 interface ThemeContextType {
   theme: Theme;
@@ -12,13 +12,13 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [theme, setThemeState] = useState<Theme>(() => {
-    // Check localStorage first, then system preference
+    // Check localStorage first
     const stored = localStorage.getItem('wathiq-theme') as Theme;
-    if (stored && ['light', 'dark'].includes(stored)) {
+    if (stored && ['light', 'dark', 'system'].includes(stored)) {
       return stored;
     }
     
-    // Check system preference
+    // Default to system preference if no stored theme or invalid stored theme
     if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
       return 'dark';
     }
@@ -29,14 +29,23 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   useEffect(() => {
     const root = window.document.documentElement;
     
+    // Determine the actual theme class to apply
+    const actualTheme = theme === 'system' 
+      ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') 
+      : theme;
+
     // Remove previous theme classes
     root.classList.remove('light', 'dark');
     
     // Add current theme class
-    root.classList.add(theme);
+    root.classList.add(actualTheme);
     
-    // Store in localStorage
-    localStorage.setItem('wathiq-theme', theme);
+    // Store in localStorage (only if not 'system')
+    if (theme !== 'system') {
+      localStorage.setItem('wathiq-theme', theme);
+    } else {
+      localStorage.removeItem('wathiq-theme'); // Clear stored theme if it's 'system'
+    }
   }, [theme]);
 
   // Listen for system theme changes
@@ -44,17 +53,22 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     
     const handleChange = (e: MediaQueryListEvent) => {
-      if (!localStorage.getItem('wathiq-theme')) {
+      // Only update if the current theme is 'system'
+      if (theme === 'system') {
         setThemeState(e.matches ? 'dark' : 'light');
       }
     };
 
     mediaQuery.addEventListener('change', handleChange);
     return () => mediaQuery.removeEventListener('change', handleChange);
-  }, []);
+  }, [theme]); // Add theme to dependencies to react to theme changes for system preference
 
   const toggleTheme = () => {
-    setThemeState(prev => prev === 'light' ? 'dark' : 'light');
+    setThemeState(prev => {
+      if (prev === 'light') return 'dark';
+      if (prev === 'dark') return 'system';
+      return 'light'; // If system, cycle back to light
+    });
   };
 
   const setTheme = (newTheme: Theme) => {

@@ -1,73 +1,79 @@
-# Welcome to your Lovable project
+# Wathiq: An Arabic-First Business Management Application
 
-## Project info
+## Project Overview
 
-**URL**: https://lovable.dev/projects/3f4a7b0b-3174-4562-a630-cc5f8650f401
+Wathiq is a comprehensive business management application designed with an Arabic-first approach. It helps users manage various aspects of their daily business operations, including finance, sales, customer relations, marketing, operations, and reporting. The application emphasizes robust data management, an intuitive user interface, and full internationalization support for the Arabic language.
 
-## How can I edit this code?
+## Key Features
 
-There are several ways of editing your application.
+*   **Dashboard**: Provides a high-level overview of key business metrics and daily activity.
+*   **Finance Management**: Track income, expenses, investments, and liquidity with robust form validation.
+*   **Sales Management**: Manage sales meetings, track client interactions, and monitor meeting outcomes.
+*   **Customer Management**: Maintain customer records, track their status, and manage estimated values.
+*   **Operations Management**: Oversee daily business operations, track status, and monitor completion rates.
+*   **Marketing Management**: Manage marketing tasks and track new customer arrivals from marketing efforts.
+*   **Supplier Management**: Add, view, edit, and delete supplier information, including associated documents, with robust form validation.
+*   **Data Management**: Comprehensive tools for data backup, restore, and cleanup.
+*   **Download Center**: Access and download various reports in PDF and CSV formats, with progress tracking.
+*   **Reporting**: Generate detailed daily reports for all business sections, with an integrated report viewer.
+*   **Theming**: Supports both light and dark modes, with system theme synchronization.
+*   **Accessibility**: Enhanced screen reader support and keyboard navigation.
+*   **Arabic-First Design**: Full internationalization for the Arabic language, including localized text, date formatting, and RTL (Right-to-Left) UI adjustments.
 
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/3f4a7b0b-3174-4562-a630-cc5f8650f401) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
+## Technologies Used
 
 This project is built with:
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+*   **Vite**: A fast build tool that provides a lightning-fast development experience.
+*   **TypeScript**: A typed superset of JavaScript that compiles to plain JavaScript, enhancing code quality and maintainability.
+*   **React**: A declarative, component-based JavaScript library for building user interfaces.
+*   **Shadcn UI**: A collection of reusable components built with Radix UI and Tailwind CSS, providing a beautiful and accessible UI.
+*   **Tailwind CSS**: A utility-first CSS framework for rapidly building custom designs.
+*   **date-fns**: A modern JavaScript date utility library for efficient date manipulation and formatting.
+*   **React Router**: For declarative routing in the application.
+*   **React Query**: For data fetching, caching, and state management.
+*   **jsPDF**: A client-side JavaScript PDF generation library, utilized for creating Arabic PDFs.
 
-## How can I deploy this project?
+## How to Set Up and Run the Project Locally
 
-Simply open [Lovable](https://lovable.dev/projects/3f4a7b0b-3174-4562-a630-cc5f8650f401) and click on Share -> Publish.
+To get a local copy up and running, follow these simple steps.
 
-## Can I connect a custom domain to my Lovable project?
+### Prerequisites
 
-Yes, you can!
+*   Node.js (LTS version recommended)
+*   npm (comes with Node.js) or Yarn or Bun
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+### Installation
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+1.  **Clone the repository:**
+    ```sh
+    git clone https://github.com/sultan0alshami/wathiq.git # Replace with your actual repo URL
+    ```
+2.  **Navigate to the project directory:**
+    ```sh
+    cd wathiq
+    ```
+3.  **Install dependencies:**
+    ```sh
+    npm install # or yarn install or bun install
+    ```
+4.  **Start the development server:**
+    ```sh
+    npm run dev # or yarn dev or bun dev
+    ```
+
+The application will now be running on `http://localhost:5173` (or another port if 5173 is in use).
+
+## Contributing
+
+We welcome contributions! Please refer to our `CONTRIBUTING.md` (if available) for guidelines on how to contribute to this project.
+
+## License
+
+Distributed under the MIT License. See `LICENSE` for more information.
+
+## Contact
+
+[Sultan Alshami] - [sultan12alshami@gmail.com/+966534820384]
+
+Project Link: [https://github.com/sultan0alshami/wathiq](https://github.com/sultan0alshami/wathiq)

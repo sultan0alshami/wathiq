@@ -14,7 +14,9 @@ import {
   Package, 
   FileSpreadsheet,
   Archive,
-  Zap
+  Zap,
+  Loader2, // Import Loader2
+  XCircle // Import XCircle
 } from 'lucide-react';
 import { useDateContext } from '@/contexts/DateContext';
 import { getDataForDate } from '@/lib/mockData';
@@ -23,8 +25,10 @@ import { EnhancedExportService, ExportProgress, BulkExportOptions } from '@/serv
 import { ExportProgressDialog } from '@/components/ui/export-progress-dialog';
 import { BulkExportDialog } from '@/components/ui/bulk-export-dialog';
 import { useToast } from '@/hooks/use-toast';
+import { isToday } from '@/hooks/useDateNavigation'; // Import isToday
+import { ARABIC_DOWNLOAD_MESSAGES } from '@/lib/arabicDownloadMessages';
 
-interface DownloadItem {
+export interface DownloadItem {
   id: number;
   name: string;
   section: string;
@@ -51,9 +55,9 @@ export const Download: React.FC = () => {
       id: 1,
       name: 'تقرير المالية اليومي',
       section: 'المالية',
-      date: currentDate,
+      date: new Date(currentDate.getTime() - 1 * 24 * 60 * 60 * 1000), // Yesterday
       type: 'pdf',
-      size: '2.3 MB',
+      size: '2.3 MB', // This is mock data; in a real app, calculate dynamically
       status: 'ready',
       description: 'تقرير شامل للحالة المالية اليومية',
       downloads: 12
@@ -62,9 +66,9 @@ export const Download: React.FC = () => {
       id: 2,
       name: 'بيانات المبيعات - CSV',
       section: 'المبيعات',
-      date: currentDate,
+      date: new Date(currentDate.getTime() - 2 * 24 * 60 * 60 * 1000), // Two days ago
       type: 'csv',
-      size: '1.8 MB',
+      size: '1.8 MB', // This is mock data; in a real app, calculate dynamically
       status: 'ready',
       description: 'بيانات المبيعات بصيغة CSV',
       downloads: 8
@@ -73,9 +77,9 @@ export const Download: React.FC = () => {
       id: 3,
       name: 'تقرير العمليات',
       section: 'العمليات',
-      date: currentDate,
+      date: new Date(currentDate.getTime() - 5 * 24 * 60 * 60 * 1000), // Five days ago
       type: 'excel',
-      size: '1.2 MB',
+      size: '1.2 MB', // This is mock data; in a real app, calculate dynamically
       status: 'ready',
       description: 'تقرير تفصيلي للعمليات اليومية',
       downloads: 5
@@ -84,9 +88,9 @@ export const Download: React.FC = () => {
       id: 4,
       name: 'أرشيف التسويق الأسبوعي',
       section: 'التسويق',
-      date: new Date(currentDate.getTime() - 7 * 24 * 60 * 60 * 1000),
+      date: new Date(currentDate.getTime() - 7 * 24 * 60 * 60 * 1000), // One week ago
       type: 'zip',
-      size: '15.7 MB',
+      size: '15.7 MB', // This is mock data; in a real app, calculate dynamically
       status: 'ready',
       description: 'أرشيف كامل لأنشطة التسويق الأسبوعية',
       downloads: 3
@@ -95,9 +99,9 @@ export const Download: React.FC = () => {
       id: 5,
       name: 'تقرير العملاء المفصل',
       section: 'العملاء',
-      date: currentDate,
+      date: new Date(currentDate.getTime() - 10 * 24 * 60 * 60 * 1000), // Ten days ago
       type: 'pdf',
-      size: '3.1 MB',
+      size: '3.1 MB', // This is mock data; in a real app, calculate dynamically
       status: 'processing',
       description: 'تقرير مفصل لقاعدة بيانات العملاء',
       downloads: 0
@@ -106,14 +110,55 @@ export const Download: React.FC = () => {
       id: 6,
       name: 'ملخص الأداء الشهري',
       section: 'إدارة',
-      date: new Date(currentDate.getTime() - 30 * 24 * 60 * 60 * 1000),
+      date: new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, currentDate.getDate()), // One month ago
       type: 'pdf',
-      size: '5.4 MB',
+      size: '5.4 MB', // This is mock data; in a real app, calculate dynamically
       status: 'ready',
       description: 'ملخص شامل للأداء خلال الشهر الماضي',
       downloads: 25
+    },
+    {
+      id: 7,
+      name: 'تقرير المبيعات للربع الأخير',
+      section: 'المبيعات',
+      date: new Date(currentDate.getFullYear(), currentDate.getMonth() - 3, currentDate.getDate()), // Three months ago
+      type: 'csv',
+      size: '7.8 MB', // This is mock data; in a real app, calculate dynamically
+      status: 'ready',
+      description: 'بيانات المبيعات مجمعة للربع الأخير',
+      downloads: 18
+    },
+    {
+      id: 8,
+      name: 'قائمة الموردين المحدثة',
+      section: 'الموردين',
+      date: new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() - 15), // Fifteen days ago
+      type: 'excel',
+      size: '0.9 MB', // This is mock data; in a real app, calculate dynamically
+      status: 'ready',
+      description: 'قائمة محدثة بجميع الموردين وبيانات الاتصال',
+      downloads: 6
     }
   ];
+
+  // Helper to parse size strings like "2.3 MB" to a number in MB
+  const parseSizeToMB = (sizeStr: string): number => {
+    const parts = sizeStr.split(' ');
+    if (parts.length === 2) {
+      const value = parseFloat(parts[0]);
+      const unit = parts[1].toLowerCase();
+      if (!isNaN(value)) {
+        if (unit === 'mb') return value;
+        // Add more unit conversions if necessary (e.g., KB, GB)
+      }
+    }
+    return 0; // Default to 0 if parsing fails
+  };
+
+  // Calculate statistics
+  const totalSizeMB = downloadItems.reduce((sum, item) => sum + parseSizeToMB(item.size), 0);
+  const downloadsTodayCount = downloadItems.filter(item => isToday(item.date)).reduce((sum, item) => sum + item.downloads, 0);
+  const inProgressCount = downloadItems.filter(item => item.status === 'processing').length;
 
   const getTypeIcon = (type: string) => {
     switch (type) {
@@ -133,13 +178,13 @@ export const Download: React.FC = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'ready':
-        return <Badge variant="default" className="bg-success text-success-foreground">جاهز</Badge>;
+        return <Badge variant="default" className="bg-success text-success-foreground dark:bg-green-700 dark:text-green-100">جاهز</Badge>;
       case 'processing':
-        return <Badge variant="secondary">قيد المعالجة</Badge>;
+        return <Badge variant="secondary" className="dark:bg-yellow-900 dark:text-yellow-200">قيد المعالجة</Badge>;
       case 'failed':
-        return <Badge variant="destructive">فشل</Badge>;
+        return <Badge variant="destructive" className="dark:bg-red-700 dark:text-red-100">فشل</Badge>;
       default:
-        return <Badge variant="secondary">{status}</Badge>;
+        return <Badge variant="secondary" className="dark:bg-gray-700 dark:text-gray-100">{status}</Badge>;
     }
   };
 
@@ -151,7 +196,8 @@ export const Download: React.FC = () => {
       id: exportId,
       filename: item.name,
       progress: 0,
-      status: 'pending'
+      status: 'pending',
+      originalItem: item, // Store the original item for retry
     };
     
     setExportProgresses(prev => [...prev, newProgress]);
@@ -169,7 +215,9 @@ export const Download: React.FC = () => {
         // Use enhanced Arabic PDF export for all PDF types
         await EnhancedExportService.generateArabicPDF(currentDate, exportId);
       } else {
-        // Use existing export methods with progress tracking
+        // Note: Progress tracking for non-PDF types is currently mocked via setTimeout.
+        // In a real application, this would involve actual integration with ExportService
+        // to report progress for CSV, Excel, and Zip file generations.
         switch (item.section) {
           case 'المالية':
             ExportService.exportFinanceCSV(currentDate);
@@ -226,7 +274,8 @@ export const Download: React.FC = () => {
       id: exportId,
       filename: 'التصدير المجمع',
       progress: 0,
-      status: 'pending'
+      status: 'pending',
+      originalOptions: options, // Store the original options for bulk retry
     };
     
     setExportProgresses(prev => [...prev, newProgress]);
@@ -266,19 +315,36 @@ export const Download: React.FC = () => {
     const exportItem = exportProgresses.find(p => p.id === exportId);
     if (!exportItem) return;
 
+    // Reset status to pending and clear error for retry attempt
+    setExportProgresses(prev =>
+      prev.map(p => p.id === exportId ? { ...p, progress: 0, status: 'pending', error: undefined } : p)
+    );
+
     try {
-      await EnhancedExportService.retryExport(exportId, async () => {
-        // Retry the original export
-        if (exportId.startsWith('bulk-')) {
-          // Would need to store original options for retry
-        } else {
-          // Retry individual export
-        }
+      if (exportItem.originalOptions) {
+        // Retry bulk export
+        await EnhancedExportService.bulkExport(exportItem.originalOptions);
+      } else if (exportItem.originalItem) {
+        // Retry individual export
+        await handleDownload(exportItem.originalItem); // Re-use the existing handleDownload logic
+      } else {
+        throw new Error('Could not find original export parameters for retry');
+      }
+
+      toast({
+        title: "تمت إعادة المحاولة بنجاح",
+        description: "تمت إعادة محاولة التصدير بنجاح",
       });
     } catch (error) {
+      console.error('Retry export error:', error);
+      setExportProgresses(prev =>
+        prev.map(p => p.id === exportId ?
+          { ...p, status: 'failed', error: (error as Error).message } : p
+        )
+      );
       toast({
         title: "فشل في إعادة المحاولة",
-        description: "لم نتمكن من إعادة محاولة التصدير",
+        description: `لم نتمكن من إعادة محاولة التصدير: ${(error as Error).message}`,
         variant: "destructive",
       });
     }
@@ -346,7 +412,7 @@ export const Download: React.FC = () => {
             <CardTitle className="text-sm font-medium text-muted-foreground">إجمالي الحجم</CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
-            <div className="text-2xl font-bold text-wathiq-primary">29.5</div>
+            <div className="text-2xl font-bold text-wathiq-primary">{totalSizeMB.toFixed(1)}</div>
             <p className="text-xs text-muted-foreground">ميجابايت</p>
           </CardContent>
         </Card>
@@ -356,7 +422,7 @@ export const Download: React.FC = () => {
             <CardTitle className="text-sm font-medium text-muted-foreground">التحميلات اليوم</CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
-            <div className="text-2xl font-bold text-success">53</div>
+            <div className="text-2xl font-bold text-success">{downloadsTodayCount}</div>
             <p className="text-xs text-muted-foreground">عملية تحميل</p>
           </CardContent>
         </Card>
@@ -366,7 +432,7 @@ export const Download: React.FC = () => {
             <CardTitle className="text-sm font-medium text-muted-foreground">قيد المعالجة</CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
-            <div className="text-2xl font-bold text-warning">1</div>
+            <div className="text-2xl font-bold text-warning">{inProgressCount}</div>
             <p className="text-xs text-muted-foreground">ملف في الانتظار</p>
           </CardContent>
         </Card>
@@ -442,14 +508,14 @@ export const Download: React.FC = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="text-right">النوع</TableHead>
-                <TableHead className="text-right">اسم الملف</TableHead>
-                <TableHead className="text-right">القسم</TableHead>
-                <TableHead className="text-right">التاريخ</TableHead>
-                <TableHead className="text-right">الحجم</TableHead>
-                <TableHead className="text-right">الحالة</TableHead>
-                <TableHead className="text-right">التحميلات</TableHead>
-                <TableHead className="text-right">الإجراءات</TableHead>
+                <TableHead>{ARABIC_DOWNLOAD_MESSAGES.TABLE_HEAD_TYPE}</TableHead>
+                <TableHead>{ARABIC_DOWNLOAD_MESSAGES.TABLE_HEAD_FILENAME}</TableHead>
+                <TableHead>{ARABIC_DOWNLOAD_MESSAGES.TABLE_HEAD_SECTION}</TableHead>
+                <TableHead>{ARABIC_DOWNLOAD_MESSAGES.TABLE_HEAD_DATE}</TableHead>
+                <TableHead>{ARABIC_DOWNLOAD_MESSAGES.TABLE_HEAD_SIZE}</TableHead>
+                <TableHead>{ARABIC_DOWNLOAD_MESSAGES.TABLE_HEAD_STATUS}</TableHead>
+                <TableHead>{ARABIC_DOWNLOAD_MESSAGES.TABLE_HEAD_DOWNLOADS}</TableHead>
+                <TableHead>{ARABIC_DOWNLOAD_MESSAGES.TABLE_HEAD_ACTIONS}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -480,8 +546,18 @@ export const Download: React.FC = () => {
                         <DownloadIcon className="w-4 h-4" />
                       </Button>
                     ) : (
-                      <Button variant="ghost" size="sm" disabled>
-                        <Calendar className="w-4 h-4" />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled
+                        aria-label={item.status === 'processing' ? ARABIC_DOWNLOAD_MESSAGES.DISABLED_BUTTON_PROCESSING : ARABIC_DOWNLOAD_MESSAGES.DISABLED_BUTTON_FAILED}
+                        title={item.status === 'processing' ? ARABIC_DOWNLOAD_MESSAGES.DISABLED_BUTTON_PROCESSING : ARABIC_DOWNLOAD_MESSAGES.DISABLED_BUTTON_FAILED}
+                      >
+                        {item.status === 'processing' ? (
+                          <Loader2 className="w-4 h-4 animate-spin text-wathiq-primary" />
+                        ) : (
+                          <XCircle className="w-4 h-4 text-destructive" />
+                        )}
                       </Button>
                     )}
                   </TableCell>

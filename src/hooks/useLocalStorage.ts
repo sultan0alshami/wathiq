@@ -57,8 +57,31 @@ export const getDateStorageKey = (baseKey: string, date: Date): string => {
 export const useDataWithDate = <T>(
   baseKey: string,
   currentDate: Date,
-  initialValue: T
-): LocalStorageHook<T> => {
+  initialValue: T,
+  setDataLoading?: (isLoading: boolean) => void // Add setDataLoading callback
+) => {
   const dateKey = getDateStorageKey(baseKey, currentDate);
-  return useLocalStorage(dateKey, initialValue);
+  const [value, setStoredValue, clearValue] = useLocalStorage(dateKey, initialValue);
+
+  // When currentDate changes, we need to potentially load new data
+  useEffect(() => {
+    if (setDataLoading) setDataLoading(true); // Indicate loading has started
+    try {
+      const item = window.localStorage.getItem(dateKey);
+      const newValue = item ? JSON.parse(item) : initialValue;
+      if (JSON.stringify(newValue) !== JSON.stringify(value)) {
+        setStoredValue(newValue);
+      }
+    } catch (error) {
+      console.warn(`Error reading localStorage key "${dateKey}" in useDataWithDate:`, error);
+    } finally {
+      if (setDataLoading) setDataLoading(false); // Indicate loading has finished
+    }
+  }, [dateKey, initialValue, setDataLoading, setStoredValue]);
+
+  return {
+    value,
+    setValue: setStoredValue,
+    clearValue,
+  };
 };

@@ -1,0 +1,16 @@
+export const ARABIC_EXPORT_PROGRESS_DIALOG_MESSAGES = {
+  DIALOG_TITLE: "حالة التصدير",
+  DIALOG_DESCRIPTION: "تتبع تقدم عمليات التصدير والتحميل",
+  STATUS_COMPLETED: "مكتمل",
+  STATUS_FAILED: "فشل",
+  STATUS_PROCESSING: "قيد المعالجة",
+  STATUS_PENDING: "في الانتظار",
+  PROGRESS_LABEL: "التقدم",
+  RETRY_BUTTON: "إعادة المحاولة",
+  DOWNLOAD_BUTTON: "تحميل",
+  SUMMARY_ALL_COMPLETED: "تم إكمال جميع العمليات بنجاح",
+  SUMMARY_HAS_FAILURES: (failedCount: number) => `فشلت ${failedCount} عملية - يمكنك إعادة المحاولة`,
+  SUMMARY_IN_PROGRESS: "جاري المعالجة...",
+  SUMMARY_READY_TO_START: "جاهز للبدء",
+  CLOSE_BUTTON: "إغلاق",
+};

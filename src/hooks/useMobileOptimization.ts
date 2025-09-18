@@ -3,6 +3,8 @@ import { useIsMobile } from '@/hooks/use-mobile';
 
 // Touch gesture detection
 export function useTouchGestures() {
+  // IMPORTANT: The consuming component is responsible for attaching handleTouchStart and handleTouchEnd to a DOM element.
+  // Alternatively, the hook could be extended to accept a ref and attach listeners internally.
   const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
   const [touchEnd, setTouchEnd] = useState<{ x: number; y: number } | null>(null);
 

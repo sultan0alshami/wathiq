@@ -2,6 +2,8 @@ import React, { Component, ReactNode } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { Button } from './button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './card';
+import { useToast } from './use-toast';
+import { ARABIC_ERROR_BOUNDARY_MESSAGES } from '@/lib/arabicErrorBoundaryMessages';
 
 interface Props {
   children: ReactNode;
@@ -25,7 +27,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('Error caught by boundary:', error, errorInfo);
+    console.error('Error caught by boundary:', error, '\nComponent Stack:\n', errorInfo.componentStack);
     
     this.setState({
       error,
@@ -40,6 +42,10 @@ export class ErrorBoundary extends Component<Props, State> {
 
   private handleRetry = () => {
     this.setState({ hasError: false, error: undefined, errorInfo: undefined });
+    // TODO: Evaluate more robust recovery for top-level errors:
+    // 1. Redirection: For unrecoverable errors, consider navigating to a safe page (e.g., window.location.href = '/').
+    // 2. Global State Reset: If the error might be due to corrupted global state, implement a mechanism to reset relevant parts of the application state.
+    // 3. User Feedback: Offer more options to the user, such as submitting an error report or clearing local storage.
   };
 
   public render() {
@@ -56,15 +62,15 @@ export class ErrorBoundary extends Component<Props, State> {
             <div className="w-12 h-12 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-4">
               <AlertTriangle className="w-6 h-6 text-destructive" />
             </div>
-            <CardTitle className="text-destructive">حدث خطأ غير متوقع</CardTitle>
+            <CardTitle className="text-destructive">{ARABIC_ERROR_BOUNDARY_MESSAGES.UNEXPECTED_ERROR_TITLE}</CardTitle>
             <CardDescription>
-              نعتذر، حدث خطأ أثناء تحميل هذا الجزء من التطبيق
+              {ARABIC_ERROR_BOUNDARY_MESSAGES.UNEXPECTED_ERROR_DESCRIPTION}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {process.env.NODE_ENV === 'development' && this.state.error && (
               <div className="bg-muted p-4 rounded-md">
-                <h4 className="font-medium text-sm mb-2">تفاصيل الخطأ (وضع التطوير):</h4>
+                <h4 className="font-medium text-sm mb-2">{ARABIC_ERROR_BOUNDARY_MESSAGES.ERROR_DETAILS_TITLE}</h4>
                 <pre className="text-xs text-muted-foreground whitespace-pre-wrap">
                   {this.state.error.toString()}
                 </pre>
@@ -74,7 +80,7 @@ export class ErrorBoundary extends Component<Props, State> {
             <div className="flex flex-col gap-2">
               <Button onClick={this.handleRetry} className="w-full">
                 <RefreshCw className="w-4 h-4 ml-2" />
-                إعادة المحاولة
+                {ARABIC_ERROR_BOUNDARY_MESSAGES.RETRY_BUTTON}
               </Button>
               
               <Button 
@@ -82,7 +88,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 onClick={() => window.location.reload()}
                 className="w-full"
               >
-                إعادة تحميل الصفحة
+                {ARABIC_ERROR_BOUNDARY_MESSAGES.RELOAD_PAGE_BUTTON}
               </Button>
             </div>
           </CardContent>
@@ -100,18 +106,23 @@ export function withErrorBoundary<P extends object>(
   fallback?: ReactNode,
   onError?: (error: Error, errorInfo: React.ErrorInfo) => void
 ) {
-  return function WrappedComponent(props: P) {
+  const WrappedComponent = function (props: P) {
     return (
       <ErrorBoundary fallback={fallback} onError={onError}>
         <Component {...props} />
       </ErrorBoundary>
     );
   };
+
+  WrappedComponent.displayName = `withErrorBoundary(${Component.displayName || Component.name || 'Component'})`;
+
+  return WrappedComponent;
 }
 
 // Hook for error reporting
 export function useErrorHandler() {
-  return (error: Error, errorInfo?: string) => {
+  const { toast } = useToast();
+  return (error: Error, errorInfo?: React.ErrorInfo | string) => {
     console.error('Manual error report:', error, errorInfo);
     
     // Here you could integrate with error reporting services
@@ -119,7 +130,11 @@ export function useErrorHandler() {
     
     // For now, just log to console and potentially show a toast
     if (typeof window !== 'undefined' && 'navigator' in window) {
-      // Could trigger a toast notification here
+      toast({
+        title: ARABIC_ERROR_BOUNDARY_MESSAGES.MANUAL_ERROR_TITLE,
+        description: ARABIC_ERROR_BOUNDARY_MESSAGES.MANUAL_ERROR_DESCRIPTION(error.message),
+        variant: "destructive",
+      });
     }
   };
 }

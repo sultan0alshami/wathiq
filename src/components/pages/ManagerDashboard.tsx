@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { useDateContext } from '@/contexts/DateContext';
 import { useChartData } from '@/hooks/useChartData';
-import { getDataForDate } from '@/lib/mockData';
+import { getDataForDate, DailyData } from '@/lib/mockData';
 import { ExportService } from '@/services/ExportService';
 import { useToast } from '@/hooks/use-toast';
 import { formatCurrency, formatChartNumber } from '@/lib/numberUtils';
@@ -29,12 +29,12 @@ import { format, parseISO } from 'date-fns';
 export const ManagerDashboard: React.FC = () => {
   const { currentDate, formatDate } = useDateContext();
   const { toast } = useToast();
-  const [reportDialog, setReportDialog] = useState<{ 
-    open: boolean; 
-    data: any; 
-    section: string; 
+  const [reportDialog, setReportDialog] = useState<{
+    open: boolean;
+    data: DailyData | null;
+    section: string;
     date: Date | null;
-  }>({ 
+  }>({
     open: false, 
     data: null, 
     section: '', 
@@ -109,6 +109,7 @@ export const ManagerDashboard: React.FC = () => {
   const newCustomersToday = 
     currentData.customers.length + // Direct customers
     currentData.sales.customersContacted + // Sales contacts
+    // TODO: Refactor marketingCustomers calculation to use a more robust method (e.g., a dedicated isCustomerRelated flag in task data) instead of string matching on task titles.
     currentData.marketing.tasks.filter(task => task.title.includes('عميل')).length; // Marketing customer tasks
 
   const COLORS = ['hsl(var(--wathiq-primary))', 'hsl(var(--wathiq-accent))', 'hsl(var(--success))', 'hsl(var(--warning))', 'hsl(var(--destructive))'];
@@ -266,7 +267,7 @@ export const ManagerDashboard: React.FC = () => {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={liquidityData}>
+              <BarChart data={incomeVsExpensesData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis 
                   dataKey="date" 
@@ -403,8 +404,8 @@ export const ManagerDashboard: React.FC = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sectionSubmissionData.slice(-15).reverse().map((item, index) => (
-                <TableRow key={index}>
+              {sectionSubmissionData.slice(-15).reverse().map((item) => (
+                <TableRow key={item.date}>
                   <TableCell className="font-medium">{item.date}</TableCell>
                   <TableCell>
                     {item.المالية ? (

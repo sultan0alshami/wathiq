@@ -1,8 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
-import { format, subDays, parseISO } from 'date-fns';
+import { format, subDays } from 'date-fns';
 import { getDataForDate, DailyData } from '@/lib/mockData';
-import { StorageService } from '@/services/StorageService';
-import { formatCurrency, formatChartNumber } from '@/lib/numberUtils';
+import { formatCurrency } from '@/lib/numberUtils';
 
 export interface ChartDataPoint {
   date: string;
@@ -96,6 +95,7 @@ export const useChartData = (days: number = 30) => {
         };
       });
     } catch (err) {
+      setError('خطأ في تحميل بيانات الإيرادات والمصروفات');
       console.error('Error loading income vs expenses data:', err);
       return [];
     }
@@ -121,6 +121,7 @@ export const useChartData = (days: number = 30) => {
         };
       });
     } catch (err) {
+      setError('خطأ في تحميل بيانات إكمال المهام');
       console.error('Error loading tasks completion data:', err);
       return [];
     }
@@ -136,7 +137,7 @@ export const useChartData = (days: number = 30) => {
         const directCustomers = dailyData.customers.length;
         const salesContacts = dailyData.sales.customersContacted;
         const marketingCustomers = dailyData.marketing.tasks.filter(task => 
-          task.title.includes('عميل') || task.title.includes('customer')
+          task.isCustomerRelated
         ).length;
         
         const totalCustomers = directCustomers + salesContacts + marketingCustomers;
@@ -148,6 +149,7 @@ export const useChartData = (days: number = 30) => {
         };
       });
     } catch (err) {
+      setError('خطأ في تحميل بيانات اتجاهات العملاء');
       console.error('Error loading customers trend data:', err);
       return [];
     }
@@ -171,6 +173,7 @@ export const useChartData = (days: number = 30) => {
         };
       });
     } catch (err) {
+      setError('خطأ في تحميل بيانات أقسام الإرسال');
       console.error('Error loading section submission data:', err);
       return [];
     }
@@ -197,6 +200,7 @@ export const useChartData = (days: number = 30) => {
         label: formatCurrency(amount)
       }));
     } catch (err) {
+      setError('خطأ في تحميل بيانات فئات المصروفات');
       console.error('Error loading expense categories data:', err);
       return [];
     }
@@ -221,6 +225,7 @@ export const useChartData = (days: number = 30) => {
         };
       });
     } catch (err) {
+      setError('خطأ في تحميل بيانات أداء المبيعات');
       console.error('Error loading sales performance data:', err);
       return [];
     }

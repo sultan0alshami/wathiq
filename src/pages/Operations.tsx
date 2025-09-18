@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,10 +6,58 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Trash2, Plus, Settings2, CheckCircle, Clock, AlertCircle, Loader2 } from 'lucide-react';
+import { Trash2, Plus, Settings2, CheckCircle, Clock, AlertCircle, Loader2, Gauge } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useDateContext } from '@/contexts/DateContext';
 import { getDataForDate, updateSectionData, type OperationEntry } from '@/lib/mockData';
+import { ValidationMessage, useFormValidation, ValidationRules } from '@/components/ui/enhanced-form-validation';
+import { DeleteConfirmationDialog } from '@/components/ui/confirmation-dialog';
+import { KPICardSkeleton, TableSkeleton } from '@/components/ui/loading-skeleton';
+import { ARABIC_OPERATIONS_MESSAGES } from '@/lib/arabicOperationsMessages';
+
+interface OperationEntry {
+  id: string;
+  task: string;
+  status: 'pending' | 'in-progress' | 'completed';
+  notes: string;
+  owner: string;
+  priority: 'low' | 'medium' | 'high';
+}
+
+const OperationUtils = {
+  getStatusIcon: (status: OperationEntry['status']) => {
+    switch (status) {
+      case 'completed':
+        return <CheckCircle className="w-4 h-4 text-green-600" />;
+      case 'in-progress':
+        return <Clock className="w-4 h-4 text-yellow-600" />;
+      case 'pending':
+        return <AlertCircle className="w-4 h-4 text-red-600" />;
+    }
+  },
+
+  getStatusLabel: (status: OperationEntry['status']) => {
+    switch (status) {
+      case 'completed':
+        return ARABIC_OPERATIONS_MESSAGES.STATUS_COMPLETED;
+      case 'in-progress':
+        return ARABIC_OPERATIONS_MESSAGES.STATUS_IN_PROGRESS;
+      case 'pending':
+        return ARABIC_OPERATIONS_MESSAGES.STATUS_PENDING;
+    }
+  },
+
+  getStatusColor: (status: OperationEntry['status']) => {
+    switch (status) {
+      case 'completed':
+        return 'bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-200 dark:border-green-700';
+      case 'in-progress':
+        return 'bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-950 dark:text-yellow-200 dark:border-yellow-700';
+      case 'pending':
+        return 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-200 dark:border-red-700';
+    }
+  },
+};
 
 export const Operations: React.FC = () => {
   const { currentDate } = useDateContext();
@@ -18,6 +66,9 @@ export const Operations: React.FC = () => {
   
   const [operations, setOperations] = useState<OperationEntry[]>([]);
   const [expectedNextDay, setExpectedNextDay] = useState<number>(0);
+  const [deleteOperationId, setDeleteOperationId] = useState<string | null>(null);
+
+  const [expectedNextDayInput, setExpectedNextDayInput] = useState<string>('0');
 
   // Form states
   const [newTask, setNewTask] = useState('');
@@ -26,54 +77,88 @@ export const Operations: React.FC = () => {
   const [newStatus, setNewStatus] = useState<OperationEntry['status']>('pending');
   const [newPriority, setNewPriority] = useState<OperationEntry['priority']>('medium');
 
+  const { validateField } = useFormValidation();
+
+  // New Operation form validations
+  const newTaskValidation = validateField(newTask, [
+    ValidationRules.required(ARABIC_OPERATIONS_MESSAGES.OPERATION_NAME_LABEL),
+    ValidationRules.minLength(3, ARABIC_OPERATIONS_MESSAGES.OPERATION_NAME_MIN_LENGTH),
+    ValidationRules.arabicText()
+  ]);
+
+  const newOwnerValidation = validateField(newOwner, [
+    ValidationRules.required(ARABIC_OPERATIONS_MESSAGES.ASSIGNED_TO_LABEL),
+    ValidationRules.arabicText()
+  ]);
+
+  const expectedNextDayValidation = useMemo(() =>
+    validateField(expectedNextDayInput, [
+      ValidationRules.number(ARABIC_OPERATIONS_MESSAGES.EXPECTED_NEXT_DAY_INVALID),
+      ValidationRules.min(0, ARABIC_OPERATIONS_MESSAGES.EXPECTED_NEXT_DAY_NEGATIVE)
+    ]),
+  [expectedNextDayInput]);
+
   // Load data on mount and date change
   useEffect(() => {
-    const data = getDataForDate(currentDate);
-    setOperations(data.operations.entries);
-    setExpectedNextDay(data.operations.expectedNextDay);
+    setLoading(true);
+    // Simulate loading delay
+    new Promise(resolve => setTimeout(resolve, 500)).then(() => {
+      const data = getDataForDate(currentDate);
+      setOperations(data.operations.entries);
+      setExpectedNextDay(data.operations.expectedNextDay);
+      setExpectedNextDayInput(String(data.operations.expectedNextDay));
+      setLoading(false);
+    });
   }, [currentDate]);
 
   const addOperation = async () => {
-    if (newTask && newOwner) {
-      setLoading(true);
-      try {
-        const operation: OperationEntry = {
-          id: Date.now().toString(),
-          task: newTask,
-          status: newStatus,
-          notes: newNotes,
-          owner: newOwner,
-          priority: newPriority,
-        };
-        const updatedOperations = [...operations, operation];
-        setOperations(updatedOperations);
-        
-        updateSectionData(currentDate, 'operations', {
-          totalOperations: updatedOperations.length,
-          entries: updatedOperations,
-          expectedNextDay,
-        });
-        
-        // Reset form
-        setNewTask('');
-        setNewOwner('');
-        setNewNotes('');
-        setNewStatus('pending');
-        setNewPriority('medium');
-        
-        toast({
-          title: "تم إضافة العملية",
-          description: "تم حفظ العملية بنجاح",
-        });
-      } catch (error) {
-        toast({
-          title: "خطأ",
-          description: "حدث خطأ أثناء حفظ العملية",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
+    const isFormValid = newTaskValidation.isValid && newOwnerValidation.isValid;
+    if (!isFormValid) {
+      toast({
+        title: ARABIC_OPERATIONS_MESSAGES.FORM_ERROR_TITLE,
+        description: ARABIC_OPERATIONS_MESSAGES.FORM_ERROR_DESCRIPTION,
+        variant: "destructive",
+      });
+      return;
+    }
+    setLoading(true);
+    try {
+      const operation: OperationEntry = {
+        id: Date.now().toString(),
+        task: newTask,
+        status: newStatus,
+        notes: newNotes,
+        owner: newOwner,
+        priority: newPriority,
+      };
+      const updatedOperations = [...operations, operation];
+      setOperations(updatedOperations);
+      
+      updateSectionData(currentDate, 'operations', {
+        totalOperations: updatedOperations.length,
+        entries: updatedOperations,
+        expectedNextDay,
+      });
+      
+      // Reset form
+      setNewTask('');
+      setNewOwner('');
+      setNewNotes('');
+      setNewStatus('pending');
+      setNewPriority('medium');
+      
+      toast({
+        title: ARABIC_OPERATIONS_MESSAGES.TOAST_ADD_SUCCESS_TITLE,
+        description: ARABIC_OPERATIONS_MESSAGES.TOAST_ADD_SUCCESS_DESCRIPTION,
+      });
+    } catch (error) {
+      toast({
+        title: ARABIC_OPERATIONS_MESSAGES.TOAST_ADD_ERROR_TITLE,
+        description: ARABIC_OPERATIONS_MESSAGES.TOAST_ADD_ERROR_DESCRIPTION,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -90,13 +175,13 @@ export const Operations: React.FC = () => {
       });
       
       toast({
-        title: "تم حذف العملية",
-        description: "تم حذف العملية بنجاح",
+        title: ARABIC_OPERATIONS_MESSAGES.TOAST_DELETE_SUCCESS_TITLE,
+        description: ARABIC_OPERATIONS_MESSAGES.TOAST_DELETE_SUCCESS_DESCRIPTION,
       });
     } catch (error) {
       toast({
-        title: "خطأ",
-        description: "حدث خطأ أثناء حذف العملية",
+        title: ARABIC_OPERATIONS_MESSAGES.TOAST_DELETE_ERROR_TITLE,
+        description: ARABIC_OPERATIONS_MESSAGES.TOAST_DELETE_ERROR_DESCRIPTION,
         variant: "destructive",
       });
     } finally {
@@ -116,62 +201,42 @@ export const Operations: React.FC = () => {
         entries: updatedOperations,
         expectedNextDay,
       });
+      toast({
+        title: ARABIC_OPERATIONS_MESSAGES.TOAST_UPDATE_SUCCESS_TITLE,
+        description: ARABIC_OPERATIONS_MESSAGES.TOAST_UPDATE_SUCCESS_DESCRIPTION,
+      });
     } catch (error) {
       toast({
-        title: "خطأ",
-        description: "حدث خطأ أثناء تحديث الحالة",
+        title: ARABIC_OPERATIONS_MESSAGES.TOAST_UPDATE_ERROR_TITLE,
+        description: ARABIC_OPERATIONS_MESSAGES.TOAST_UPDATE_ERROR_DESCRIPTION,
         variant: "destructive",
       });
     }
   };
 
-  const updateExpectedNextDay = async (count: number) => {
-    setExpectedNextDay(count);
-    try {
-      updateSectionData(currentDate, 'operations', {
-        totalOperations: operations.length,
-        entries: operations,
-        expectedNextDay: count,
-      });
-    } catch (error) {
-      toast({
-        title: "خطأ",
-        description: "حدث خطأ أثناء حفظ التوقعات",
-        variant: "destructive",
-      });
-    }
-  };
+  const updateExpectedNextDay = async (value: string) => {
+    setExpectedNextDayInput(value);
+    const validation = validateField(value, [
+      ValidationRules.number(ARABIC_OPERATIONS_MESSAGES.EXPECTED_NEXT_DAY_INVALID),
+      ValidationRules.min(0, ARABIC_OPERATIONS_MESSAGES.EXPECTED_NEXT_DAY_NEGATIVE)
+    ]);
 
-  const getStatusIcon = (status: OperationEntry['status']) => {
-    switch (status) {
-      case 'completed':
-        return <CheckCircle className="w-4 h-4 text-green-600" />;
-      case 'in-progress':
-        return <Clock className="w-4 h-4 text-yellow-600" />;
-      case 'pending':
-        return <AlertCircle className="w-4 h-4 text-red-600" />;
-    }
-  };
-
-  const getStatusLabel = (status: OperationEntry['status']) => {
-    switch (status) {
-      case 'completed':
-        return 'مكتمل';
-      case 'in-progress':
-        return 'قيد التنفيذ';
-      case 'pending':
-        return 'معلق';
-    }
-  };
-
-  const getStatusColor = (status: OperationEntry['status']) => {
-    switch (status) {
-      case 'completed':
-        return 'bg-green-50 text-green-700 border-green-200';
-      case 'in-progress':
-        return 'bg-yellow-50 text-yellow-700 border-yellow-200';
-      case 'pending':
-        return 'bg-red-50 text-red-700 border-red-200';
+    if (validation.isValid) {
+      const count = parseInt(value);
+      setExpectedNextDay(count);
+      try {
+        updateSectionData(currentDate, 'operations', {
+          totalOperations: operations.length,
+          entries: operations,
+          expectedNextDay: count,
+        });
+      } catch (error) {
+        toast({
+          title: ARABIC_OPERATIONS_MESSAGES.TOAST_ADD_ERROR_TITLE,
+          description: ARABIC_OPERATIONS_MESSAGES.TOAST_ADD_ERROR_DESCRIPTION,
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -184,125 +249,137 @@ export const Operations: React.FC = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-primary">العمليات</h1>
+        <h1 className="text-3xl font-bold text-primary">{ARABIC_OPERATIONS_MESSAGES.PAGE_TITLE}</h1>
         <Badge variant="outline" className="text-lg px-4 py-2">
-          اليوم: {new Date().toLocaleDateString('ar-EG')}
+          {ARABIC_OPERATIONS_MESSAGES.TODAY_DATE} {new Date().toLocaleDateString('ar-EG')}
         </Badge>
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="border-red-200 bg-red-50">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <AlertCircle className="w-5 h-5 text-red-600" />
-              <div>
-                <p className="text-sm text-red-600">العمليات المعلقة</p>
-                <p className="text-2xl font-bold text-red-700">{pendingCount}</p>
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <KPICardSkeleton key={i} />
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card className="border-red-200 bg-red-50">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-red-600" />
+                <div>
+                  <p className="text-sm text-red-600">{ARABIC_OPERATIONS_MESSAGES.OPERATIONS_PENDING}</p>
+                  <p className="text-2xl font-bold text-red-700">{pendingCount}</p>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <Card className="border-yellow-200 bg-yellow-50">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Clock className="w-5 h-5 text-yellow-600" />
-              <div>
-                <p className="text-sm text-yellow-600">قيد التنفيذ</p>
-                <p className="text-2xl font-bold text-yellow-700">{inProgressCount}</p>
+          <Card className="border-yellow-200 bg-yellow-50">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <Clock className="w-5 h-5 text-yellow-600" />
+                <div>
+                  <p className="text-sm text-yellow-600">{ARABIC_OPERATIONS_MESSAGES.OPERATIONS_IN_PROGRESS}</p>
+                  <p className="text-2xl font-bold text-yellow-700">{inProgressCount}</p>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <Card className="border-green-200 bg-green-50">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <CheckCircle className="w-5 h-5 text-green-600" />
-              <div>
-                <p className="text-sm text-green-600">العمليات المكتملة</p>
-                <p className="text-2xl font-bold text-green-700">{completedCount}</p>
+          <Card className="border-green-200 bg-green-50">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="w-5 h-5 text-green-600" />
+                <div>
+                  <p className="text-sm text-green-600">{ARABIC_OPERATIONS_MESSAGES.OPERATIONS_COMPLETED}</p>
+                  <p className="text-2xl font-bold text-green-700">{completedCount}</p>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <Card className="border-primary/20 bg-primary/5">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Settings2 className="w-5 h-5 text-primary" />
-              <div>
-                <p className="text-sm text-muted-foreground">معدل الإنجاز</p>
-                <p className="text-2xl font-bold text-primary">{completionRate}%</p>
+          <Card className="border-primary/20 bg-primary/5">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <Gauge className="w-5 h-5 text-primary" />
+                <div>
+                  <p className="text-sm text-muted-foreground">{ARABIC_OPERATIONS_MESSAGES.COMPLETION_RATE}</p>
+                  <p className="text-2xl font-bold text-primary">{completionRate}%</p>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Add New Operation */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-primary">إضافة عملية جديدة</CardTitle>
+          <CardTitle className="text-primary">{ARABIC_OPERATIONS_MESSAGES.ADD_OPERATION_TITLE}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>اسم العملية</Label>
+              <Label>{ARABIC_OPERATIONS_MESSAGES.OPERATION_NAME_LABEL}</Label>
               <Input
-                placeholder="مثال: مراجعة التقارير الشهرية"
+                placeholder={ARABIC_OPERATIONS_MESSAGES.OPERATION_NAME_PLACEHOLDER}
                 value={newTask}
                 onChange={(e) => setNewTask(e.target.value)}
+                className={!newTaskValidation.isValid ? "border-destructive" : ""}
               />
+              <ValidationMessage result={newTaskValidation} />
             </div>
             <div className="space-y-2">
-              <Label>المسؤول</Label>
+              <Label>{ARABIC_OPERATIONS_MESSAGES.ASSIGNED_TO_LABEL}</Label>
               <Input
-                placeholder="اسم المسؤول عن العملية"
+                placeholder={ARABIC_OPERATIONS_MESSAGES.ASSIGNED_TO_PLACEHOLDER}
                 value={newOwner}
                 onChange={(e) => setNewOwner(e.target.value)}
+                className={!newOwnerValidation.isValid ? "border-destructive" : ""}
               />
+              <ValidationMessage result={newOwnerValidation} />
             </div>
             <div className="space-y-2">
-              <Label>الحالة</Label>
+              <Label>{ARABIC_OPERATIONS_MESSAGES.STATUS_LABEL}</Label>
               <Select value={newStatus} onValueChange={(value: OperationEntry['status']) => setNewStatus(value)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="pending">معلق</SelectItem>
-                  <SelectItem value="in-progress">قيد التنفيذ</SelectItem>
-                  <SelectItem value="completed">مكتمل</SelectItem>
+                  <SelectItem value="pending">{ARABIC_OPERATIONS_MESSAGES.STATUS_PENDING}</SelectItem>
+                  <SelectItem value="in-progress">{ARABIC_OPERATIONS_MESSAGES.STATUS_IN_PROGRESS}</SelectItem>
+                  <SelectItem value="completed">{ARABIC_OPERATIONS_MESSAGES.STATUS_COMPLETED}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>الأولوية</Label>
+              <Label>{ARABIC_OPERATIONS_MESSAGES.PRIORITY_LABEL}</Label>
               <Select value={newPriority} onValueChange={(value: OperationEntry['priority']) => setNewPriority(value)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="low">منخفضة</SelectItem>
-                  <SelectItem value="medium">متوسطة</SelectItem>
-                  <SelectItem value="high">عالية</SelectItem>
+                  <SelectItem value="low">{ARABIC_OPERATIONS_MESSAGES.PRIORITY_LOW}</SelectItem>
+                  <SelectItem value="medium">{ARABIC_OPERATIONS_MESSAGES.PRIORITY_MEDIUM}</SelectItem>
+                  <SelectItem value="high">{ARABIC_OPERATIONS_MESSAGES.PRIORITY_HIGH}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="md:col-span-2 space-y-2">
-              <Label>ملاحظات</Label>
+              <Label>{ARABIC_OPERATIONS_MESSAGES.ADDITIONAL_NOTES_LABEL}</Label>
               <Textarea
-                placeholder="ملاحظات إضافية..."
+                placeholder={ARABIC_OPERATIONS_MESSAGES.ADDITIONAL_NOTES_PLACEHOLDER}
                 value={newNotes}
                 onChange={(e) => setNewNotes(e.target.value)}
                 rows={3}
               />
             </div>
             <div className="md:col-span-2">
-              <Button onClick={addOperation} disabled={loading} className="bg-primary hover:bg-primary/90">
+              <Button onClick={addOperation} disabled={loading || !newTaskValidation.isValid || !newOwnerValidation.isValid} className="bg-primary hover:bg-primary/90">
                 {loading ? <Loader2 className="w-4 h-4 ml-2 animate-spin" /> : <Plus className="w-4 h-4 ml-2" />}
-                إضافة عملية
+                {ARABIC_OPERATIONS_MESSAGES.ADD_OPERATION_BUTTON}
               </Button>
             </div>
           </div>
@@ -312,13 +389,15 @@ export const Operations: React.FC = () => {
       {/* Operations List */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-primary">قائمة العمليات اليومية</CardTitle>
+          <CardTitle className="text-primary">{ARABIC_OPERATIONS_MESSAGES.TODAY_OPERATIONS_TITLE(operations.length)}</CardTitle>
         </CardHeader>
         <CardContent>
-          {operations.length === 0 ? (
+          {loading ? (
+            <TableSkeleton rows={5} columns={1} />
+          ) : operations.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Settings2 className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p>لا توجد عمليات مضافة بعد</p>
+              <p>{ARABIC_OPERATIONS_MESSAGES.NO_OPERATIONS_ADDED}</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -329,18 +408,18 @@ export const Operations: React.FC = () => {
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-3">
                           <h3 className="font-semibold text-lg">{operation.task}</h3>
-                          {getStatusIcon(operation.status)}
-                          <Badge className={getStatusColor(operation.status)}>
-                            {getStatusLabel(operation.status)}
+                          {OperationUtils.getStatusIcon(operation.status)}
+                          <Badge className={OperationUtils.getStatusColor(operation.status)}>
+                            {OperationUtils.getStatusLabel(operation.status)}
                           </Badge>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                           <p className="text-muted-foreground">
-                            <span className="font-medium">المسؤول:</span> {operation.owner}
+                            <span className="font-medium">{ARABIC_OPERATIONS_MESSAGES.ASSIGNED_TO_LABEL}:</span> {operation.owner}
                           </p>
                           {operation.notes && (
                             <p className="text-muted-foreground">
-                              <span className="font-medium">ملاحظات:</span> {operation.notes}
+                              <span className="font-medium">{ARABIC_OPERATIONS_MESSAGES.ADDITIONAL_NOTES_LABEL}:</span> {operation.notes}
                             </p>
                           )}
                         </div>
@@ -353,9 +432,9 @@ export const Operations: React.FC = () => {
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="pending">معلق</SelectItem>
-                              <SelectItem value="in-progress">قيد التنفيذ</SelectItem>
-                              <SelectItem value="completed">مكتمل</SelectItem>
+                              <SelectItem value="pending">{ARABIC_OPERATIONS_MESSAGES.STATUS_PENDING}</SelectItem>
+                              <SelectItem value="in-progress">{ARABIC_OPERATIONS_MESSAGES.STATUS_IN_PROGRESS}</SelectItem>
+                              <SelectItem value="completed">{ARABIC_OPERATIONS_MESSAGES.STATUS_COMPLETED}</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -363,7 +442,7 @@ export const Operations: React.FC = () => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => removeOperation(operation.id)}
+                        onClick={() => setDeleteOperationId(operation.id)}
                         className="text-red-600 hover:bg-red-100"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -380,23 +459,36 @@ export const Operations: React.FC = () => {
       {/* Expected Next Day Operations */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-primary">توقعات عمليات اليوم التالي</CardTitle>
+          <CardTitle className="text-primary">{ARABIC_OPERATIONS_MESSAGES.EXPECTED_NEXT_DAY_TITLE}</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center gap-4">
-            <Label htmlFor="expected">عدد العمليات المتوقعة</Label>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="expected">{ARABIC_OPERATIONS_MESSAGES.EXPECTED_NEXT_DAY_LABEL}</Label>
             <Input
               id="expected"
               type="number"
               min="0"
-              value={expectedNextDay}
-              onChange={(e) => updateExpectedNextDay(parseInt(e.target.value) || 0)}
-              className="max-w-xs"
-              placeholder="أدخل العدد المتوقع"
+              value={expectedNextDayInput}
+              onChange={(e) => updateExpectedNextDay(e.target.value)}
+              className={!expectedNextDayValidation.isValid ? "border-destructive max-w-xs" : "max-w-xs"}
+              placeholder={ARABIC_OPERATIONS_MESSAGES.EXPECTED_NEXT_DAY_PLACEHOLDER}
             />
+            <ValidationMessage result={expectedNextDayValidation} />
           </div>
         </CardContent>
       </Card>
+
+      <DeleteConfirmationDialog
+        open={deleteOperationId !== null}
+        onOpenChange={(open) => !open && setDeleteOperationId(null)}
+        onConfirm={() => {
+          if (deleteOperationId) {
+            removeOperation(deleteOperationId);
+            setDeleteOperationId(null);
+          }
+        }}
+        itemName={ARABIC_OPERATIONS_MESSAGES.OPERATION_ITEM_NAME}
+      />
 
     </div>
   );

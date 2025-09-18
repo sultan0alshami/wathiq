@@ -21,6 +21,8 @@ export function TableSkeleton({ rows = 5, columns = 4 }: { rows?: number; column
       {/* Header */}
       <div className="flex space-x-2 rtl:space-x-reverse">
         {Array.from({ length: columns }).map((_, i) => (
+          // In this context, `i` (index) is an acceptable key because the number of columns is fixed
+          // and the order of these skeleton items does not change dynamically.
           <Skeleton key={i} className="h-4 flex-1" />
         ))}
       </div>
@@ -29,6 +31,8 @@ export function TableSkeleton({ rows = 5, columns = 4 }: { rows?: number; column
       {Array.from({ length: rows }).map((_, rowIndex) => (
         <div key={rowIndex} className="flex space-x-2 rtl:space-x-reverse">
           {Array.from({ length: columns }).map((_, colIndex) => (
+            // In this context, `colIndex` is an acceptable key because the number of columns is fixed
+            // and the order of these skeleton items does not change dynamically.
             <Skeleton key={colIndex} className="h-8 flex-1" />
           ))}
         </div>
@@ -67,6 +71,8 @@ export function ChartSkeleton() {
       <Skeleton className="h-6 w-48" />
       <div className="space-y-2">
         {Array.from({ length: 8 }).map((_, i) => (
+          // In this context, `i` (index) is an acceptable key because the number of chart bars is fixed
+          // and the order of these skeleton items does not change dynamically.
           <div key={i} className="flex items-end space-x-1 rtl:space-x-reverse">
             <Skeleton className={`w-8 h-${Math.floor(Math.random() * 20) + 10}`} />
             <Skeleton className={`w-8 h-${Math.floor(Math.random() * 20) + 10}`} />

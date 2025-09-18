@@ -19,9 +19,13 @@ import { useAdvancedSearch } from '@/hooks/useSearch';
 import { useDebounce, useMemoizedCalculations } from '@/hooks/usePerformance';
 import { useMobileDataDisplay } from '@/hooks/useMobileOptimization';
 import { useToast } from '@/hooks/use-toast';
+import { ARABIC_ENHANCED_FINANCE_MESSAGES } from '@/lib/arabicEnhancedFinanceMessages';
 
 export const EnhancedFinance: React.FC = () => {
   const { currentDate, formatDate } = useDateContext();
+  // Note: currentLiquidity is treated as an initial balance or a manually updated value.
+  // If it's expected to dynamically update based on the sum of all entries, its calculation
+  // should be derived from the `entries` state. For now, it's updated explicitly.
   const [currentLiquidity, setCurrentLiquidity] = useState<number>(0);
   const [entries, setEntries] = useState<FinanceEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,6 +38,9 @@ export const EnhancedFinance: React.FC = () => {
   const [newEntryTitle, setNewEntryTitle] = useState('');
   const [newEntryAmount, setNewEntryAmount] = useState('');
   const [newEntryType, setNewEntryType] = useState<'income' | 'expense' | 'deposit'>('income');
+  // Note: For a more robust solution, newEntryCategory could be a predefined set of categories
+  // (e.g., loaded from a configuration or fetched from a backend) or leverage an auto-suggestion
+  // component based on previously entered categories for consistency and better reporting.
   const [newEntryCategory, setNewEntryCategory] = useState('');
   const [newEntryDescription, setNewEntryDescription] = useState('');
 
@@ -54,16 +61,23 @@ export const EnhancedFinance: React.FC = () => {
   // Form validation
   const titleValidation = useMemo(() => 
     validateField(newEntryTitle, [
-      ValidationRules.required('عنوان المعاملة مطلوب'),
-      ValidationRules.minLength(3, 'يجب أن يحتوي العنوان على 3 أحرف على الأقل'),
+      ValidationRules.required(ARABIC_ENHANCED_FINANCE_MESSAGES.TRANSACTION_TITLE_REQUIRED),
+      ValidationRules.minLength(3, ARABIC_ENHANCED_FINANCE_MESSAGES.TRANSACTION_TITLE_MIN_LENGTH),
       ValidationRules.arabicText()
     ]), [newEntryTitle]);
 
   const amountValidation = useMemo(() =>
     validateField(newEntryAmount, [
-      ValidationRules.required('المبلغ مطلوب'),
-      ValidationRules.positiveNumber('يجب أن يكون المبلغ رقم موجب')
+      ValidationRules.required(ARABIC_ENHANCED_FINANCE_MESSAGES.AMOUNT_REQUIRED),
+      ValidationRules.positiveNumber(ARABIC_ENHANCED_FINANCE_MESSAGES.AMOUNT_POSITIVE_NUMBER)
     ]), [newEntryAmount]);
+
+  const categoryValidation = useMemo(() =>
+    validateField(newEntryCategory, [
+      ValidationRules.required(ARABIC_ENHANCED_FINANCE_MESSAGES.CATEGORY_REQUIRED),
+      ValidationRules.minLength(2, ARABIC_ENHANCED_FINANCE_MESSAGES.CATEGORY_MIN_LENGTH),
+      ValidationRules.arabicText()
+    ]), [newEntryCategory]);
 
   // Load data for current date
   useEffect(() => {
@@ -114,8 +128,8 @@ export const EnhancedFinance: React.FC = () => {
     
     if (!isFormValid) {
       toast({
-        title: "خطأ في النموذج",
-        description: "يرجى تصحيح الأخطاء المحددة",
+        title: ARABIC_ENHANCED_FINANCE_MESSAGES.FORM_ERROR_TITLE,
+        description: ARABIC_ENHANCED_FINANCE_MESSAGES.FORM_ERROR_DESCRIPTION,
         variant: "destructive",
       });
       return;
@@ -147,8 +161,8 @@ export const EnhancedFinance: React.FC = () => {
     setNewEntryDescription('');
     
     toast({
-      title: "تم إضافة المعاملة",
-      description: `تم إضافة معاملة بقيمة ${formatCurrency(newEntry.amount)}`,
+      title: ARABIC_ENHANCED_FINANCE_MESSAGES.TRANSACTION_ADDED_TITLE,
+      description: ARABIC_ENHANCED_FINANCE_MESSAGES.TRANSACTION_ADDED_DESCRIPTION(formatCurrency(newEntry.amount)),
     });
   }, [newEntryTitle, newEntryAmount, newEntryType, newEntryCategory, newEntryDescription, 
       currentDate, currentLiquidity, entries, titleValidation.isValid, amountValidation.isValid, toast]);
@@ -166,8 +180,8 @@ export const EnhancedFinance: React.FC = () => {
 
     if (entryToDelete) {
       toast({
-        title: "تم حذف المعاملة",
-        description: `تم حذف ${entryToDelete.title}`,
+        title: ARABIC_ENHANCED_FINANCE_MESSAGES.TRANSACTION_DELETED_TITLE,
+        description: ARABIC_ENHANCED_FINANCE_MESSAGES.TRANSACTION_DELETED_DESCRIPTION(entryToDelete.title),
       });
     }
   }, [entries, currentDate, currentLiquidity, toast]);
@@ -211,7 +225,7 @@ export const EnhancedFinance: React.FC = () => {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold text-primary">المالية</h1>
+          <h1 className="text-3xl font-bold text-primary">{ARABIC_ENHANCED_FINANCE_MESSAGES.FINANCE_TITLE}</h1>
           <Badge variant="outline" className="text-lg px-4 py-2">
             {formatDate(currentDate, 'dd/MM/yyyy')}
           </Badge>
@@ -241,7 +255,7 @@ export const EnhancedFinance: React.FC = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-primary">المالية المحسنة</h1>
+        <h1 className="text-3xl font-bold text-primary">{ARABIC_ENHANCED_FINANCE_MESSAGES.PAGE_TITLE}</h1>
         <Badge variant="outline" className="text-lg px-4 py-2">
           {formatDate(currentDate, 'dd/MM/yyyy')}
         </Badge>
@@ -255,14 +269,15 @@ export const EnhancedFinance: React.FC = () => {
               <SearchInput
                 value={searchTerm}
                 onChange={debouncedSearch}
-                placeholder="البحث في المعاملات..."
+                placeholder={ARABIC_ENHANCED_FINANCE_MESSAGES.SEARCH_PLACEHOLDER}
                 onClear={clearSearch}
+                aria-label={ARABIC_ENHANCED_FINANCE_MESSAGES.SEARCH_PLACEHOLDER}
               />
             </div>
             {hasActiveFilters && (
               <Button onClick={clearSearch} variant="outline" size="sm">
                 <Filter className="w-4 h-4 ml-2" />
-                مسح الفلاتر
+                {ARABIC_ENHANCED_FINANCE_MESSAGES.CLEAR_FILTERS_BUTTON}
               </Button>
             )}
           </div>
@@ -274,12 +289,12 @@ export const EnhancedFinance: React.FC = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-primary">
             <Wallet className="w-5 h-5" />
-            السيولة الحالية
+            {ARABIC_ENHANCED_FINANCE_MESSAGES.CURRENT_LIQUIDITY_TITLE}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-4">
-            <Label htmlFor="liquidity">المبلغ (ريال)</Label>
+            <Label htmlFor="liquidity">{ARABIC_ENHANCED_FINANCE_MESSAGES.AMOUNT_LABEL}</Label>
             <Input
               id="liquidity"
               type="text"
@@ -291,7 +306,7 @@ export const EnhancedFinance: React.FC = () => {
                 }
               }}
               className="max-w-xs"
-              placeholder="أدخل السيولة الحالية"
+              placeholder={ARABIC_ENHANCED_FINANCE_MESSAGES.LIQUIDITY_PLACEHOLDER}
             />
           </div>
         </CardContent>
@@ -304,7 +319,7 @@ export const EnhancedFinance: React.FC = () => {
             <div className="flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-green-600" />
               <div>
-                <p className="text-sm text-green-600">إجمالي الإيرادات</p>
+                <p className="text-sm text-green-600">{ARABIC_ENHANCED_FINANCE_MESSAGES.TOTAL_INCOMES}</p>
                 <p className="text-2xl font-bold text-green-700">{formatCurrency(calculations.totalIncomes)}</p>
               </div>
             </div>
@@ -316,7 +331,7 @@ export const EnhancedFinance: React.FC = () => {
             <div className="flex items-center gap-2">
               <DollarSign className="w-5 h-5 text-blue-600" />
               <div>
-                <p className="text-sm text-blue-600">إجمالي الإيداعات</p>
+                <p className="text-sm text-blue-600">{ARABIC_ENHANCED_FINANCE_MESSAGES.TOTAL_DEPOSITS}</p>
                 <p className="text-2xl font-bold text-blue-700">{formatCurrency(calculations.totalDeposits)}</p>
               </div>
             </div>
@@ -328,7 +343,7 @@ export const EnhancedFinance: React.FC = () => {
             <div className="flex items-center gap-2">
               <TrendingDown className="w-5 h-5 text-red-600" />
               <div>
-                <p className="text-sm text-red-600">إجمالي المصروفات</p>
+                <p className="text-sm text-red-600">{ARABIC_ENHANCED_FINANCE_MESSAGES.TOTAL_EXPENSES}</p>
                 <p className="text-2xl font-bold text-red-700">{formatCurrency(calculations.totalExpenses)}</p>
               </div>
             </div>
@@ -340,7 +355,7 @@ export const EnhancedFinance: React.FC = () => {
             <div className="flex items-center gap-2">
               <Wallet className="w-5 h-5 text-primary" />
               <div>
-                <p className="text-sm text-muted-foreground">صافي التغيير اليومي</p>
+                <p className="text-sm text-muted-foreground">{ARABIC_ENHANCED_FINANCE_MESSAGES.NET_DAILY_CHANGE}</p>
                 <p className={`text-2xl font-bold ${calculations.netChange >= 0 ? 'text-primary' : 'text-orange-700'}`}>
                   {calculations.netChange >= 0 ? '+' : ''}{formatCurrency(Math.abs(calculations.netChange))}
                 </p>
@@ -353,14 +368,14 @@ export const EnhancedFinance: React.FC = () => {
       {/* Add Entry Form */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-primary">إضافة معاملة مالية</CardTitle>
+          <CardTitle className="text-primary">{ARABIC_ENHANCED_FINANCE_MESSAGES.ADD_TRANSACTION_TITLE}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>عنوان المعاملة</Label>
+              <Label>{ARABIC_ENHANCED_FINANCE_MESSAGES.TRANSACTION_TITLE_LABEL}</Label>
               <Input
-                placeholder="مثال: بيع منتج، مصاريف مكتب..."
+                placeholder={ARABIC_ENHANCED_FINANCE_MESSAGES.TRANSACTION_TITLE_PLACEHOLDER}
                 value={newEntryTitle}
                 onChange={(e) => setNewEntryTitle(e.target.value)}
                 className={titleValidation.isValid ? '' : 'border-destructive'}
@@ -369,24 +384,24 @@ export const EnhancedFinance: React.FC = () => {
             </div>
             
             <div className="space-y-2">
-              <Label>النوع</Label>
+              <Label>{ARABIC_ENHANCED_FINANCE_MESSAGES.TYPE_LABEL}</Label>
               <Select value={newEntryType} onValueChange={(value: 'income' | 'expense' | 'deposit') => setNewEntryType(value)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="income">إيراد</SelectItem>
-                  <SelectItem value="expense">مصروف</SelectItem>
-                  <SelectItem value="deposit">إيداع</SelectItem>
+                  <SelectItem value="income">{ARABIC_ENHANCED_FINANCE_MESSAGES.TYPE_INCOME}</SelectItem>
+                  <SelectItem value="expense">{ARABIC_ENHANCED_FINANCE_MESSAGES.TYPE_EXPENSE}</SelectItem>
+                  <SelectItem value="deposit">{ARABIC_ENHANCED_FINANCE_MESSAGES.TYPE_DEPOSIT}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             
             <div className="space-y-2">
-              <Label>المبلغ</Label>
+              <Label>{ARABIC_ENHANCED_FINANCE_MESSAGES.AMOUNT_INPUT_LABEL}</Label>
               <Input
                 type="text"
-                placeholder="المبلغ بالريال"
+                placeholder={ARABIC_ENHANCED_FINANCE_MESSAGES.AMOUNT_INPUT_PLACEHOLDER}
                 value={newEntryAmount}
                 onChange={(e) => {
                   const value = formatInputNumber(e.target.value);
@@ -400,18 +415,20 @@ export const EnhancedFinance: React.FC = () => {
             </div>
             
             <div className="space-y-2">
-              <Label>الفئة</Label>
+              <Label>{ARABIC_ENHANCED_FINANCE_MESSAGES.CATEGORY_LABEL}</Label>
               <Input
-                placeholder="مثال: مبيعات، مكتب، تسويق..."
+                placeholder={ARABIC_ENHANCED_FINANCE_MESSAGES.CATEGORY_PLACEHOLDER}
                 value={newEntryCategory}
                 onChange={(e) => setNewEntryCategory(e.target.value)}
+                className={categoryValidation.isValid ? '' : 'border-destructive'}
               />
+              <ValidationMessage result={categoryValidation} />
             </div>
             
             <div className="md:col-span-2 space-y-2">
-              <Label>وصف إضافي</Label>
+              <Label>{ARABIC_ENHANCED_FINANCE_MESSAGES.ADDITIONAL_DESCRIPTION_LABEL}</Label>
               <Textarea
-                placeholder="تفاصيل إضافية عن المعاملة..."
+                placeholder={ARABIC_ENHANCED_FINANCE_MESSAGES.ADDITIONAL_DESCRIPTION_PLACEHOLDER}
                 value={newEntryDescription}
                 onChange={(e) => setNewEntryDescription(e.target.value)}
                 rows={2}
@@ -421,11 +438,11 @@ export const EnhancedFinance: React.FC = () => {
           
           <Button
             onClick={addEntry}
-            disabled={!titleValidation.isValid || !amountValidation.isValid}
+            disabled={!titleValidation.isValid || !amountValidation.isValid || !categoryValidation.isValid}
             className="bg-primary hover:bg-primary/90"
           >
             <Plus className="w-4 h-4 ml-2" />
-            إضافة معاملة
+            {ARABIC_ENHANCED_FINANCE_MESSAGES.ADD_TRANSACTION_BUTTON}
           </Button>
         </CardContent>
       </Card>
@@ -434,7 +451,7 @@ export const EnhancedFinance: React.FC = () => {
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle className="text-primary">المعاملات المالية اليومية</CardTitle>
+            <CardTitle className="text-primary">{ARABIC_ENHANCED_FINANCE_MESSAGES.DAILY_TRANSACTIONS_TITLE}</CardTitle>
             <Badge variant="secondary">
               {filteredEntries.length} من {entries.length}
             </Badge>
@@ -443,11 +460,11 @@ export const EnhancedFinance: React.FC = () => {
         <CardContent>
           {filteredEntries.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              <DollarSign className="w-12 h-12 mx-auto mb-4 opacity-50" />
+              <SearchX className="w-12 h-12 mx-auto mb-4 opacity-50" />
               <p>
                 {hasActiveFilters 
-                  ? 'لا توجد معاملات تطابق البحث'
-                  : 'لا توجد معاملات مالية مضافة بعد'
+                  ? ARABIC_ENHANCED_FINANCE_MESSAGES.NO_MATCHING_TRANSACTIONS
+                  : ARABIC_ENHANCED_FINANCE_MESSAGES.NO_TRANSACTIONS_ADDED
                 }
               </p>
             </div>
@@ -493,13 +510,13 @@ export const EnhancedFinance: React.FC = () => {
             setDeleteEntry(null);
           }
         }}
-        itemName="المعاملة المالية"
+        itemName={ARABIC_ENHANCED_FINANCE_MESSAGES.FINANCIAL_TRANSACTION_ITEM_NAME}
       />
 
       {/* Save Alert */}
       <Alert>
         <AlertDescription>
-          💾 البيانات محفوظة محلياً في المتصفح وستبقى متاحة عند تحديث الصفحة.
+          {ARABIC_ENHANCED_FINANCE_MESSAGES.SAVE_ALERT_DESCRIPTION}
         </AlertDescription>
       </Alert>
     </div>

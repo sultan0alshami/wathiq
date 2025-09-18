@@ -5,16 +5,53 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Separator } from '@/components/ui/separator';
 import { DailyData } from '@/lib/mockData';
-import { formatCurrency, formatNumber } from '@/lib/numberUtils';
+import { formatCurrency } from '@/lib/numberUtils';
 import { format } from 'date-fns';
+import { ARABIC_REPORT_VIEWER_MESSAGES } from '@/lib/arabicReportViewerMessages'; // Added import
+
+// Define a union type for possible section values
+type ReportSection = 'المالية' | 'المبيعات' | 'العمليات' | 'التسويق';
 
 interface ReportViewerDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   data: DailyData | null;
-  section: string;
+  section: ReportSection; // Use the union type here
   date: Date;
 }
+
+const BADGE_INFO_MAP = {
+  financeEntryType: {
+    income: { variant: 'default', text: ARABIC_REPORT_VIEWER_MESSAGES.FINANCE_ENTRY_TYPE_INCOME },
+    expense: { variant: 'destructive', text: ARABIC_REPORT_VIEWER_MESSAGES.FINANCE_ENTRY_TYPE_EXPENSE },
+    deposit: { variant: 'secondary', text: ARABIC_REPORT_VIEWER_MESSAGES.FINANCE_ENTRY_TYPE_DEPOSIT },
+  },
+  salesOutcome: {
+    positive: { variant: 'default', text: ARABIC_REPORT_VIEWER_MESSAGES.SALES_OUTCOME_POSITIVE },
+    negative: { variant: 'destructive', text: ARABIC_REPORT_VIEWER_MESSAGES.SALES_OUTCOME_NEGATIVE },
+    pending: { variant: 'secondary', text: ARABIC_REPORT_VIEWER_MESSAGES.SALES_OUTCOME_PENDING },
+  },
+  operationsStatus: {
+    completed: { variant: 'default', text: ARABIC_REPORT_VIEWER_MESSAGES.OPERATIONS_STATUS_COMPLETED },
+    'in-progress': { variant: 'secondary', text: ARABIC_REPORT_VIEWER_MESSAGES.OPERATIONS_STATUS_IN_PROGRESS },
+    pending: { variant: 'outline', text: ARABIC_REPORT_VIEWER_MESSAGES.OPERATIONS_STATUS_PENDING },
+  },
+  operationsPriority: {
+    high: { variant: 'destructive', text: ARABIC_REPORT_VIEWER_MESSAGES.OPERATIONS_PRIORITY_HIGH },
+    medium: { variant: 'secondary', text: ARABIC_REPORT_VIEWER_MESSAGES.OPERATIONS_PRIORITY_MEDIUM },
+    low: { variant: 'outline', text: ARABIC_REPORT_VIEWER_MESSAGES.OPERATIONS_PRIORITY_LOW },
+  },
+  marketingStatus: {
+    completed: { variant: 'default', text: ARABIC_REPORT_VIEWER_MESSAGES.MARKETING_STATUS_COMPLETED },
+    'in-progress': { variant: 'secondary', text: ARABIC_REPORT_VIEWER_MESSAGES.MARKETING_STATUS_IN_PROGRESS },
+    planned: { variant: 'outline', text: ARABIC_REPORT_VIEWER_MESSAGES.MARKETING_STATUS_PLANNED },
+  },
+  marketingPriority: {
+    high: { variant: 'destructive', text: ARABIC_REPORT_VIEWER_MESSAGES.MARKETING_PRIORITY_HIGH },
+    medium: { variant: 'secondary', text: ARABIC_REPORT_VIEWER_MESSAGES.MARKETING_PRIORITY_MEDIUM },
+    low: { variant: 'outline', text: ARABIC_REPORT_VIEWER_MESSAGES.MARKETING_PRIORITY_LOW },
+  },
+};
 
 export const ReportViewerDialog: React.FC<ReportViewerDialogProps> = ({
   open,
@@ -25,25 +62,34 @@ export const ReportViewerDialog: React.FC<ReportViewerDialogProps> = ({
 }) => {
   if (!data) return null;
 
+  // Helper function to get badge variant and text
+  const getBadgeInfo = (type: keyof typeof BADGE_INFO_MAP, statusOrPriority?: string) => {
+    const categoryMap = BADGE_INFO_MAP[type];
+    if (categoryMap && statusOrPriority && categoryMap[statusOrPriority as keyof typeof categoryMap]) {
+      return categoryMap[statusOrPriority as keyof typeof categoryMap];
+    }
+    return { variant: 'secondary', text: '' };
+  };
+
   const getSectionData = () => {
     switch (section) {
       case 'المالية':
         return {
-          title: 'تقرير المالية اليومي',
+          title: ARABIC_REPORT_VIEWER_MESSAGES.FINANCE_REPORT_TITLE,
           content: (
             <div className="space-y-4">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">ملخص مالي</CardTitle>
+                  <CardTitle className="text-lg">{ARABIC_REPORT_VIEWER_MESSAGES.FINANCE_SUMMARY_TITLE}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <p className="text-sm text-muted-foreground">السيولة الحالية</p>
+                      <p className="text-sm text-muted-foreground">{ARABIC_REPORT_VIEWER_MESSAGES.FINANCE_CURRENT_LIQUIDITY}</p>
                       <p className="text-2xl font-bold text-success">{formatCurrency(data.finance.currentLiquidity)}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground">إجمالي العمليات</p>
+                      <p className="text-sm text-muted-foreground">{ARABIC_REPORT_VIEWER_MESSAGES.FINANCE_TOTAL_OPERATIONS}</p>
                       <p className="text-2xl font-bold">{data.finance.entries.length}</p>
                     </div>
                   </div>
@@ -52,31 +98,34 @@ export const ReportViewerDialog: React.FC<ReportViewerDialogProps> = ({
               
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">العمليات المالية</CardTitle>
+                  <CardTitle className="text-lg">{ARABIC_REPORT_VIEWER_MESSAGES.FINANCE_OPERATIONS_TITLE}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="text-right">النوع</TableHead>
-                        <TableHead className="text-right">العنوان</TableHead>
-                        <TableHead className="text-right">المبلغ</TableHead>
-                        <TableHead className="text-right">الفئة</TableHead>
+                        <TableHead className="text-right">{ARABIC_REPORT_VIEWER_MESSAGES.FINANCE_TABLE_HEADER_TYPE}</TableHead>
+                        <TableHead className="text-right">{ARABIC_REPORT_VIEWER_MESSAGES.FINANCE_TABLE_HEADER_TITLE}</TableHead>
+                        <TableHead className="text-right">{ARABIC_REPORT_VIEWER_MESSAGES.FINANCE_TABLE_HEADER_AMOUNT}</TableHead>
+                        <TableHead className="text-right">{ARABIC_REPORT_VIEWER_MESSAGES.FINANCE_TABLE_HEADER_CATEGORY}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {data.finance.entries.map((entry, index) => (
-                        <TableRow key={index}>
-                          <TableCell>
-                            <Badge variant={entry.type === 'income' ? 'default' : entry.type === 'expense' ? 'destructive' : 'secondary'}>
-                              {entry.type === 'income' ? 'إيراد' : entry.type === 'expense' ? 'مصروف' : 'إيداع'}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{entry.title}</TableCell>
-                          <TableCell className="font-bold">{formatCurrency(entry.amount)}</TableCell>
-                          <TableCell>{entry.category}</TableCell>
-                        </TableRow>
-                      ))}
+                      {data.finance.entries.map((entry) => {
+                        // Using entry.id if available, otherwise fallback to a generated one or index with caution
+                        const key = entry.id || `${entry.title}-${entry.amount}`;
+                        const { variant, text } = getBadgeInfo('financeEntryType', entry.type);
+                        return (
+                          <TableRow key={key}>
+                            <TableCell>
+                              <Badge variant={variant}>{text}</Badge>
+                            </TableCell>
+                            <TableCell>{entry.title}</TableCell>
+                            <TableCell className="font-bold">{formatCurrency(entry.amount)}</TableCell>
+                            <TableCell>{entry.category}</TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </CardContent>
@@ -87,21 +136,21 @@ export const ReportViewerDialog: React.FC<ReportViewerDialogProps> = ({
       
       case 'المبيعات':
         return {
-          title: 'تقرير المبيعات اليومي',
+          title: ARABIC_REPORT_VIEWER_MESSAGES.SALES_REPORT_TITLE,
           content: (
             <div className="space-y-4">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">ملخص المبيعات</CardTitle>
+                  <CardTitle className="text-lg">{ARABIC_REPORT_VIEWER_MESSAGES.SALES_SUMMARY_TITLE}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <p className="text-sm text-muted-foreground">العملاء المتصل بهم</p>
+                      <p className="text-sm text-muted-foreground">{ARABIC_REPORT_VIEWER_MESSAGES.SALES_CUSTOMERS_CONTACTED}</p>
                       <p className="text-2xl font-bold text-primary">{data.sales.customersContacted}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground">الاجتماعات</p>
+                      <p className="text-sm text-muted-foreground">{ARABIC_REPORT_VIEWER_MESSAGES.SALES_MEETINGS}</p>
                       <p className="text-2xl font-bold">{data.sales.entries.length}</p>
                     </div>
                   </div>
@@ -110,31 +159,33 @@ export const ReportViewerDialog: React.FC<ReportViewerDialogProps> = ({
               
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">الاجتماعات</CardTitle>
+                  <CardTitle className="text-lg">{ARABIC_REPORT_VIEWER_MESSAGES.SALES_MEETINGS_TITLE}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="text-right">اسم العميل</TableHead>
-                        <TableHead className="text-right">رقم الهاتف</TableHead>
-                        <TableHead className="text-right">النتيجة</TableHead>
-                        <TableHead className="text-right">الملاحظات</TableHead>
+                        <TableHead className="text-right">{ARABIC_REPORT_VIEWER_MESSAGES.SALES_TABLE_HEADER_CUSTOMER_NAME}</TableHead>
+                        <TableHead className="text-right">{ARABIC_REPORT_VIEWER_MESSAGES.SALES_TABLE_HEADER_PHONE_NUMBER}</TableHead>
+                        <TableHead className="text-right">{ARABIC_REPORT_VIEWER_MESSAGES.SALES_TABLE_HEADER_OUTCOME}</TableHead>
+                        <TableHead className="text-right">{ARABIC_REPORT_VIEWER_MESSAGES.SALES_TABLE_HEADER_NOTES}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {data.sales.entries.map((entry, index) => (
-                        <TableRow key={index}>
-                          <TableCell className="font-medium">{entry.customerName}</TableCell>
-                          <TableCell>{entry.contactNumber}</TableCell>
-                          <TableCell>
-                            <Badge variant={entry.outcome === 'positive' ? 'default' : entry.outcome === 'negative' ? 'destructive' : 'secondary'}>
-                              {entry.outcome === 'positive' ? 'إيجابي' : entry.outcome === 'negative' ? 'سلبي' : 'في الانتظار'}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{entry.notes}</TableCell>
-                        </TableRow>
-                      ))}
+                      {data.sales.entries.map((entry) => {
+                        const key = entry.id || `${entry.customerName}-${entry.meetingDate}`;
+                        const { variant, text } = getBadgeInfo('salesOutcome', entry.outcome);
+                        return (
+                          <TableRow key={key}>
+                            <TableCell className="font-medium">{entry.customerName}</TableCell>
+                            <TableCell>{entry.contactNumber}</TableCell>
+                            <TableCell>
+                              <Badge variant={variant}>{text}</Badge>
+                            </TableCell>
+                            <TableCell>{entry.notes}</TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </CardContent>
@@ -143,7 +194,7 @@ export const ReportViewerDialog: React.FC<ReportViewerDialogProps> = ({
               {data.sales.dailySummary && (
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">ملخص اليوم</CardTitle>
+                    <CardTitle className="text-lg">{ARABIC_REPORT_VIEWER_MESSAGES.SALES_DAILY_SUMMARY_TITLE}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <p className="text-sm">{data.sales.dailySummary}</p>
@@ -156,21 +207,21 @@ export const ReportViewerDialog: React.FC<ReportViewerDialogProps> = ({
       
       case 'العمليات':
         return {
-          title: 'تقرير العمليات اليومي',
+          title: ARABIC_REPORT_VIEWER_MESSAGES.OPERATIONS_REPORT_TITLE,
           content: (
             <div className="space-y-4">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">ملخص العمليات</CardTitle>
+                  <CardTitle className="text-lg">{ARABIC_REPORT_VIEWER_MESSAGES.OPERATIONS_SUMMARY_TITLE}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <p className="text-sm text-muted-foreground">إجمالي العمليات</p>
+                      <p className="text-sm text-muted-foreground">{ARABIC_REPORT_VIEWER_MESSAGES.OPERATIONS_TOTAL_OPERATIONS}</p>
                       <p className="text-2xl font-bold text-primary">{data.operations.totalOperations}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground">المتوقع غداً</p>
+                      <p className="text-sm text-muted-foreground">{ARABIC_REPORT_VIEWER_MESSAGES.OPERATIONS_EXPECTED_TOMORROW}</p>
                       <p className="text-2xl font-bold">{data.operations.expectedNextDay}</p>
                     </div>
                   </div>
@@ -179,35 +230,36 @@ export const ReportViewerDialog: React.FC<ReportViewerDialogProps> = ({
               
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">قائمة العمليات</CardTitle>
+                  <CardTitle className="text-lg">{ARABIC_REPORT_VIEWER_MESSAGES.OPERATIONS_LIST_TITLE}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="text-right">المهمة</TableHead>
-                        <TableHead className="text-right">الحالة</TableHead>
-                        <TableHead className="text-right">المسؤول</TableHead>
-                        <TableHead className="text-right">الأولوية</TableHead>
+                        <TableHead className="text-right">{ARABIC_REPORT_VIEWER_MESSAGES.OPERATIONS_TABLE_HEADER_TASK}</TableHead>
+                        <TableHead className="text-right">{ARABIC_REPORT_VIEWER_MESSAGES.OPERATIONS_TABLE_HEADER_STATUS}</TableHead>
+                        <TableHead className="text-right">{ARABIC_REPORT_VIEWER_MESSAGES.OPERATIONS_TABLE_HEADER_OWNER}</TableHead>
+                        <TableHead className="text-right">{ARABIC_REPORT_VIEWER_MESSAGES.OPERATIONS_TABLE_HEADER_PRIORITY}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {data.operations.entries.map((entry, index) => (
-                        <TableRow key={index}>
-                          <TableCell className="font-medium">{entry.task}</TableCell>
-                          <TableCell>
-                            <Badge variant={entry.status === 'completed' ? 'default' : entry.status === 'in-progress' ? 'secondary' : 'outline'}>
-                              {entry.status === 'completed' ? 'مكتمل' : entry.status === 'in-progress' ? 'قيد التنفيذ' : 'في الانتظار'}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{entry.owner}</TableCell>
-                          <TableCell>
-                            <Badge variant={entry.priority === 'high' ? 'destructive' : entry.priority === 'medium' ? 'secondary' : 'outline'}>
-                              {entry.priority === 'high' ? 'عالية' : entry.priority === 'medium' ? 'متوسطة' : 'منخفضة'}
-                            </Badge>
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                      {data.operations.entries.map((entry) => {
+                        const key = entry.id || `${entry.task}-${entry.owner}`;
+                        const { variant: statusVariant, text: statusText } = getBadgeInfo('operationsStatus', entry.status);
+                        const { variant: priorityVariant, text: priorityText } = getBadgeInfo('operationsPriority', undefined, entry.priority);
+                        return (
+                          <TableRow key={key}>
+                            <TableCell className="font-medium">{entry.task}</TableCell>
+                            <TableCell>
+                              <Badge variant={statusVariant}>{statusText}</Badge>
+                            </TableCell>
+                            <TableCell>{entry.owner}</TableCell>
+                            <TableCell>
+                              <Badge variant={priorityVariant}>{priorityText}</Badge>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </CardContent>
@@ -218,21 +270,21 @@ export const ReportViewerDialog: React.FC<ReportViewerDialogProps> = ({
       
       case 'التسويق':
         return {
-          title: 'تقرير التسويق اليومي',
+          title: ARABIC_REPORT_VIEWER_MESSAGES.MARKETING_REPORT_TITLE,
           content: (
             <div className="space-y-4">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">ملخص التسويق</CardTitle>
+                  <CardTitle className="text-lg">{ARABIC_REPORT_VIEWER_MESSAGES.MARKETING_SUMMARY_TITLE}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <p className="text-sm text-muted-foreground">إجمالي المهام</p>
+                      <p className="text-sm text-muted-foreground">{ARABIC_REPORT_VIEWER_MESSAGES.MARKETING_TOTAL_TASKS}</p>
                       <p className="text-2xl font-bold text-primary">{data.marketing.tasks.length}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground">المهام المكتملة</p>
+                      <p className="text-sm text-muted-foreground">{ARABIC_REPORT_VIEWER_MESSAGES.MARKETING_COMPLETED_TASKS}</p>
                       <p className="text-2xl font-bold text-success">{data.marketing.tasks.filter(t => t.status === 'completed').length}</p>
                     </div>
                   </div>
@@ -241,35 +293,36 @@ export const ReportViewerDialog: React.FC<ReportViewerDialogProps> = ({
               
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">المهام</CardTitle>
+                  <CardTitle className="text-lg">{ARABIC_REPORT_VIEWER_MESSAGES.MARKETING_TASKS_TITLE}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="text-right">العنوان</TableHead>
-                        <TableHead className="text-right">الحالة</TableHead>
-                        <TableHead className="text-right">المسؤول</TableHead>
-                        <TableHead className="text-right">الأولوية</TableHead>
+                        <TableHead className="text-right">{ARABIC_REPORT_VIEWER_MESSAGES.MARKETING_TABLE_HEADER_TITLE}</TableHead>
+                        <TableHead className="text-right">{ARABIC_REPORT_VIEWER_MESSAGES.MARKETING_TABLE_HEADER_STATUS}</TableHead>
+                        <TableHead className="text-right">{ARABIC_REPORT_VIEWER_MESSAGES.MARKETING_TABLE_HEADER_ASSIGNEE}</TableHead>
+                        <TableHead className="text-right">{ARABIC_REPORT_VIEWER_MESSAGES.MARKETING_TABLE_HEADER_PRIORITY}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {data.marketing.tasks.map((task, index) => (
-                        <TableRow key={index}>
-                          <TableCell className="font-medium">{task.title}</TableCell>
-                          <TableCell>
-                            <Badge variant={task.status === 'completed' ? 'default' : task.status === 'in-progress' ? 'secondary' : 'outline'}>
-                              {task.status === 'completed' ? 'مكتمل' : task.status === 'in-progress' ? 'قيد التنفيذ' : 'مخطط'}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{task.assignee}</TableCell>
-                          <TableCell>
-                            <Badge variant={task.priority === 'high' ? 'destructive' : task.priority === 'medium' ? 'secondary' : 'outline'}>
-                              {task.priority === 'high' ? 'عالية' : task.priority === 'medium' ? 'متوسطة' : 'منخفضة'}
-                            </Badge>
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                      {data.marketing.tasks.map((task) => {
+                        const key = task.id || `${task.title}-${task.assignee}`;
+                        const { variant: statusVariant, text: statusText } = getBadgeInfo('marketingStatus', task.status);
+                        const { variant: priorityVariant, text: priorityText } = getBadgeInfo('marketingPriority', undefined, task.priority);
+                        return (
+                          <TableRow key={key}>
+                            <TableCell className="font-medium">{task.title}</TableCell>
+                            <TableCell>
+                              <Badge variant={statusVariant}>{statusText}</Badge>
+                            </TableCell>
+                            <TableCell>{task.assignee}</TableCell>
+                            <TableCell>
+                              <Badge variant={priorityVariant}>{priorityText}</Badge>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </CardContent>
@@ -279,9 +332,10 @@ export const ReportViewerDialog: React.FC<ReportViewerDialogProps> = ({
         };
       
       default:
+        console.warn(`Unknown section provided to ReportViewerDialog: ${section}`);
         return {
-          title: 'تقرير غير محدد',
-          content: <p>لا توجد بيانات متاحة لهذا القسم</p>
+          title: ARABIC_REPORT_VIEWER_MESSAGES.UNDEFINED_REPORT_TITLE,
+          content: <p>{ARABIC_REPORT_VIEWER_MESSAGES.NO_DATA_AVAILABLE}</p>
         };
     }
   };
@@ -294,7 +348,7 @@ export const ReportViewerDialog: React.FC<ReportViewerDialogProps> = ({
         <DialogHeader>
           <DialogTitle>{sectionData.title}</DialogTitle>
           <DialogDescription>
-            تاريخ التقرير: {format(date, 'dd/MM/yyyy')}
+            {ARABIC_REPORT_VIEWER_MESSAGES.REPORT_DATE_PREFIX} {format(date, 'dd/MM/yyyy')}
           </DialogDescription>
         </DialogHeader>
         <Separator />

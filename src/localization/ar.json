@@ -1,0 +1,172 @@
+{
+  "sales": {
+    "title": "المبيعات",
+    "header": {
+      "today": "اليوم"
+    },
+    "quickStats": {
+      "customersContacted": "العملاء المتصلين",
+      "meetingsToday": "الاجتماعات اليوم",
+      "completedMeetings": "الاجتماعات المكتملة",
+      "conversionRate": "معدل التحويل"
+    },
+    "newCustomersContacted": {
+      "cardTitle": "العملاء الجدد المتصلين",
+      "label": "عدد العملاء الجدد",
+      "placeholder": "أدخل عدد العملاء"
+    },
+    "dailyMeetings": {
+      "cardTitle": "الاجتماعات اليومية",
+      "addMeetingForm": {
+        "customerName": {
+          "label": "اسم العميل",
+          "placeholder": "اسم العميل"
+        },
+        "contactNumber": {
+          "label": "رقم الهاتف",
+          "placeholder": "رقم التواصل"
+        },
+        "meetingTime": {
+          "label": "توقيت الاجتماع"
+        },
+        "outcome": {
+          "label": "النتيجة",
+          "placeholder": "اختر النتيجة",
+          "options": {
+            "pending": "قيد الانتظار",
+            "positive": "إيجابية",
+            "negative": "سلبية"
+          }
+        },
+        "notes": {
+          "label": "ملاحظات",
+          "placeholder": "ملاحظات الاجتماع..."
+        },
+        "button": "إضافة اجتماع",
+        "toast": {
+          "success": {
+            "title": "تم إضافة الاجتماع",
+            "description": "تم حفظ الاجتماع بنجاح"
+          },
+          "error": {
+            "title": "خطأ",
+            "description": "حدث خطأ أثناء حفظ الاجتماع"
+          }
+        }
+      },
+      "meetingList": {
+        "phone": "رقم الهاتف",
+        "time": "التوقيت",
+        "date": "تاريخ الاجتماع",
+        "notes": "الملاحظات",
+        "outcome": {
+          "positive": "إيجابية",
+          "negative": "سلبية",
+          "pending": "قيد الانتظار"
+        },
+        "deleteButton": "حذف",
+        "deleteConfirmation": {
+          "title": "تأكيد حذف الاجتماع",
+          "description": "هل أنت متأكد أنك تريد حذف هذا الاجتماع؟ لا يمكن التراجع عن هذا الإجراء."
+        },
+        "toast": {
+          "success": {
+            "title": "تم حذف الاجتماع",
+            "description": "تم حذف الاجتماع بنجاح"
+          },
+          "error": {
+            "title": "خطأ",
+            "description": "حدث خطأ أثناء حذف الاجتماع"
+          }
+        }
+      }
+    },
+    "dailySummary": {
+      "cardTitle": "ملخص اليوم",
+      "placeholder": "اكتب ملخص أنشطة المبيعات لهذا اليوم...",
+      "toast": {
+        "error": {
+          "title": "خطأ",
+          "description": "حدث خطأ أثناء حفظ الملخص"
+        }
+      }
+    },
+    "toast": {
+      "dataSaveError": {
+        "title": "خطأ",
+        "description": "حدث خطأ أثناء حفظ البيانات"
+      }
+    }
+  },
+  "dateLocale": "ar-SA",
+  "reports": {
+    "title": "التقارير",
+    "description": "إدارة وعرض التقارير اليومية",
+    "header": {
+      "filterSection": "فلترة القسم",
+      "allSections": "الكل",
+      "filterStatus": "فلترة الحالة",
+      "allStatuses": "كل الحالات",
+      "completed": "مكتملة",
+      "pending": "معلقة",
+      "bulkDownload": "تحميل مجمع"
+    },
+    "toast": {
+      "downloadStart": "بدء تحميل",
+      "downloadInProgress": "جارٍ تجهيز ملفك للتحميل...",
+      "downloadSuccess": "تم التحميل بنجاح",
+      "downloadSuccessDescription": "تم تحميل {reportTitle} بنجاح",
+      "downloadError": "خطأ في التحميل",
+      "downloadErrorDescription": "حدث خطأ أثناء تحميل {reportTitle}. يرجى المحاولة مرة أخرى. "
+    },
+    "reportTitles": {
+      "finance": "تقرير المالية اليومي",
+      "sales": "تقرير المبيعات اليومي",
+      "operations": "تقرير العمليات اليومي",
+      "marketing": "تقرير التسويق اليومي",
+      "merged": "التقرير المجمع اليومي"
+    },
+    "reportSections": {
+      "finance": "المالية",
+      "sales": "المبيعات",
+      "operations": "العمليات",
+      "marketing": "التسويق"
+    },
+    "status": {
+      "completed": "مكتمل",
+      "pending": "معلق"
+    },
+    "submittedBy": {
+      "finance": "النظام المالي",
+      "sales": "نظام المبيعات",
+      "operations": "نظام العمليات",
+      "marketing": "نظام التسويق",
+      "system": "النظام"
+    },
+    "statsCards": {
+      "totalReports": "إجمالي التقارير",
+      "today": "لهذا اليوم",
+      "completed": "المكتملة",
+      "completionRate": "معدل الإنجاز",
+      "pending": "المعلقة",
+      "remaining": "متبقية",
+      "dataSize": "حجم البيانات",
+      "kb": "كيلوبايت",
+      "mb": "ميجابايت"
+    },
+    "reportsTable": {
+      "title": "تقارير اليوم",
+      "description": "قائمة بجميع التقارير المقدمة لهذا اليوم",
+      "tableHeaders": {
+        "reportName": "اسم التقرير",
+        "section": "القسم",
+        "status": "الحالة",
+        "submittedBy": "مقدم بواسطة",
+        "submissionTime": "وقت التسليم",
+        "size": "الحجم",
+        "actions": "الإجراءات"
+      },
+      "noReports": "لا توجد تقارير مضافة بعد"
+    }
+  }
+}

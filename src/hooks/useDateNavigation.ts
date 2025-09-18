@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { format, subDays, addDays } from 'date-fns';
+import { useState, useCallback } from 'react';
+import { addDays, subDays, isSameDay, startOfDay } from 'date-fns';
 
 export interface DateNavigationHook {
   currentDate: Date;
@@ -11,6 +11,16 @@ export interface DateNavigationHook {
   formatDate: (date: Date, formatStr?: string) => string;
   isToday: (date: Date) => boolean;
 }
+
+export const formatDate = (date: Date, formatStr: string = 'yyyy-MM-dd'): string => {
+  return date.toISOString().slice(0, 10); // Simplified format for now
+};
+
+// Refactor isToday to compare date components directly
+export const isToday = (date: Date): boolean => {
+  const today = startOfDay(new Date());
+  return isSameDay(date, today);
+};
 
 export const useDateNavigation = (): DateNavigationHook => {
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
@@ -36,14 +46,9 @@ export const useDateNavigation = (): DateNavigationHook => {
     setCurrentDate(prev => addDays(prev, 1));
   };
 
-  const formatDate = (date: Date, formatStr: string = 'yyyy-MM-dd'): string => {
-    return format(date, formatStr);
-  };
-
-  const isToday = (date: Date): boolean => {
-    const today = new Date();
-    return formatDate(date) === formatDate(today);
-  };
+  const nextDay = useCallback(() => {
+    setCurrentDate(prevDate => addDays(prevDate, 1));
+  }, []);
 
   return {
     currentDate,

@@ -40,6 +40,7 @@ export interface MarketingTask {
   dueDate: Date;
   description: string;
   priority: 'low' | 'medium' | 'high';
+  isCustomerRelated?: boolean;
 }
 
 export interface Customer {
@@ -105,7 +106,16 @@ export interface SupplierDocument {
 // Generate mock data for a specific date
 export const generateMockDataForDate = (date: Date): DailyData => {
   const dateStr = format(date, 'yyyy-MM-dd');
-  
+
+  // Helper to add random time offsets within the same day (maintaining the same date)
+  const getRandomTime = (baseDate: Date) => {
+    const newDate = new Date(baseDate);
+    newDate.setHours(Math.floor(Math.random() * 24));
+    newDate.setMinutes(Math.floor(Math.random() * 60));
+    newDate.setSeconds(Math.floor(Math.random() * 60));
+    return newDate;
+  };
+
   return {
     date: dateStr,
     finance: {
@@ -117,7 +127,7 @@ export const generateMockDataForDate = (date: Date): DailyData => {
           title: 'مبيعات منتجات تقنية متطورة للشركات الناشئة',
           amount: parseFloat((15000 + Math.random() * 5000).toFixed(2)),
           category: 'sales',
-          date: date,
+          date: getRandomTime(date),
           description: 'إيرادات من بيع المنتجات التقنية المتطورة والحلول الرقمية المبتكرة للشركات الناشئة والمؤسسات الصغيرة والمتوسطة في المملكة العربية السعودية'
         },
         {
@@ -126,7 +136,7 @@ export const generateMockDataForDate = (date: Date): DailyData => {
           title: 'مصاريف المكتب والمرافق التشغيلية',
           amount: parseFloat((2000 + Math.random() * 1000).toFixed(2)),
           category: 'office',
-          date: date,
+          date: getRandomTime(date),
           description: 'مصاريف تشغيلية يومية تشمل الكهرباء والماء والإنترنت وصيانة المعدات والمكاتب الإدارية'
         },
         {
@@ -135,7 +145,7 @@ export const generateMockDataForDate = (date: Date): DailyData => {
           title: 'خدمات استشارية وتدريبية متخصصة',
           amount: parseFloat((8000 + Math.random() * 3000).toFixed(2)),
           category: 'consulting',
-          date: date,
+          date: getRandomTime(date),
           description: 'إيرادات من تقديم الخدمات الاستشارية والتدريبية في مجال التكنولوجيا والإدارة للعملاء'
         },
         {
@@ -144,7 +154,7 @@ export const generateMockDataForDate = (date: Date): DailyData => {
           title: 'رواتب ومكافآت الموظفين والفريق',
           amount: parseFloat((12000 + Math.random() * 2000).toFixed(2)),
           category: 'salaries',
-          date: date,
+          date: getRandomTime(date),
           description: 'رواتب شهرية ومكافآت أداء للموظفين والمطورين والمستشارين العاملين في الشركة'
         },
         {
@@ -153,7 +163,7 @@ export const generateMockDataForDate = (date: Date): DailyData => {
           title: 'إيداع من العميل الذهبي الرئيسي',
           amount: parseFloat((25000 + Math.random() * 5000).toFixed(2)),
           category: 'client-deposit',
-          date: date,
+          date: getRandomTime(date),
           description: 'إيداع مقدم من العميل الذهبي لتمويل المشروع الجديد والخدمات المستقبلية'
         }
       ]
@@ -165,7 +175,7 @@ export const generateMockDataForDate = (date: Date): DailyData => {
           id: `sales-${dateStr}-1`,
           customerName: 'شركة الأمل التجارية للحلول التقنية المتقدمة',
           contactNumber: '+966501234567',
-          meetingDate: date,
+          meetingDate: getRandomTime(date),
           meetingTime: '10:00',
           outcome: 'positive',
           notes: 'اجتماع ناجح ومثمر مع إمكانية التعاون طويل المدى في مشاريع التحول الرقمي والحلول التقنية المبتكرة. العميل مهتم بالحلول الشاملة.',
@@ -175,7 +185,7 @@ export const generateMockDataForDate = (date: Date): DailyData => {
           id: `sales-${dateStr}-2`,
           customerName: 'مؤسسة الرياض للتطوير والاستثمار',
           contactNumber: '+966502345678',
-          meetingDate: date,
+          meetingDate: getRandomTime(date),
           meetingTime: '14:30',
           outcome: 'pending',
           notes: 'اجتماع أولي لمناقشة إمكانية تطوير منصة رقمية متكاملة لإدارة الاستثمارات. يحتاج متابعة خلال أسبوع.',
@@ -185,7 +195,7 @@ export const generateMockDataForDate = (date: Date): DailyData => {
           id: `sales-${dateStr}-3`,
           customerName: 'شركة النخيل الذكية للتكنولوجيا',
           contactNumber: '+966503456789',
-          meetingDate: date,
+          meetingDate: getRandomTime(date),
           meetingTime: '16:00',
           outcome: 'negative',
           notes: 'العميل غير مهتم حالياً بسبب الميزانية المحدودة، لكن أبدى اهتماماً مستقبلياً. يُنصح بالمتابعة خلال ٦ أشهر.',
@@ -223,18 +233,20 @@ export const generateMockDataForDate = (date: Date): DailyData => {
           title: 'إنشاء محتوى وسائل التواصل',
           status: 'completed',
           assignee: 'سارة التسويق',
-          dueDate: date,
+          dueDate: getRandomTime(date),
           description: 'إنشاء محتوى لمنصات التواصل الاجتماعي',
-          priority: 'high'
+          priority: 'high',
+          isCustomerRelated: Math.random() > 0.5,
         },
         {
           id: `mkt-${dateStr}-2`,
           title: 'تحليل البيانات الأسبوعية',
           status: 'in-progress',
           assignee: 'محمد التحليل',
-          dueDate: date,
+          dueDate: getRandomTime(date),
           description: 'تحليل أداء الحملات التسويقية',
-          priority: 'medium'
+          priority: 'medium',
+          isCustomerRelated: Math.random() > 0.5,
         }
       ],
       yesterdayDone: [
@@ -254,7 +266,7 @@ export const generateMockDataForDate = (date: Date): DailyData => {
         name: 'خالد أحمد المطيري التميمي',
         phone: '+966501234567',
         email: 'khalid.almutairi@almumayyiztech.com',
-        arrivalDate: date,
+        arrivalDate: getRandomTime(date),
         contacted: true,
         cameBack: false,
         notes: 'عميل مهتم بالمنتجات التقنية المتطورة وحلول الذكاء الاصطناعي للشركات الناشئة. لديه خبرة واسعة في التكنولوجيا المالية.',
@@ -265,7 +277,7 @@ export const generateMockDataForDate = (date: Date): DailyData => {
         name: 'فاطمة محمد السعيد الأحمدي',
         phone: '+966507654321',
         email: 'fatima.alsaeed@riyadhinvest.sa',
-        arrivalDate: date,
+        arrivalDate: getRandomTime(date),
         contacted: false,
         cameBack: true,
         notes: 'عميل سابق، زيارة متابعة لمناقشة توسيع نطاق التعاون في مشاريع التحول الرقمي للمؤسسات المالية الكبيرة.',
@@ -276,7 +288,7 @@ export const generateMockDataForDate = (date: Date): DailyData => {
         name: 'عبدالرحمن سعود الغامدي',
         phone: '+966508765432',
         email: 'abdulrahman@smartsolutions.sa',
-        arrivalDate: date,
+        arrivalDate: getRandomTime(date),
         contacted: true,
         cameBack: false,
         notes: 'مدير تقني مهتم بحلول إنترنت الأشياء والمدن الذكية. يبحث عن شراكة استراتيجية طويلة المدى.',
@@ -287,7 +299,7 @@ export const generateMockDataForDate = (date: Date): DailyData => {
         name: 'نورا عبدالله الدوسري',
         phone: '+966509876543',
         email: 'nora.aldosari@innovatehub.sa',
-        arrivalDate: date,
+        arrivalDate: getRandomTime(date),
         contacted: true,
         cameBack: true,
         notes: 'رائدة أعمال في مجال التقنية النسائية، مهتمة بالاستثمار في منصات التجارة الإلكترونية والحلول المبتكرة للمرأة العاملة.',
@@ -304,7 +316,7 @@ export const generateMockDataForDate = (date: Date): DailyData => {
         address: 'الرياض، المملكة العربية السعودية',
         category: 'مواد خام',
         status: 'active',
-        registrationDate: date,
+        registrationDate: getRandomTime(date),
         notes: 'مورد موثوق للمواد الأساسية',
         documents: []
       }
@@ -320,24 +332,34 @@ export const getDataForDate = (date: Date): DailyData => {
   try {
     const stored = localStorage.getItem(storageKey);
     if (stored) {
-      const data = JSON.parse(stored);
+      const data = JSON.parse(stored) as DailyData;
       // Convert date strings back to Date objects
-      data.finance.entries = data.finance.entries.map((entry: any) => ({
+      data.finance.entries = data.finance.entries.map((entry: Omit<FinanceEntry, 'date'> & { date: string }) => ({
         ...entry,
         date: new Date(entry.date)
       }));
-      data.sales.entries = data.sales.entries.map((entry: any) => ({
+      data.sales.entries = data.sales.entries.map((entry: Omit<SalesEntry, 'meetingDate'> & { meetingDate: string }) => ({
         ...entry,
         meetingDate: new Date(entry.meetingDate)
       }));
-      data.marketing.tasks = data.marketing.tasks.map((task: any) => ({
+      data.marketing.tasks = data.marketing.tasks.map((task: Omit<MarketingTask, 'dueDate'> & { dueDate: string }) => ({
         ...task,
         dueDate: new Date(task.dueDate)
       }));
-      data.customers = data.customers.map((customer: any) => ({
+      data.customers = data.customers.map((customer: Omit<Customer, 'arrivalDate'> & { arrivalDate: string }) => ({
         ...customer,
         arrivalDate: new Date(customer.arrivalDate)
       }));
+      if (data.suppliers) {
+        data.suppliers = data.suppliers.map((supplier: Omit<Supplier, 'registrationDate' | 'documents'> & { registrationDate: string, documents: (Omit<SupplierDocument, 'uploadDate'> & { uploadDate: string })[] }) => ({
+          ...supplier,
+          registrationDate: new Date(supplier.registrationDate),
+          documents: supplier.documents.map(doc => ({
+            ...doc,
+            uploadDate: new Date(doc.uploadDate)
+          }))
+        }));
+      }
       return data;
     }
   } catch (error) {
@@ -363,10 +385,10 @@ export const saveDataForDate = (date: Date, data: DailyData) => {
 };
 
 // Update specific section data
-export const updateSectionData = (
+export const updateSectionData = <K extends keyof Omit<DailyData, 'date'>>(
   date: Date, 
-  section: keyof Omit<DailyData, 'date'>, 
-  data: any
+  section: K, 
+  data: DailyData[K]
 ) => {
   const currentData = getDataForDate(date);
   const updatedData = {
