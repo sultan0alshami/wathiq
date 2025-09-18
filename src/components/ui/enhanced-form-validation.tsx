@@ -109,6 +109,11 @@ export const ValidationRules = {
     message
   }),
 
+  min: (min: number, message?: string): ValidationRule => ({
+    validate: (value) => !isNaN(Number(value)) && Number(value) >= min,
+    message: message || `يجب أن لا يقل عن ${min}`
+  }),
+
   positiveNumber: (message = 'يجب أن يكون رقم موجب'): ValidationRule => ({
     validate: (value) => !isNaN(Number(value)) && Number(value) > 0,
     message

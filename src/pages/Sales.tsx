@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { useFormValidation, ValidationMessage } from '@/components/ui/enhanced-form-validation';
+import { useFormValidation, ValidationMessage, ValidationRules } from '@/components/ui/enhanced-form-validation';
 import { DeleteConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { CalendarDays, ClipboardCheck } from 'lucide-react';
 import { KPICardSkeleton, TableSkeleton } from '@/components/ui/loading-skeleton';
@@ -42,7 +42,7 @@ export const Sales: React.FC = () => {
   const [newMeetingTime, setNewMeetingTime] = useState('');
   const [newMeetingOutcome, setNewMeetingOutcome] = useState<'positive' | 'negative' | 'pending'>('pending');
 
-  const { validateField, ValidationRules } = useFormValidation();
+  const { validateField } = useFormValidation();
 
   // Individual validation states
   const [customerNameValidation, setCustomerNameValidation] = useState(validateField('', [ValidationRules.required(ARABIC_SALES_MESSAGES.MEETING_TITLE_REQUIRED), ValidationRules.minLength(3, ARABIC_SALES_MESSAGES.MEETING_TITLE_MIN_LENGTH)]));

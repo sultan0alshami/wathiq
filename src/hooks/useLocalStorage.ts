@@ -61,7 +61,7 @@ export const useDataWithDate = <T>(
   setDataLoading?: (isLoading: boolean) => void // Add setDataLoading callback
 ) => {
   const dateKey = getDateStorageKey(baseKey, currentDate);
-  const [value, setStoredValue, clearValue] = useLocalStorage(dateKey, initialValue);
+  const { value, setValue: setStoredValue, clearValue } = useLocalStorage(dateKey, initialValue);
 
   // When currentDate changes, we need to potentially load new data
   useEffect(() => {
