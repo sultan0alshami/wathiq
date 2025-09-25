@@ -3,13 +3,14 @@ import { format } from 'date-fns';
 import { DailyData } from '@/lib/mockData';
 import { formatCurrency, formatNumber } from '@/lib/numberUtils';
 import { ar } from 'date-fns/locale';
-import reshape from 'arabic-reshaper'; // Import arabic-reshaper
-import bidi from 'bidi-js'; // Import bidi-js as default
+import ArabicReshaper from 'arabic-reshaper'; // Import arabic-reshaper
+import bidiFactory from 'bidi-js'; // Import bidi-js as default
 
 // Import font files directly (ensure these paths are correct in your project)
 import DubaiRegular from './fonts/ArbFONTS-Dubai-Regular.otf';
 import DubaiBold from './fonts/ArbFONTS-Dubai-Bold.ttf';
 
+const bidi = bidiFactory(); // Instantiate bidi-js
 
 export class ArabicPDFService {
   private static arabicFontLoaded = false;
@@ -26,8 +27,9 @@ export class ArabicPDFService {
 
   // Enhanced Arabic text processing
   private static processText(text: string): string {
-    const reshapedText = reshape.reshape(text);
-    return bidi.getBidiText(reshapedText, { unicode: true, reverse: true }); // Apply Bidi algorithm using default import
+    const reshapedText = ArabicReshaper.convertArabic(text);
+    const embedLevelsResult = bidi.getEmbeddingLevels(reshapedText); // Get embedding levels
+    return bidi.getReorderedString(reshapedText, embedLevelsResult, 0, reshapedText.length - 1); // Get reordered string
   }
 
   // Initialize enhanced Arabic font support
@@ -35,10 +37,11 @@ export class ArabicPDFService {
     if (this.arabicFontLoaded) return;
 
     const pdf = new jsPDF(); // Temporary instance to add fonts
-    pdf.addFileToVFS('ArbFONTS-Dubai-Regular.otf', DubaiRegular);
-    pdf.addFont('ArbFONTS-Dubai-Regular.otf', 'Dubai', 'normal', 'Identity-H'); // Added 'Identity-H'
-    pdf.addFileToVFS('ArbFONTS-Dubai-Bold.ttf', DubaiBold);
-    pdf.addFont('ArbFONTS-Dubai-Bold.ttf', 'Dubai', 'bold', 'Identity-H'); // Added 'Identity-H'
+    // Temporarily commenting out font loading to isolate bidi-js issue
+    // pdf.addFileToVFS('ArbFONTS-Dubai-Regular.otf', DubaiRegular);
+    // pdf.addFont('ArbFONTS-Dubai-Regular.otf', 'Dubai', 'normal', 'Identity-H'); // Added 'Identity-H'
+    // pdf.addFileToVFS('ArbFONTS-Dubai-Bold.ttf', DubaiBold);
+    // pdf.addFont('ArbFONTS-Dubai-Bold.ttf', 'Dubai', 'bold', 'Identity-H'); // Added 'Identity-H'
     this.arabicFontLoaded = true;
   }
 
@@ -50,7 +53,8 @@ export class ArabicPDFService {
     }
 
     const pdf = new jsPDF();
-    pdf.setFont('Dubai', 'normal'); // Set the font family for the entire document
+    // Temporarily commenting out font setting
+    // pdf.setFont('Dubai', 'normal'); // Set the font family for the entire document
     pdf.setR2L(true);
     pdf.setFontSize(12);
 
@@ -82,7 +86,8 @@ export class ArabicPDFService {
     // Sales section
     if (yPosition > pageHeight - 200) {
       pdf.addPage();
-      pdf.setFont('Dubai', 'normal'); // Re-apply font after adding page
+      // Temporarily commenting out font setting
+      // pdf.setFont('Dubai', 'normal'); // Re-apply font after adding page
       yPosition = 60;
     }
     yPosition = this.addSalesSection(pdf, data, pageWidth, margin, yPosition);
@@ -91,7 +96,8 @@ export class ArabicPDFService {
     // Operations section
     if (yPosition > pageHeight - 200) {
       pdf.addPage();
-      pdf.setFont('Dubai', 'normal'); // Re-apply font after adding page
+      // Temporarily commenting out font setting
+      // pdf.setFont('Dubai', 'normal'); // Re-apply font after adding page
       yPosition = 60;
     }
     yPosition = this.addOperationsSection(pdf, data, pageWidth, margin, yPosition);
@@ -100,7 +106,8 @@ export class ArabicPDFService {
     // Marketing section
     if (yPosition > pageHeight - 200) {
       pdf.addPage();
-      pdf.setFont('Dubai', 'normal'); // Re-apply font after adding page
+      // Temporarily commenting out font setting
+      // pdf.setFont('Dubai', 'normal'); // Re-apply font after adding page
       yPosition = 60;
     }
     yPosition = this.addMarketingSection(pdf, data, pageWidth, margin, yPosition);
@@ -120,7 +127,8 @@ export class ArabicPDFService {
     // Main title
     pdf.setTextColor(this.whiteColor[0], this.whiteColor[1], this.whiteColor[2]);
     pdf.setFontSize(32);
-    pdf.setFont('Dubai', 'bold');
+    // Temporarily commenting out font setting
+    // pdf.setFont('Dubai', 'bold');
 
     const title = this.processText('تقرير واثق اليومي الشامل');
     pdf.text(title, pageWidth - margin - 20, yPosition + 20, {
@@ -136,7 +144,8 @@ export class ArabicPDFService {
 
     // Reset text color
     pdf.setTextColor(this.textColor[0], this.textColor[1], this.textColor[2]);
-    pdf.setFont('Dubai', 'normal');
+    // Temporarily commenting out font setting
+    // pdf.setFont('Dubai', 'normal');
 
     yPosition += 10;
     return yPosition;
@@ -180,7 +189,8 @@ export class ArabicPDFService {
     data.finance.entries.forEach((entry, index) => {
       if (yPosition > 700) {
         pdf.addPage();
-        pdf.setFont('Amiri', 'normal'); // Re-apply font after adding page
+        // Temporarily commenting out font setting
+        // pdf.setFont('Amiri', 'normal'); // Re-apply font after adding page
         yPosition = 60;
       }
 
@@ -244,7 +254,8 @@ export class ArabicPDFService {
     data.sales.entries.forEach((entry, index) => {
       if (yPosition > 650) {
         pdf.addPage();
-        pdf.setFont('Amiri', 'normal'); // Re-apply font after adding page
+        // Temporarily commenting out font setting
+        // pdf.setFont('Amiri', 'normal'); // Re-apply font after adding page
         yPosition = 60;
       }
 
@@ -296,7 +307,8 @@ export class ArabicPDFService {
     data.operations.entries.forEach((entry, index) => {
       if (yPosition > 700) {
         pdf.addPage();
-        pdf.setFont('Amiri', 'normal'); // Re-apply font after adding page
+        // Temporarily commenting out font setting
+        // pdf.setFont('Amiri', 'normal'); // Re-apply font after adding page
         yPosition = 60;
       }
 
@@ -339,7 +351,8 @@ export class ArabicPDFService {
     data.marketing.tasks.forEach((task, index) => {
       if (yPosition > 700) {
         pdf.addPage();
-        pdf.setFont('Amiri', 'normal'); // Re-apply font after adding page
+        // Temporarily commenting out font setting
+        // pdf.setFont('Amiri', 'normal'); // Re-apply font after adding page
         yPosition = 60;
       }
 
@@ -375,7 +388,8 @@ export class ArabicPDFService {
     // Title text
     pdf.setTextColor(this.whiteColor[0], this.whiteColor[1], this.whiteColor[2]);
     pdf.setFontSize(20);
-    pdf.setFont('Amiri', 'bold');
+    // Temporarily commenting out font setting
+    // pdf.setFont('Amiri', 'bold');
     const titleText = this.processText(title);
     pdf.text(titleText, pageWidth - margin - 20, yPosition + 20, { align: 'right' });
 
@@ -385,14 +399,16 @@ export class ArabicPDFService {
     pdf.line(margin, yPosition + 32, pageWidth - margin, yPosition + 32);
 
     pdf.setTextColor(this.textColor[0], this.textColor[1], this.textColor[2]);
-    pdf.setFont('Amiri', 'normal');
+    // Temporarily commenting out font setting
+    // pdf.setFont('Amiri', 'normal');
 
     return yPosition + 35;
   }
 
   // Enhanced footer
   private static addEnhancedFooter(pdf: jsPDF, date: Date, pageWidth: number, pageHeight: number, margin: number) {
-    pdf.setFont('Dubai', 'normal');
+    // Temporarily commenting out font setting
+    // pdf.setFont('Dubai', 'normal');
     pdf.setFontSize(10);
     pdf.setTextColor(this.mutedColor[0], this.mutedColor[1], this.mutedColor[2]);
     const footerText = this.processText(`تم إنشاء هذا التقرير بواسطة نظام واثق - ${format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ar })}`);
