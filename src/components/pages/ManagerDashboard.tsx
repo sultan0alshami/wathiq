@@ -25,6 +25,7 @@ import { useToast } from '@/hooks/use-toast';
 import { formatCurrency, formatChartNumber } from '@/lib/numberUtils';
 import { ReportViewerDialog } from '@/components/ui/report-viewer-dialog';
 import { format, parseISO } from 'date-fns';
+import { ReportSectionType } from '@/pages/Reports';
 
 export const ManagerDashboard: React.FC = () => {
   const { currentDate, formatDate } = useDateContext();
@@ -32,12 +33,12 @@ export const ManagerDashboard: React.FC = () => {
   const [reportDialog, setReportDialog] = useState<{
     open: boolean;
     data: DailyData | null;
-    section: string;
+    section: ReportSectionType | 'merged';
     date: Date | null;
   }>({
     open: false, 
     data: null, 
-    section: '', 
+    section: 'finance', 
     date: null 
   });
   const { 
@@ -152,12 +153,8 @@ export const ManagerDashboard: React.FC = () => {
           </CardHeader>
           <CardContent className="pt-0">
             <div className="text-2xl font-bold text-wathiq-primary">
-              {formatCurrency(currentLiquidity)}
+              {formatCurrency(currentLiquidity)} ريال سعودي <TrendingUp className="w-3 h-3 inline mr-1 text-success" />
             </div>
-            <p className="text-xs text-muted-foreground">
-              ريال سعودي
-              <TrendingUp className="w-3 h-3 inline mr-1 text-success" />
-            </p>
           </CardContent>
         </Card>
 
@@ -179,9 +176,8 @@ export const ManagerDashboard: React.FC = () => {
           </CardHeader>
           <CardContent className="pt-0">
             <div className="text-2xl font-bold text-success">
-              {formatCurrency(dailyIncome)}
+              {formatCurrency(dailyIncome)} ريال سعودي
             </div>
-            <p className="text-xs text-muted-foreground">ريال سعودي</p>
           </CardContent>
         </Card>
 
@@ -191,9 +187,8 @@ export const ManagerDashboard: React.FC = () => {
           </CardHeader>
           <CardContent className="pt-0">
             <div className="text-2xl font-bold text-destructive">
-              {formatCurrency(dailyExpenses)}
+              {formatCurrency(dailyExpenses)} ريال سعودي
             </div>
-            <p className="text-xs text-muted-foreground">ريال سعودي</p>
           </CardContent>
         </Card>
 

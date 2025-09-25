@@ -1,10 +1,24 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
 
 /* Wathiq Design System - All colors, gradients, fonts, etc should be defined here. 
 All colors MUST be HSL. RTL support enabled.
 */
+
+@font-face {
+  font-family: 'Dubai Regular';
+  src: url('./services/fonts/ArbFONTS-Dubai-Regular.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Dubai Bold';
+  src: url('./services/fonts/ArbFONTS-Dubai-Bold.ttf') format('truetype');
+  font-weight: bold;
+  font-style: normal;
+}
 
 @layer base {
   :root {

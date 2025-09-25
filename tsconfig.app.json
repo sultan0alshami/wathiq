@@ -9,18 +9,19 @@
 
     /* Bundler mode */
     "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
     "isolatedModules": true,
     "moduleDetection": "force",
-    "noEmit": true,
     "jsx": "react-jsx",
-
+    "types": ["react", "react-dom", "json-schema"],
+    "typeRoots": ["./node_modules/@types", "./node_modules/@radix-ui/react-slot/dist/types"],
     /* Linting */
     "strict": true,
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
-    }
+    },
+    "noFallthroughCasesInSwitch": true
   },
+  "exclude": ["node_modules", "**/*.spec.ts", "**/*.test.ts", "**/__tests__/**/*", "**/*.config.ts", "**/*.config.js", "estree"],
   "include": ["src", "src/types"]
 }

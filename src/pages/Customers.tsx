@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Trash2, Plus, Users, Phone, Mail, Calendar, Search, Filter, Award, UserPlus } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { formatCurrency, formatInputNumber, isValidEnglishNumber } from '@/lib/numberUtils';
+import { formatCurrency, formatInputNumber, isValidEnglishNumber, parseEnglishNumber } from '@/lib/numberUtils';
 import { useFormValidation, ValidationRules, ValidationMessage } from '@/components/ui/enhanced-form-validation';
 import { DeleteConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { ARABIC_CUSTOMERS_MESSAGES } from '@/lib/arabicCustomersMessages';

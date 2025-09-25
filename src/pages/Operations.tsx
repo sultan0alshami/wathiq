@@ -15,15 +15,6 @@ import { DeleteConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { KPICardSkeleton, TableSkeleton } from '@/components/ui/loading-skeleton';
 import { ARABIC_OPERATIONS_MESSAGES } from '@/lib/arabicOperationsMessages';
 
-interface OperationEntry {
-  id: string;
-  task: string;
-  status: 'pending' | 'in-progress' | 'completed';
-  notes: string;
-  owner: string;
-  priority: 'low' | 'medium' | 'high';
-}
-
 const OperationUtils = {
   getStatusIcon: (status: OperationEntry['status']) => {
     switch (status) {

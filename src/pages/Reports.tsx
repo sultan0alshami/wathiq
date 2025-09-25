@@ -19,9 +19,9 @@ export const Reports: React.FC = () => {
   const { currentDate, formatDate } = useDateContext();
   const { toast } = useToast();
   const [viewerOpen, setViewerOpen] = useState(false);
-  const [selectedReport, setSelectedReport] = useState<{ data: DailyData; section: string } | null>(null);
+  const [selectedReport, setSelectedReport] = useState<{ data: DailyData; section: ReportSectionType } | null>(null);
   const [filterStatus, setFilterStatus] = useState<'all' | 'مكتمل' | 'معلق'>('all');
-  const [filterSection, setFilterSection] = useState<string[]>([]);
+  const [filterSection, setFilterSection] = useState<ReportSectionType[]>([]);
 
   // Get real data for reports
   const dailyData = getDataForDate(currentDate);
@@ -35,14 +35,8 @@ export const Reports: React.FC = () => {
   };
 
   // Helper function to get dynamic submitted by
-  const getSubmittedBy = (section: string): string => {
-    switch (section) {
-      case 'المالية': return 'النظام المالي';
-      case 'المبيعات': return 'نظام المبيعات';
-      case 'العمليات': return 'نظام العمليات';
-      case 'التسويق': return 'نظام التسويق';
-      default: return 'النظام';
-    }
+  const getSubmittedBy = (sectionKey: keyof typeof ar.reports.reportSections): string => {
+    return ar.reports.submittedBy[sectionKey];
   };
 
   // Helper function to get dynamic submitted at (random time between 9:00 and 17:00)
@@ -81,49 +75,61 @@ export const Reports: React.FC = () => {
     }
   };
 
-  const reports = [
+  interface Report {
+    id: number;
+    title: string;
+    section: ReportSectionType;
+    date: Date;
+    status: string;
+    type: string;
+    size: string;
+    submittedBy: string;
+    submittedAt: string;
+  }
+
+  const reports: Report[] = [
     {
       id: 1,
       title: ar.reports.reportTitles.finance,
-      section: ar.reports.reportSections.finance,
+      section: 'finance',
       date: currentDate,
       status: dailyData.finance.entries.length > 0 ? ar.reports.status.completed : ar.reports.status.pending,
       type: 'daily',
       size: calculateReportSize(dailyData.finance.entries),
-      submittedBy: getSubmittedBy(ar.reports.reportSections.finance),
+      submittedBy: getSubmittedBy('finance'),
       submittedAt: getSubmittedAt()
     },
     {
       id: 2,
       title: ar.reports.reportTitles.sales,
-      section: ar.reports.reportSections.sales,
+      section: 'sales',
       date: currentDate,
       status: dailyData.sales.entries.length > 0 ? ar.reports.status.completed : ar.reports.status.pending,
       type: 'daily',
       size: calculateReportSize(dailyData.sales.entries),
-      submittedBy: getSubmittedBy(ar.reports.reportSections.sales),
+      submittedBy: getSubmittedBy('sales'),
       submittedAt: getSubmittedAt()
     },
     {
       id: 3,
       title: ar.reports.reportTitles.operations,
-      section: ar.reports.reportSections.operations,
+      section: 'operations',
       date: currentDate,
       status: dailyData.operations.entries.length > 0 ? ar.reports.status.completed : ar.reports.status.pending,
       type: 'daily',
       size: calculateReportSize(dailyData.operations.entries),
-      submittedBy: getSubmittedBy(ar.reports.reportSections.operations),
+      submittedBy: getSubmittedBy('operations'),
       submittedAt: getSubmittedAt()
     },
     {
       id: 4,
       title: ar.reports.reportTitles.marketing,
-      section: ar.reports.reportSections.marketing,
+      section: 'marketing',
       date: currentDate,
       status: dailyData.marketing.tasks.length > 0 ? ar.reports.status.completed : ar.reports.status.pending,
       type: 'daily',
       size: calculateReportSize(dailyData.marketing.tasks),
-      submittedBy: getSubmittedBy(ar.reports.reportSections.marketing),
+      submittedBy: getSubmittedBy('marketing'),
       submittedAt: getSubmittedAt()
     },
   ];
@@ -131,7 +137,7 @@ export const Reports: React.FC = () => {
   const filteredReports = useMemo(() => {
     return reports.filter(report => {
       const statusMatch = filterStatus === 'all' || report.status === filterStatus;
-      const sectionMatch = filterSection.length === 0 || filterSection.includes(report.section);
+      const sectionMatch = filterSection.length === 0 || filterSection.includes(report.section as ReportSectionType);
       return statusMatch && sectionMatch;
     });
   }, [reports, filterStatus, filterSection]);
@@ -148,16 +154,16 @@ export const Reports: React.FC = () => {
     const report = reports.find(r => r.id === reportId);
     if (report && report.status === ar.reports.status.completed) {
       switch (report.section) {
-        case ar.reports.reportSections.finance:
+        case 'finance':
           triggerDownloadWithProgress(ExportService.exportFinanceCSV, `finance-${formatDate(currentDate, 'yyyy-MM-dd')}.csv`, report.title);
           break;
-        case ar.reports.reportSections.sales:
+        case 'sales':
           triggerDownloadWithProgress(ExportService.exportSalesCSV, `sales-${formatDate(currentDate, 'yyyy-MM-dd')}.csv`, report.title);
           break;
-        case ar.reports.reportSections.operations:
+        case 'operations':
           triggerDownloadWithProgress(ExportService.exportOperationsCSV, `operations-${formatDate(currentDate, 'yyyy-MM-dd')}.csv`, report.title);
           break;
-        case ar.reports.reportSections.marketing:
+        case 'marketing':
           triggerDownloadWithProgress(ExportService.exportMarketingCSV, `marketing-${formatDate(currentDate, 'yyyy-MM-dd')}.csv`, report.title);
           break;
       }
@@ -212,8 +218,8 @@ export const Reports: React.FC = () => {
   const totalSizeUnit = totalCompletedReportsSizeKB < 1024 ? ar.reports.statsCards.kb : ar.reports.statsCards.mb;
 
   const allSections = useMemo(() => {
-    const sections = new Set<string>();
-    reports.forEach(report => sections.add(report.section));
+    const sections = new Set<keyof typeof ar.reports.reportSections>();
+    reports.forEach(report => sections.add(report.section as keyof typeof ar.reports.reportSections));
     return Array.from(sections);
   }, [reports]);
 
@@ -236,17 +242,17 @@ export const Reports: React.FC = () => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-48">
-              {allSections.map(section => (
+              {allSections.map(sectionKey => (
                 <DropdownMenuCheckboxItem
-                  key={section}
-                  checked={filterSection.includes(section)}
+                  key={sectionKey}
+                  checked={filterSection.includes(sectionKey as ReportSectionType)}
                   onCheckedChange={(checked) => {
                     setFilterSection(prev =>
-                      checked ? [...prev, section] : prev.filter(s => s !== section)
+                      checked ? [...prev, sectionKey as ReportSectionType] : prev.filter(s => s !== sectionKey)
                     );
                   }}
                 >
-                  {section}
+                  {ar.reports.reportSections[sectionKey]}
                 </DropdownMenuCheckboxItem>
               ))}
               <DropdownMenuCheckboxItem
@@ -354,7 +360,7 @@ export const Reports: React.FC = () => {
                 filteredReports.map((report) => (
                   <TableRow key={report.id}>
                     <TableCell className="font-medium">{report.title}</TableCell>
-                    <TableCell>{report.section}</TableCell>
+                    <TableCell>{ar.reports.reportSections[report.section as keyof typeof ar.reports.reportSections]}</TableCell>
                     <TableCell>{getStatusBadge(report.status)}</TableCell>
                     <TableCell>{report.submittedBy}</TableCell>
                     <TableCell>{report.submittedAt}</TableCell>
@@ -393,7 +399,7 @@ export const Reports: React.FC = () => {
         open={viewerOpen}
         onOpenChange={setViewerOpen}
         data={selectedReport?.data || null}
-        section={selectedReport?.section || (ar.reports.reportSections.finance as ReportSectionType)}
+        section={selectedReport?.section || 'finance'}
         date={currentDate}
       />
     </div>
@@ -401,3 +407,5 @@ export const Reports: React.FC = () => {
 };
 
 type ReportSectionType = keyof typeof ar.reports.reportSections;
+
+export type { ReportSectionType };

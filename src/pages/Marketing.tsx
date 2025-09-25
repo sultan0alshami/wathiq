@@ -29,7 +29,7 @@ export const Marketing: React.FC = () => {
   const [tasks, setTasks] = useState<MarketingTask[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [yesterdayTasks, setYesterdayTasks] = useState<{ id: string; title: string }[]>([]);
-  const [plannedTasks, setPlannedTasks] = useState<string[]>([]);
+  const [plannedTasks, setPlannedTasks] = useState<{ id: string; title: string }[]>([]);
 
   // Task form states
   const [newTaskTitle, setNewTaskTitle] = useState('');

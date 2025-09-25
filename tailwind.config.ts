@@ -92,8 +92,8 @@ export default {
         },
       },
       fontFamily: {
-        arabic: ['Noto Sans Arabic', 'sans-serif'],
-        sans: ['Noto Sans Arabic', 'system-ui', 'sans-serif'],
+        arabic: ['Dubai Regular', 'Noto Sans Arabic', 'sans-serif'],
+        sans: ['Dubai Regular', 'system-ui', 'sans-serif'],
       },
       borderRadius: {
         lg: "var(--radius)",

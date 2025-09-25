@@ -22,7 +22,7 @@ import { CalendarDays, ClipboardCheck } from 'lucide-react';
 import { KPICardSkeleton, TableSkeleton } from '@/components/ui/loading-skeleton';
 import { format } from 'date-fns';
 import { ARABIC_SALES_MESSAGES } from '@/lib/arabicSalesMessages';
-import arLocale from 'date-fns/locale/ar';
+import { ar as arLocale } from 'date-fns/locale/ar';
 
 export const Sales: React.FC = () => {
   const { currentDate } = useDateContext();
@@ -38,6 +38,7 @@ export const Sales: React.FC = () => {
   // Meeting form states
   const [newMeetingCustomer, setNewMeetingCustomer] = useState('');
   const [newMeetingContact, setNewMeetingContact] = useState('');
+  const [newMeetingPhoneNumber, setNewMeetingPhoneNumber] = useState('');
   const [newMeetingNotes, setNewMeetingNotes] = useState('');
   const [newMeetingTime, setNewMeetingTime] = useState('');
   const [newMeetingOutcome, setNewMeetingOutcome] = useState<'positive' | 'negative' | 'pending'>('pending');
@@ -46,7 +47,8 @@ export const Sales: React.FC = () => {
 
   // Individual validation states
   const [customerNameValidation, setCustomerNameValidation] = useState(validateField('', [ValidationRules.required(ARABIC_SALES_MESSAGES.MEETING_TITLE_REQUIRED), ValidationRules.minLength(3, ARABIC_SALES_MESSAGES.MEETING_TITLE_MIN_LENGTH)]));
-  const [contactNumberValidation, setContactNumberValidation] = useState(validateField('', [ValidationRules.required(ARABIC_SALES_MESSAGES.CLIENT_NAME_REQUIRED), ValidationRules.phone()]));
+  const [contactNumberValidation, setContactNumberValidation] = useState(validateField('', [ValidationRules.required(ARABIC_SALES_MESSAGES.CLIENT_NAME_REQUIRED)]));
+  const [phoneNumberValidation, setPhoneNumberValidation] = useState(validateField('', [ValidationRules.required(ARABIC_SALES_MESSAGES.CUSTOMER_PHONE_LABEL), ValidationRules.phone(ARABIC_SALES_MESSAGES.VALIDATION_PHONE_INVALID)]));
   const [meetingTimeValidation, setMeetingTimeValidation] = useState(validateField('', [ValidationRules.required(ARABIC_SALES_MESSAGES.MEETING_DATE_REQUIRED)]));
   const [meetingOutcomeValidation, setMeetingOutcomeValidation] = useState(validateField('', [ValidationRules.required(ARABIC_SALES_MESSAGES.OUTCOME_REQUIRED)]));
   const [meetingNotesValidation, setMeetingNotesValidation] = useState(validateField('', [ValidationRules.maxLength(500, ARABIC_SALES_MESSAGES.NOTES_MAX_LENGTH)]));
@@ -64,14 +66,16 @@ export const Sales: React.FC = () => {
   const addMeeting = async () => {
     // Re-validate all fields on submission attempt
     const isCustomerNameValid = validateField(newMeetingCustomer, [ValidationRules.required(ARABIC_SALES_MESSAGES.MEETING_TITLE_REQUIRED), ValidationRules.minLength(3, ARABIC_SALES_MESSAGES.MEETING_TITLE_MIN_LENGTH)]).isValid;
-    const isContactNumberValid = validateField(newMeetingContact, [ValidationRules.required(ARABIC_SALES_MESSAGES.CLIENT_NAME_REQUIRED), ValidationRules.phone()]).isValid;
+    const isContactNumberValid = validateField(newMeetingContact, [ValidationRules.required(ARABIC_SALES_MESSAGES.CLIENT_NAME_REQUIRED)]).isValid;
+    const isPhoneNumberValid = validateField(newMeetingPhoneNumber, [ValidationRules.required(ARABIC_SALES_MESSAGES.CUSTOMER_PHONE_LABEL), ValidationRules.phone(ARABIC_SALES_MESSAGES.VALIDATION_PHONE_INVALID)]).isValid;
     const isMeetingTimeValid = validateField(newMeetingTime, [ValidationRules.required(ARABIC_SALES_MESSAGES.MEETING_DATE_REQUIRED)]).isValid;
     const isMeetingOutcomeValid = validateField(newMeetingOutcome, [ValidationRules.required(ARABIC_SALES_MESSAGES.OUTCOME_REQUIRED)]).isValid;
     const isMeetingNotesValid = validateField(newMeetingNotes, [ValidationRules.maxLength(500, ARABIC_SALES_MESSAGES.NOTES_MAX_LENGTH)]).isValid;
 
-    if (!isCustomerNameValid || !isContactNumberValid || !isMeetingTimeValid || !isMeetingOutcomeValid || !isMeetingNotesValid) {
+    if (!isCustomerNameValid || !isContactNumberValid || !isPhoneNumberValid || !isMeetingTimeValid || !isMeetingOutcomeValid || !isMeetingNotesValid) {
       setCustomerNameValidation(validateField(newMeetingCustomer, [ValidationRules.required(ARABIC_SALES_MESSAGES.MEETING_TITLE_REQUIRED), ValidationRules.minLength(3, ARABIC_SALES_MESSAGES.MEETING_TITLE_MIN_LENGTH)]));
-      setContactNumberValidation(validateField(newMeetingContact, [ValidationRules.required(ARABIC_SALES_MESSAGES.CLIENT_NAME_REQUIRED), ValidationRules.phone()]));
+      setContactNumberValidation(validateField(newMeetingContact, [ValidationRules.required(ARABIC_SALES_MESSAGES.CLIENT_NAME_REQUIRED)]));
+      setPhoneNumberValidation(validateField(newMeetingPhoneNumber, [ValidationRules.required(ARABIC_SALES_MESSAGES.CUSTOMER_PHONE_LABEL), ValidationRules.phone(ARABIC_SALES_MESSAGES.VALIDATION_PHONE_INVALID)]));
       setMeetingTimeValidation(validateField(newMeetingTime, [ValidationRules.required(ARABIC_SALES_MESSAGES.MEETING_DATE_REQUIRED)]));
       setMeetingOutcomeValidation(validateField(newMeetingOutcome, [ValidationRules.required(ARABIC_SALES_MESSAGES.OUTCOME_REQUIRED)]));
       setMeetingNotesValidation(validateField(newMeetingNotes, [ValidationRules.maxLength(500, ARABIC_SALES_MESSAGES.NOTES_MAX_LENGTH)]));
@@ -90,6 +94,7 @@ export const Sales: React.FC = () => {
         id: Date.now().toString(),
         customerName: newMeetingCustomer,
         contactNumber: newMeetingContact,
+        phoneNumber: newMeetingPhoneNumber,
         meetingDate: currentDate,
         meetingTime: newMeetingTime,
         outcome: newMeetingOutcome,
@@ -108,11 +113,13 @@ export const Sales: React.FC = () => {
       // Reset form and validation states
       setNewMeetingCustomer('');
       setNewMeetingContact('');
+      setNewMeetingPhoneNumber('');
       setNewMeetingNotes('');
       setNewMeetingTime('');
       setNewMeetingOutcome('pending');
       setCustomerNameValidation(validateField('', [ValidationRules.required(ARABIC_SALES_MESSAGES.MEETING_TITLE_REQUIRED), ValidationRules.minLength(3, ARABIC_SALES_MESSAGES.MEETING_TITLE_MIN_LENGTH)]));
-      setContactNumberValidation(validateField('', [ValidationRules.required(ARABIC_SALES_MESSAGES.CLIENT_NAME_REQUIRED), ValidationRules.phone()]));
+      setContactNumberValidation(validateField('', [ValidationRules.required(ARABIC_SALES_MESSAGES.CLIENT_NAME_REQUIRED)]));
+      setPhoneNumberValidation(validateField('', [ValidationRules.required(ARABIC_SALES_MESSAGES.CUSTOMER_PHONE_LABEL), ValidationRules.phone(ARABIC_SALES_MESSAGES.VALIDATION_PHONE_INVALID)]));
       setMeetingTimeValidation(validateField('', [ValidationRules.required(ARABIC_SALES_MESSAGES.MEETING_DATE_REQUIRED)]));
       setMeetingOutcomeValidation(validateField('', [ValidationRules.required(ARABIC_SALES_MESSAGES.OUTCOME_REQUIRED)]));
       setMeetingNotesValidation(validateField('', [ValidationRules.maxLength(500, ARABIC_SALES_MESSAGES.NOTES_MAX_LENGTH)]));
@@ -232,7 +239,7 @@ export const Sales: React.FC = () => {
                   <Users className="w-5 h-5 text-blue-600" />
                   <div>
                     <p className="text-sm text-blue-600">{ARABIC_SALES_MESSAGES.TOTAL_MEETINGS}</p>
-                    <p className="text-2xl font-bold text-blue-700">{newCustomersContacted}</p>
+                    <p className="text-2xl font-bold text-blue-700">{meetings.length}</p>
                   </div>
                 </div>
               </CardContent>
@@ -244,7 +251,7 @@ export const Sales: React.FC = () => {
                   <ClipboardCheck className="w-5 h-5 text-green-600" />
                   <div>
                     <p className="text-sm text-green-600">{ARABIC_SALES_MESSAGES.COMPLETED_MEETINGS}</p>
-                    <p className="text-2xl font-bold text-green-700">{meetings.length}</p>
+                    <p className="text-2xl font-bold text-green-700">{completedMeetings}</p>
                   </div>
                 </div>
               </CardContent>
@@ -256,7 +263,7 @@ export const Sales: React.FC = () => {
                   <Calendar className="w-5 h-5 text-purple-600" />
                   <div>
                     <p className="text-sm text-purple-600">{ARABIC_SALES_MESSAGES.PENDING_MEETINGS}</p>
-                    <p className="text-2xl font-bold text-purple-700">{completedMeetings}</p>
+                    <p className="text-2xl font-bold text-purple-700">{meetings.length - completedMeetings}</p>
                   </div>
                 </div>
               </CardContent>
@@ -326,11 +333,24 @@ export const Sales: React.FC = () => {
                 value={newMeetingContact}
                 onChange={(e) => {
                   setNewMeetingContact(e.target.value);
-                  setContactNumberValidation(validateField(e.target.value, [ValidationRules.required(ARABIC_SALES_MESSAGES.CLIENT_NAME_REQUIRED), ValidationRules.phone()]));
+                  setContactNumberValidation(validateField(e.target.value, [ValidationRules.required(ARABIC_SALES_MESSAGES.CLIENT_NAME_REQUIRED)]));
                 }}
                 className={!contactNumberValidation.isValid ? "border-destructive" : ""}
               />
               <ValidationMessage result={contactNumberValidation} />
+            </div>
+            <div className="space-y-2">
+              <Label>{ARABIC_SALES_MESSAGES.CUSTOMER_PHONE_LABEL}</Label>
+              <Input
+                placeholder={ARABIC_SALES_MESSAGES.CUSTOMER_PHONE_PLACEHOLDER}
+                value={newMeetingPhoneNumber}
+                onChange={(e) => {
+                  setNewMeetingPhoneNumber(e.target.value);
+                  setPhoneNumberValidation(validateField(e.target.value, [ValidationRules.required(ARABIC_SALES_MESSAGES.CUSTOMER_PHONE_LABEL), ValidationRules.phone(ARABIC_SALES_MESSAGES.VALIDATION_PHONE_INVALID)]));
+                }}
+                className={!phoneNumberValidation.isValid ? "border-destructive" : ""}
+              />
+              <ValidationMessage result={phoneNumberValidation} />
             </div>
             <div className="space-y-2">
               <Label>{ARABIC_SALES_MESSAGES.MEETING_DATE_LABEL}</Label>
@@ -380,7 +400,7 @@ export const Sales: React.FC = () => {
               <ValidationMessage result={meetingNotesValidation} />
             </div>
             <div className="md:col-span-2">
-              <Button onClick={addMeeting} disabled={loading || !customerNameValidation.isValid || !contactNumberValidation.isValid || !meetingTimeValidation.isValid || !meetingOutcomeValidation.isValid || !meetingNotesValidation.isValid} className="bg-primary hover:bg-primary/90">
+              <Button onClick={addMeeting} disabled={loading || !customerNameValidation.isValid || !contactNumberValidation.isValid || !phoneNumberValidation.isValid || !meetingTimeValidation.isValid || !meetingOutcomeValidation.isValid || !meetingNotesValidation.isValid} className="bg-primary hover:bg-primary/90">
                 {loading ? <Loader2 className="w-4 h-4 ml-2 animate-spin" /> : <Plus className="w-4 h-4 ml-2" />}
                 {ARABIC_SALES_MESSAGES.ADD_MEETING_BUTTON}
               </Button>
@@ -411,7 +431,8 @@ export const Sales: React.FC = () => {
                           </div>
                           <div className="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
                             <p><span className="font-medium">{ARABIC_SALES_MESSAGES.CLIENT_NAME_LABEL}:</span> {meeting.contactNumber}</p>
-                            <p><span className="font-medium">{ARABIC_SALES_MESSAGES.MEETING_DATE_LABEL}:</span> {meeting.meetingTime || 'غير محدد'}</p>
+                            <p><span className="font-medium">{ARABIC_SALES_MESSAGES.CUSTOMER_PHONE_LABEL}:</span> {meeting.phoneNumber}</p>
+                            <p><span className="font-medium">{ARABIC_SALES_MESSAGES.MEETING_TIME_LABEL}:</span> {meeting.meetingTime || 'غير محدد'}</p>
                             <p><span className="font-medium">{ARABIC_SALES_MESSAGES.MEETING_DATE_LABEL}:</span> {meeting.meetingDate.toLocaleDateString('ar-EG')}</p>
                             {meeting.notes && (
                               <p className="col-span-2"><span className="font-medium">{ARABIC_SALES_MESSAGES.NOTES_LABEL}:</span> {meeting.notes}</p>
@@ -441,9 +462,7 @@ export const Sales: React.FC = () => {
         open={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
         onConfirm={handleRemoveMeeting}
-        title={ARABIC_SALES_MESSAGES.TOAST_DELETE_SUCCESS_TITLE}
-        description={ARABIC_SALES_MESSAGES.TOAST_DELETE_SUCCESS_DESCRIPTION}
-        itemName={ARABIC_SALES_MESSAGES.MEETING_ITEM_NAME}
+        itemName={ARABIC_SALES_MESSAGES.DELETE_CONFIRM_ITEM_NAME}
       />
 
       {/* Daily Summary */}

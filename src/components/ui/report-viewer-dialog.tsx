@@ -8,48 +8,46 @@ import { DailyData } from '@/lib/mockData';
 import { formatCurrency } from '@/lib/numberUtils';
 import { format } from 'date-fns';
 import { ARABIC_REPORT_VIEWER_MESSAGES } from '@/lib/arabicReportViewerMessages'; // Added import
-
-// Define a union type for possible section values
-type ReportSection = 'المالية' | 'المبيعات' | 'العمليات' | 'التسويق';
+import { ReportSectionType } from '@/pages/Reports'; // Added import
 
 interface ReportViewerDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   data: DailyData | null;
-  section: ReportSection; // Use the union type here
+  section: ReportSectionType | 'merged'; // Use the union type here
   date: Date;
 }
 
 const BADGE_INFO_MAP = {
   financeEntryType: {
-    income: { variant: 'default', text: ARABIC_REPORT_VIEWER_MESSAGES.FINANCE_ENTRY_TYPE_INCOME },
-    expense: { variant: 'destructive', text: ARABIC_REPORT_VIEWER_MESSAGES.FINANCE_ENTRY_TYPE_EXPENSE },
-    deposit: { variant: 'secondary', text: ARABIC_REPORT_VIEWER_MESSAGES.FINANCE_ENTRY_TYPE_DEPOSIT },
+    income: { variant: 'default' as const, text: ARABIC_REPORT_VIEWER_MESSAGES.FINANCE_ENTRY_TYPE_INCOME },
+    expense: { variant: 'destructive' as const, text: ARABIC_REPORT_VIEWER_MESSAGES.FINANCE_ENTRY_TYPE_EXPENSE },
+    deposit: { variant: 'secondary' as const, text: ARABIC_REPORT_VIEWER_MESSAGES.FINANCE_ENTRY_TYPE_DEPOSIT },
   },
   salesOutcome: {
-    positive: { variant: 'default', text: ARABIC_REPORT_VIEWER_MESSAGES.SALES_OUTCOME_POSITIVE },
-    negative: { variant: 'destructive', text: ARABIC_REPORT_VIEWER_MESSAGES.SALES_OUTCOME_NEGATIVE },
-    pending: { variant: 'secondary', text: ARABIC_REPORT_VIEWER_MESSAGES.SALES_OUTCOME_PENDING },
+    positive: { variant: 'default' as const, text: ARABIC_REPORT_VIEWER_MESSAGES.SALES_OUTCOME_POSITIVE },
+    negative: { variant: 'destructive' as const, text: ARABIC_REPORT_VIEWER_MESSAGES.SALES_OUTCOME_NEGATIVE },
+    pending: { variant: 'secondary' as const, text: ARABIC_REPORT_VIEWER_MESSAGES.SALES_OUTCOME_PENDING },
   },
   operationsStatus: {
-    completed: { variant: 'default', text: ARABIC_REPORT_VIEWER_MESSAGES.OPERATIONS_STATUS_COMPLETED },
-    'in-progress': { variant: 'secondary', text: ARABIC_REPORT_VIEWER_MESSAGES.OPERATIONS_STATUS_IN_PROGRESS },
-    pending: { variant: 'outline', text: ARABIC_REPORT_VIEWER_MESSAGES.OPERATIONS_STATUS_PENDING },
+    completed: { variant: 'default' as const, text: ARABIC_REPORT_VIEWER_MESSAGES.OPERATIONS_STATUS_COMPLETED },
+    'in-progress': { variant: 'secondary' as const, text: ARABIC_REPORT_VIEWER_MESSAGES.OPERATIONS_STATUS_IN_PROGRESS },
+    pending: { variant: 'outline' as const, text: ARABIC_REPORT_VIEWER_MESSAGES.OPERATIONS_STATUS_PENDING },
   },
   operationsPriority: {
-    high: { variant: 'destructive', text: ARABIC_REPORT_VIEWER_MESSAGES.OPERATIONS_PRIORITY_HIGH },
-    medium: { variant: 'secondary', text: ARABIC_REPORT_VIEWER_MESSAGES.OPERATIONS_PRIORITY_MEDIUM },
-    low: { variant: 'outline', text: ARABIC_REPORT_VIEWER_MESSAGES.OPERATIONS_PRIORITY_LOW },
+    high: { variant: 'destructive' as const, text: ARABIC_REPORT_VIEWER_MESSAGES.OPERATIONS_PRIORITY_HIGH },
+    medium: { variant: 'secondary' as const, text: ARABIC_REPORT_VIEWER_MESSAGES.OPERATIONS_PRIORITY_MEDIUM },
+    low: { variant: 'outline' as const, text: ARABIC_REPORT_VIEWER_MESSAGES.OPERATIONS_PRIORITY_LOW },
   },
   marketingStatus: {
-    completed: { variant: 'default', text: ARABIC_REPORT_VIEWER_MESSAGES.MARKETING_STATUS_COMPLETED },
-    'in-progress': { variant: 'secondary', text: ARABIC_REPORT_VIEWER_MESSAGES.MARKETING_STATUS_IN_PROGRESS },
-    planned: { variant: 'outline', text: ARABIC_REPORT_VIEWER_MESSAGES.MARKETING_STATUS_PLANNED },
+    completed: { variant: 'default' as const, text: ARABIC_REPORT_VIEWER_MESSAGES.MARKETING_STATUS_COMPLETED },
+    'in-progress': { variant: 'secondary' as const, text: ARABIC_REPORT_VIEWER_MESSAGES.MARKETING_STATUS_IN_PROGRESS },
+    planned: { variant: 'outline' as const, text: ARABIC_REPORT_VIEWER_MESSAGES.MARKETING_STATUS_PLANNED },
   },
   marketingPriority: {
-    high: { variant: 'destructive', text: ARABIC_REPORT_VIEWER_MESSAGES.MARKETING_PRIORITY_HIGH },
-    medium: { variant: 'secondary', text: ARABIC_REPORT_VIEWER_MESSAGES.MARKETING_PRIORITY_MEDIUM },
-    low: { variant: 'outline', text: ARABIC_REPORT_VIEWER_MESSAGES.MARKETING_PRIORITY_LOW },
+    high: { variant: 'destructive' as const, text: ARABIC_REPORT_VIEWER_MESSAGES.MARKETING_PRIORITY_HIGH },
+    medium: { variant: 'secondary' as const, text: ARABIC_REPORT_VIEWER_MESSAGES.MARKETING_PRIORITY_MEDIUM },
+    low: { variant: 'outline' as const, text: ARABIC_REPORT_VIEWER_MESSAGES.MARKETING_PRIORITY_LOW },
   },
 };
 
@@ -62,18 +60,20 @@ export const ReportViewerDialog: React.FC<ReportViewerDialogProps> = ({
 }) => {
   if (!data) return null;
 
+  type BadgeVariant = 'default' | 'destructive' | 'secondary' | 'outline';
+
   // Helper function to get badge variant and text
-  const getBadgeInfo = (type: keyof typeof BADGE_INFO_MAP, statusOrPriority?: string) => {
+  const getBadgeInfo = (type: keyof typeof BADGE_INFO_MAP, value?: string): { variant: BadgeVariant; text: string } => {
     const categoryMap = BADGE_INFO_MAP[type];
-    if (categoryMap && statusOrPriority && categoryMap[statusOrPriority as keyof typeof categoryMap]) {
-      return categoryMap[statusOrPriority as keyof typeof categoryMap];
+    if (categoryMap && value && categoryMap[value as keyof typeof categoryMap]) {
+      return categoryMap[value as keyof typeof categoryMap] as { variant: BadgeVariant; text: string };
     }
     return { variant: 'secondary', text: '' };
   };
 
   const getSectionData = () => {
     switch (section) {
-      case 'المالية':
+      case 'finance':
         return {
           title: ARABIC_REPORT_VIEWER_MESSAGES.FINANCE_REPORT_TITLE,
           content: (
@@ -134,7 +134,7 @@ export const ReportViewerDialog: React.FC<ReportViewerDialogProps> = ({
           )
         };
       
-      case 'المبيعات':
+      case 'sales':
         return {
           title: ARABIC_REPORT_VIEWER_MESSAGES.SALES_REPORT_TITLE,
           content: (
@@ -205,7 +205,7 @@ export const ReportViewerDialog: React.FC<ReportViewerDialogProps> = ({
           )
         };
       
-      case 'العمليات':
+      case 'operations':
         return {
           title: ARABIC_REPORT_VIEWER_MESSAGES.OPERATIONS_REPORT_TITLE,
           content: (
@@ -246,7 +246,7 @@ export const ReportViewerDialog: React.FC<ReportViewerDialogProps> = ({
                       {data.operations.entries.map((entry) => {
                         const key = entry.id || `${entry.task}-${entry.owner}`;
                         const { variant: statusVariant, text: statusText } = getBadgeInfo('operationsStatus', entry.status);
-                        const { variant: priorityVariant, text: priorityText } = getBadgeInfo('operationsPriority', undefined, entry.priority);
+                        const { variant: priorityVariant, text: priorityText } = getBadgeInfo('operationsPriority', entry.priority);
                         return (
                           <TableRow key={key}>
                             <TableCell className="font-medium">{entry.task}</TableCell>
@@ -268,7 +268,7 @@ export const ReportViewerDialog: React.FC<ReportViewerDialogProps> = ({
           )
         };
       
-      case 'التسويق':
+      case 'marketing':
         return {
           title: ARABIC_REPORT_VIEWER_MESSAGES.MARKETING_REPORT_TITLE,
           content: (
@@ -309,7 +309,7 @@ export const ReportViewerDialog: React.FC<ReportViewerDialogProps> = ({
                       {data.marketing.tasks.map((task) => {
                         const key = task.id || `${task.title}-${task.assignee}`;
                         const { variant: statusVariant, text: statusText } = getBadgeInfo('marketingStatus', task.status);
-                        const { variant: priorityVariant, text: priorityText } = getBadgeInfo('marketingPriority', undefined, task.priority);
+                        const { variant: priorityVariant, text: priorityText } = getBadgeInfo('marketingPriority', task.priority);
                         return (
                           <TableRow key={key}>
                             <TableCell className="font-medium">{task.title}</TableCell>

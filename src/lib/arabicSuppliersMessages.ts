@@ -53,6 +53,8 @@ export const ARABIC_SUPPLIERS_MESSAGES = {
   TABLE_HEADER_ACTIONS: 'الإجراءات',
   TABLE_NO_SUPPLIERS: 'لا توجد موردين مضافين بعد',
   DELETE_CONFIRMATION_ITEM_NAME: 'المورد',
+  DELETE_CONFIRM_TITLE: 'تأكيد الحذف',
+  DELETE_CONFIRM_DESCRIPTION: 'هل أنت متأكد أنك تريد حذف هذا المورد؟ لا يمكن التراجع عن هذا الإجراء.',
   TOTAL_SUPPLIERS_CARD_TITLE: 'إجمالي الموردين',
   ACTIVE_SUPPLIERS_CARD_TITLE: 'الموردين النشطين',
   DOCUMENTS_CARD_TITLE: 'المستندات',

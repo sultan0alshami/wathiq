@@ -64,13 +64,41 @@ export const Suppliers: React.FC = () => {
 
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
 
-  const { validate, isValid, errors, resetForm: resetFormValidation } = useFormValidation({
-    name: { required: true, minLength: 3, arabicText: true },
-    contactPerson: { required: true, minLength: 3, arabicText: true },
-    phone: { pattern: ValidationRules.phone(ARABIC_SUPPLIERS_MESSAGES.VALIDATION_PHONE_INVALID) },
-    email: { pattern: ValidationRules.email(ARABIC_SUPPLIERS_MESSAGES.VALIDATION_EMAIL_INVALID) },
-    category: { required: true, arabicText: true, message: ARABIC_SUPPLIERS_MESSAGES.VALIDATION_CATEGORY_REQUIRED },
-  }, formData);
+  const { validateField, validateForm } = useFormValidation();
+
+  const validationRules = {
+    name: [ValidationRules.required(ARABIC_SUPPLIERS_MESSAGES.VALIDATION_NAME_REQUIRED), ValidationRules.minLength(3, ARABIC_SUPPLIERS_MESSAGES.VALIDATION_NAME_REQUIRED), ValidationRules.arabicText(ARABIC_SUPPLIERS_MESSAGES.VALIDATION_NAME_REQUIRED)],
+    contactPerson: [ValidationRules.required(ARABIC_SUPPLIERS_MESSAGES.VALIDATION_CONTACT_PERSON_REQUIRED), ValidationRules.minLength(3, ARABIC_SUPPLIERS_MESSAGES.VALIDATION_CONTACT_PERSON_REQUIRED), ValidationRules.arabicText(ARABIC_SUPPLIERS_MESSAGES.VALIDATION_CONTACT_PERSON_REQUIRED)],
+    phone: [ValidationRules.phone(ARABIC_SUPPLIERS_MESSAGES.VALIDATION_PHONE_INVALID)],
+    email: [ValidationRules.email(ARABIC_SUPPLIERS_MESSAGES.VALIDATION_EMAIL_INVALID)],
+    category: [ValidationRules.required(ARABIC_SUPPLIERS_MESSAGES.VALIDATION_CATEGORY_REQUIRED), ValidationRules.arabicText(ARABIC_SUPPLIERS_MESSAGES.VALIDATION_CATEGORY_REQUIRED)],
+  };
+
+  const [validationResults, setValidationResults] = useState<Record<string, { isValid: boolean; messages: { message: string; type: "error" | "warning" | "info"; }[] }>>({
+    name: validateField('', validationRules.name),
+    contactPerson: validateField('', validationRules.contactPerson),
+    phone: validateField('', validationRules.phone),
+    email: validateField('', validationRules.email),
+    category: validateField('', validationRules.category),
+  });
+  const [formIsValid, setFormIsValid] = useState(false);
+
+  const runFormValidation = () => {
+    const newValidationResults: Record<string, { isValid: boolean; messages: { message: string; type: "error" | "warning" | "info"; }[] }> = {};
+    let overallFormIsValid = true;
+
+    (Object.keys(validationRules) as Array<keyof typeof validationRules>).forEach((fieldName) => {
+      const rules = validationRules[fieldName];
+      const result = validateField(formData[fieldName as keyof typeof formData], rules);
+      newValidationResults[fieldName] = result;
+      if (!result.isValid) {
+        overallFormIsValid = false;
+      }
+    });
+    setValidationResults(newValidationResults);
+    setFormIsValid(overallFormIsValid);
+    return overallFormIsValid;
+  };
 
   const resetForm = () => {
     setFormData({
@@ -85,12 +113,20 @@ export const Suppliers: React.FC = () => {
     });
     setUploadedFiles([]);
     setEditingSupplier(null);
-    resetFormValidation();
+    // Reset validation results to initial state
+    setValidationResults({
+      name: validateField('', validationRules.name),
+      contactPerson: validateField('', validationRules.contactPerson),
+      phone: validateField('', validationRules.phone),
+      email: validateField('', validationRules.email),
+      category: validateField('', validationRules.category),
+    });
+    setFormIsValid(false);
   };
 
   const handleAddSupplier = async () => {
-    validate();
-    if (!isValid) {
+    const currentFormIsValid = runFormValidation();
+    if (!currentFormIsValid) {
       toast({
         title: ARABIC_SUPPLIERS_MESSAGES.FORM_VALIDATION_ERROR_TITLE,
         description: ARABIC_SUPPLIERS_MESSAGES.FORM_VALIDATION_ERROR_DESCRIPTION,
@@ -127,7 +163,7 @@ export const Suppliers: React.FC = () => {
       };
 
       if (editingSupplier) {
-        const updatedSuppliers = suppliers.map(sup => 
+        const updatedSuppliers = suppliers.map((sup: Supplier) => 
           sup.id === editingSupplier.id ? newSupplier : sup
         );
         setSuppliers(updatedSuppliers);
@@ -169,6 +205,15 @@ export const Suppliers: React.FC = () => {
       status: supplier.status,
       notes: supplier.notes
     });
+    // Update validation results when editing a supplier
+    setValidationResults({
+      name: validateField(supplier.name, validationRules.name),
+      contactPerson: validateField(supplier.contactPerson, validationRules.contactPerson),
+      phone: validateField(supplier.phone, validationRules.phone),
+      email: validateField(supplier.email || '', validationRules.email),
+      category: validateField(supplier.category, validationRules.category),
+    });
+    setFormIsValid(true); // Assuming data from existing supplier is valid
     setDialogOpen(true);
   };
 
@@ -180,7 +225,7 @@ export const Suppliers: React.FC = () => {
   const confirmDeleteSupplier = () => {
     if (!supplierToDelete) return;
 
-    const updatedSuppliers = suppliers.filter(sup => sup.id !== supplierToDelete);
+    const updatedSuppliers = suppliers.filter((sup: Supplier) => sup.id !== supplierToDelete);
     setSuppliers(updatedSuppliers);
     toast({
       title: ARABIC_SUPPLIERS_MESSAGES.TOAST_DELETE_SUCCESS_TITLE,
@@ -239,11 +284,11 @@ export const Suppliers: React.FC = () => {
                 <Input
                   id="name"
                   value={formData.name}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, name: e.target.value})}
                   placeholder={ARABIC_SUPPLIERS_MESSAGES.FORM_NAME_PLACEHOLDER}
-                  className={errors.name ? "border-destructive" : ""}
+                  className={validationResults.name.messages.length > 0 ? "border-destructive" : ""}
                 />
-                {errors.name && <ValidationMessage message={errors.name} />}
+                <ValidationMessage result={validationResults.name} />
               </div>
               
               <div className="space-y-2">
@@ -251,11 +296,11 @@ export const Suppliers: React.FC = () => {
                 <Input
                   id="contactPerson"
                   value={formData.contactPerson}
-                  onChange={(e) => setFormData({...formData, contactPerson: e.target.value})}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, contactPerson: e.target.value})}
                   placeholder={ARABIC_SUPPLIERS_MESSAGES.FORM_CONTACT_PERSON_PLACEHOLDER}
-                  className={errors.contactPerson ? "border-destructive" : ""}
+                  className={validationResults.contactPerson.messages.length > 0 ? "border-destructive" : ""}
                 />
-                {errors.contactPerson && <ValidationMessage message={errors.contactPerson} />}
+                <ValidationMessage result={validationResults.contactPerson} />
               </div>
               
               <div className="space-y-2">
@@ -263,11 +308,11 @@ export const Suppliers: React.FC = () => {
                 <Input
                   id="phone"
                   value={formData.phone}
-                  onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, phone: e.target.value})}
                   placeholder={ARABIC_SUPPLIERS_MESSAGES.FORM_PHONE_PLACEHOLDER}
-                  className={errors.phone ? "border-destructive" : ""}
+                  className={validationResults.phone.messages.length > 0 ? "border-destructive" : ""}
                 />
-                {errors.phone && <ValidationMessage message={errors.phone} />}
+                <ValidationMessage result={validationResults.phone} />
               </div>
               
               <div className="space-y-2">
@@ -276,20 +321,20 @@ export const Suppliers: React.FC = () => {
                   id="email"
                   type="email"
                   value={formData.email}
-                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, email: e.target.value})}
                   placeholder={ARABIC_SUPPLIERS_MESSAGES.FORM_EMAIL_PLACEHOLDER}
-                  className={errors.email ? "border-destructive" : ""}
+                  className={validationResults.email.messages.length > 0 ? "border-destructive" : ""}
                 />
-                {errors.email && <ValidationMessage message={errors.email} />}
+                <ValidationMessage result={validationResults.email} />
               </div>
               
               <div className="space-y-2">
                 <Label htmlFor="category">{ARABIC_SUPPLIERS_MESSAGES.FORM_CATEGORY_LABEL}</Label>
                 <Select 
                   value={formData.category} 
-                  onValueChange={(value) => setFormData({...formData, category: value})} 
+                  onValueChange={(value: string) => setFormData({...formData, category: value})} 
                 >
-                  <SelectTrigger className={errors.category ? "border-destructive" : ""}>
+                  <SelectTrigger className={validationResults.category.messages.length > 0 ? "border-destructive" : ""}>
                     <SelectValue placeholder={ARABIC_SUPPLIERS_MESSAGES.FORM_CATEGORY_PLACEHOLDER} />
                   </SelectTrigger>
                   <SelectContent>
@@ -300,7 +345,7 @@ export const Suppliers: React.FC = () => {
                     <SelectItem value="أخرى">{ARABIC_SUPPLIERS_MESSAGES.FORM_CATEGORY_OTHER}</SelectItem>
                   </SelectContent>
                 </Select>
-                {errors.category && <ValidationMessage message={errors.category} />}
+                <ValidationMessage result={validationResults.category} />
               </div>
               
               <div className="space-y-2">
@@ -321,7 +366,7 @@ export const Suppliers: React.FC = () => {
                 <Input
                   id="address"
                   value={formData.address}
-                  onChange={(e) => setFormData({...formData, address: e.target.value})}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, address: e.target.value})}
                   placeholder={ARABIC_SUPPLIERS_MESSAGES.FORM_ADDRESS_PLACEHOLDER}
                 />
               </div>
@@ -331,7 +376,7 @@ export const Suppliers: React.FC = () => {
                 <Textarea
                   id="notes"
                   value={formData.notes}
-                  onChange={(e) => setFormData({...formData, notes: e.target.value})}
+                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData({...formData, notes: e.target.value})}
                   placeholder={ARABIC_SUPPLIERS_MESSAGES.FORM_NOTES_PLACEHOLDER}
                   rows={3}
                 />
@@ -345,7 +390,7 @@ export const Suppliers: React.FC = () => {
                     id="documents"
                     multiple
                     accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                    onChange={handleFileUpload}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFileUpload(e)}
                     className="hidden"
                   />
                   <label
@@ -379,7 +424,7 @@ export const Suppliers: React.FC = () => {
             
             <div className="flex justify-end gap-2 mt-4">
               <Button variant="outline" onClick={() => setDialogOpen(false)}>{ARABIC_SUPPLIERS_MESSAGES.FORM_CANCEL_BUTTON}</Button>
-              <Button onClick={handleAddSupplier} disabled={isLoading || !isValid}>{isLoading ? ARABIC_SUPPLIERS_MESSAGES.FORM_SAVING_BUTTON : (editingSupplier ? ARABIC_SUPPLIERS_MESSAGES.FORM_UPDATE_BUTTON : ARABIC_SUPPLIERS_MESSAGES.FORM_ADD_BUTTON)}</Button>
+              <Button onClick={handleAddSupplier} disabled={isLoading || !formIsValid}>{isLoading ? ARABIC_SUPPLIERS_MESSAGES.FORM_SAVING_BUTTON : (editingSupplier ? ARABIC_SUPPLIERS_MESSAGES.FORM_UPDATE_BUTTON : ARABIC_SUPPLIERS_MESSAGES.FORM_ADD_BUTTON)}</Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -413,7 +458,7 @@ export const Suppliers: React.FC = () => {
                 <div>
                   <p className="text-sm text-muted-foreground">{ARABIC_SUPPLIERS_MESSAGES.ACTIVE_SUPPLIERS_CARD_TITLE}</p>
                   <p className="text-2xl font-bold text-success">
-                    {suppliers.filter(s => s.status === 'active').length}
+                    {suppliers.filter((s: Supplier) => s.status === 'active').length}
                   </p>
                 </div>
                 <Building2 className="w-8 h-8 text-success" />
@@ -427,7 +472,7 @@ export const Suppliers: React.FC = () => {
                 <div>
                   <p className="text-sm text-muted-foreground">{ARABIC_SUPPLIERS_MESSAGES.DOCUMENTS_CARD_TITLE}</p>
                   <p className="text-2xl font-bold text-wathiq-accent">
-                    {suppliers.reduce((total, supplier) => total + supplier.documents.length, 0)}
+                    {suppliers.reduce((total: number, supplier: Supplier) => total + supplier.documents.length, 0)}
                   </p>
                 </div>
                 <FileText className="w-8 h-8 text-wathiq-accent" />
@@ -441,7 +486,7 @@ export const Suppliers: React.FC = () => {
                 <div>
                   <p className="text-sm text-muted-foreground">{ARABIC_SUPPLIERS_MESSAGES.CATEGORIES_CARD_TITLE}</p>
                   <p className="text-2xl font-bold text-foreground">
-                    {new Set(suppliers.map(s => s.category).filter(Boolean)).size}
+                    {new Set(suppliers.map((s: Supplier) => s.category).filter(Boolean)).size}
                   </p>
                 </div>
                 <MapPin className="w-8 h-8 text-foreground" />
@@ -482,7 +527,7 @@ export const Suppliers: React.FC = () => {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  suppliers.map((supplier) => (
+                  suppliers.map((supplier: Supplier) => (
                     <TableRow key={supplier.id}>
                       <TableCell>
                         <div>

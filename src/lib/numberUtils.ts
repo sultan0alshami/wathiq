@@ -14,19 +14,16 @@ export const formatNumber = (value: number, decimals: number = 0): string => {
   return arabicNumberFormatter.format(Number(value.toFixed(decimals)));
 };
 
-// Format currency with exactly 2 decimal places in Arabic
-export const formatCurrency = (value: number, currency: string = 'ر.س'): string => {
+// Format currency with exactly 2 decimal places in Arabic numerals, without a currency symbol
+export const formatCurrency = (value: number): string => {
   if (isNaN(value) || value === null || value === undefined) {
-    return `0.00 ${currency}`;
+    return `0.00`;
   }
   const formatter = new Intl.NumberFormat('ar-SA', {
-    style: 'currency',
-    currency: 'SAR',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
-  // Remove SAR currency symbol and append custom Arabic currency symbol
-  return formatter.format(value).replace('SAR', '').trim() + ' ' + currency;
+  return formatter.format(value);
 };
 
 // Format percentage with 1 decimal place

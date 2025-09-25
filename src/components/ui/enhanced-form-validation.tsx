@@ -124,6 +124,11 @@ export const ValidationRules = {
     message
   }),
 
+  phone: (message = 'رقم الهاتف غير صالح'): ValidationRule => ({
+    validate: (value) => /^\+?[0-9\s\-()]{7,20}$/.test(value), // Basic phone number regex
+    message
+  }),
+
   arabicText: (message = 'يجب أن يحتوي على نص عربي'): ValidationRule => ({
     // Enforces that the field must contain at least one Arabic character.
     // Changed default type to 'error' for strict enforcement of Arabic text input.

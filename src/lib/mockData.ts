@@ -15,7 +15,8 @@ export interface FinanceEntry {
 export interface SalesEntry {
   id: string;
   customerName: string;
-  contactNumber: string;
+  contactNumber: string; // This will now represent the contact person's name
+  phoneNumber: string; // New field for customer's phone number
   meetingDate: Date;
   meetingTime: string;
   outcome: 'positive' | 'negative' | 'pending';
@@ -73,8 +74,8 @@ export interface DailyData {
   };
   marketing: {
     tasks: MarketingTask[];
-    yesterdayDone: string[];
-    plannedTasks: string[];
+    yesterdayDone: { id: string; title: string }[];
+    plannedTasks: { id: string; title: string }[];
   };
   customers: Customer[];
   suppliers?: Supplier[];
@@ -174,7 +175,8 @@ export const generateMockDataForDate = (date: Date): DailyData => {
         {
           id: `sales-${dateStr}-1`,
           customerName: 'شركة الأمل التجارية للحلول التقنية المتقدمة',
-          contactNumber: '+966501234567',
+          contactNumber: 'خالد أحمد المطيري التميمي',
+          phoneNumber: '+966501234567',
           meetingDate: getRandomTime(date),
           meetingTime: '10:00',
           outcome: 'positive',
@@ -184,7 +186,8 @@ export const generateMockDataForDate = (date: Date): DailyData => {
         {
           id: `sales-${dateStr}-2`,
           customerName: 'مؤسسة الرياض للتطوير والاستثمار',
-          contactNumber: '+966502345678',
+          contactNumber: 'فاطمة محمد السعيد الأحمدي',
+          phoneNumber: '+966507654321',
           meetingDate: getRandomTime(date),
           meetingTime: '14:30',
           outcome: 'pending',
@@ -194,7 +197,8 @@ export const generateMockDataForDate = (date: Date): DailyData => {
         {
           id: `sales-${dateStr}-3`,
           customerName: 'شركة النخيل الذكية للتكنولوجيا',
-          contactNumber: '+966503456789',
+          contactNumber: 'عبدالرحمن سعود الغامدي',
+          phoneNumber: '+966508765432',
           meetingDate: getRandomTime(date),
           meetingTime: '16:00',
           outcome: 'negative',
@@ -250,14 +254,14 @@ export const generateMockDataForDate = (date: Date): DailyData => {
         }
       ],
       yesterdayDone: [
-        'مراجعة الحملات الإعلانية',
-        'إعداد التقرير الأسبوعي',
-        'متابعة العملاء المحتملين'
+        { id: 'mkt-1', title: 'مراجعة الحملات الإعلانية' },
+        { id: 'mkt-2', title: 'إعداد التقرير الأسبوعي' },
+        { id: 'mkt-3', title: 'متابعة العملاء المحتملين' }
       ],
       plannedTasks: [
-        'إطلاق حملة إعلانية جديدة',
-        'تحديث الموقع الإلكتروني',
-        'إعداد ورشة عمل للعملاء'
+        { id: 'mkt-4', title: 'إطلاق حملة إعلانية جديدة' },
+        { id: 'mkt-5', title: 'تحديث الموقع الإلكتروني' },
+        { id: 'mkt-6', title: 'إعداد ورشة عمل للعملاء' }
       ]
     },
     customers: [
@@ -334,27 +338,27 @@ export const getDataForDate = (date: Date): DailyData => {
     if (stored) {
       const data = JSON.parse(stored) as DailyData;
       // Convert date strings back to Date objects
-      data.finance.entries = data.finance.entries.map((entry: Omit<FinanceEntry, 'date'> & { date: string }) => ({
+      data.finance.entries = data.finance.entries.map((entry: FinanceEntry) => ({
         ...entry,
         date: new Date(entry.date)
       }));
-      data.sales.entries = data.sales.entries.map((entry: Omit<SalesEntry, 'meetingDate'> & { meetingDate: string }) => ({
+      data.sales.entries = data.sales.entries.map((entry: SalesEntry) => ({
         ...entry,
         meetingDate: new Date(entry.meetingDate)
       }));
-      data.marketing.tasks = data.marketing.tasks.map((task: Omit<MarketingTask, 'dueDate'> & { dueDate: string }) => ({
+      data.marketing.tasks = data.marketing.tasks.map((task: MarketingTask) => ({
         ...task,
         dueDate: new Date(task.dueDate)
       }));
-      data.customers = data.customers.map((customer: Omit<Customer, 'arrivalDate'> & { arrivalDate: string }) => ({
+      data.customers = data.customers.map((customer: Customer) => ({
         ...customer,
         arrivalDate: new Date(customer.arrivalDate)
       }));
       if (data.suppliers) {
-        data.suppliers = data.suppliers.map((supplier: Omit<Supplier, 'registrationDate' | 'documents'> & { registrationDate: string, documents: (Omit<SupplierDocument, 'uploadDate'> & { uploadDate: string })[] }) => ({
+        data.suppliers = data.suppliers.map((supplier: Supplier) => ({
           ...supplier,
           registrationDate: new Date(supplier.registrationDate),
-          documents: supplier.documents.map(doc => ({
+          documents: supplier.documents.map((doc: SupplierDocument) => ({
             ...doc,
             uploadDate: new Date(doc.uploadDate)
           }))
