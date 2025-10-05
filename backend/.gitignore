@@ -1,0 +1,19 @@
+# Python virtual environment
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Node modules
+node_modules/
+
+# Environment variables
+.env
+
+# Temporary files
+temp_data_*.json
+
+# OS files
+.DS_Store
+Thumbs.db
