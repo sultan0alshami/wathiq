@@ -18,28 +18,42 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 
-const navigation = [
-  { name: 'لوحة التحكم', href: '/', icon: LayoutDashboard },
-  { name: 'التقارير', href: '/reports', icon: FileText },
-  { name: 'المالية', href: '/finance', icon: DollarSign },
-  { name: 'المبيعات', href: '/sales', icon: TrendingUp },
-  { name: 'العمليات', href: '/operations', icon: Settings2 },
-  { name: 'التسويق', href: '/marketing', icon: Megaphone },
-  { name: 'العملاء', href: '/customers', icon: Users },
-  { name: 'الموردين', href: '/suppliers', icon: Building2 },
-  { name: 'الرسوم البيانية', href: '/charts', icon: BarChart3 },
-  { name: 'تحميل التقارير', href: '/download', icon: Download },
+// Navigation items with permission requirements
+const navigationItems = [
+  { name: 'لوحة التحكم', href: '/', icon: LayoutDashboard, permission: null }, // Always visible
+  { name: 'التقارير', href: '/reports', icon: FileText, permission: null }, // Always visible
+  { name: 'المالية', href: '/finance', icon: DollarSign, permission: 'finance' },
+  { name: 'المبيعات', href: '/sales', icon: TrendingUp, permission: 'sales' },
+  { name: 'العمليات', href: '/operations', icon: Settings2, permission: 'operations' },
+  { name: 'التسويق', href: '/marketing', icon: Megaphone, permission: 'marketing' },
+  { name: 'العملاء', href: '/customers', icon: Users, permission: 'customers' },
+  { name: 'الموردين', href: '/suppliers', icon: Building2, permission: 'suppliers' },
+  { name: 'الرسوم البيانية', href: '/charts', icon: BarChart3, permission: null }, // Always visible
+  { name: 'تحميل التقارير', href: '/download', icon: Download, permission: 'canExport' },
 ];
 
 export const Sidebar: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, role, userName, signOut } = useAuth();
+  const { user, role, userName, permissions, signOut } = useAuth();
 
   const handleLogout = async () => {
     await signOut();
     navigate('/login');
   };
+
+  // Filter navigation items based on user permissions
+  const visibleNavigation = navigationItems.filter(item => {
+    // Items with no permission requirement are always visible
+    if (item.permission === null) return true;
+    
+    // Check if user has the required permission
+    if (permissions) {
+      return permissions[item.permission as keyof typeof permissions] === true;
+    }
+    
+    return false;
+  });
 
   return (
     <div className="w-64 bg-nav-background text-nav-foreground flex flex-col shadow-wathiq-medium">
@@ -72,7 +86,7 @@ export const Sidebar: React.FC = () => {
       {/* Navigation */}
       <nav className="flex-1 p-4">
         <ul className="space-y-2">
-          {navigation.map((item) => {
+          {visibleNavigation.map((item) => {
             const isActive = location.pathname === item.href;
             const Icon = item.icon;
             
