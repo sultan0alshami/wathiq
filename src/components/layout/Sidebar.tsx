@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   FileText, 
@@ -10,9 +10,13 @@ import {
   Users, 
   BarChart3,
   Download,
-  Building2
+  Building2,
+  LogOut,
+  User
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
 
 const navigation = [
   { name: 'لوحة التحكم', href: '/', icon: LayoutDashboard },
@@ -29,6 +33,13 @@ const navigation = [
 
 export const Sidebar: React.FC = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, role, signOut } = useAuth();
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/login');
+  };
 
   return (
     <div className="w-64 bg-nav-background text-nav-foreground flex flex-col shadow-wathiq-medium">
@@ -41,6 +52,19 @@ export const Sidebar: React.FC = () => {
           <div>
             <h1 className="text-xl font-bold">واثق</h1>
             <p className="text-sm text-nav-foreground/70">نظام الإدارة</p>
+          </div>
+        </div>
+      </div>
+
+      {/* User Info */}
+      <div className="p-4 border-b border-nav-hover">
+        <div className="flex items-center space-x-2 space-x-reverse">
+          <div className="w-8 h-8 bg-wathiq-primary/20 rounded-full flex items-center justify-center">
+            <User className="w-4 h-4 text-wathiq-primary" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium truncate">{user?.email}</p>
+            <p className="text-xs text-nav-foreground/60 capitalize">{role}</p>
           </div>
         </div>
       </div>
@@ -72,9 +96,17 @@ export const Sidebar: React.FC = () => {
         </ul>
       </nav>
 
-      {/* Footer */}
+      {/* Logout Button */}
       <div className="p-4 border-t border-nav-hover">
-        <div className="text-xs text-nav-foreground/60 text-center">
+        <Button
+          onClick={handleLogout}
+          variant="ghost"
+          className="w-full justify-start space-x-2 space-x-reverse text-nav-foreground/80 hover:bg-nav-hover hover:text-white"
+        >
+          <LogOut className="w-5 h-5" />
+          <span>تسجيل الخروج</span>
+        </Button>
+        <div className="text-xs text-nav-foreground/60 text-center mt-3">
           © 2024 شركة واثق
         </div>
       </div>
