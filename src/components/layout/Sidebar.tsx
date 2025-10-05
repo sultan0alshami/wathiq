@@ -34,7 +34,7 @@ const navigation = [
 export const Sidebar: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, role, signOut } = useAuth();
+  const { user, role, userName, signOut } = useAuth();
 
   const handleLogout = async () => {
     await signOut();
@@ -59,12 +59,12 @@ export const Sidebar: React.FC = () => {
       {/* User Info */}
       <div className="p-4 border-b border-nav-hover">
         <div className="flex items-center space-x-2 space-x-reverse">
-          <div className="w-8 h-8 bg-wathiq-primary/20 rounded-full flex items-center justify-center">
-            <User className="w-4 h-4 text-wathiq-primary" />
+          <div className="w-10 h-10 bg-wathiq-primary/20 rounded-full flex items-center justify-center">
+            <User className="w-5 h-5 text-wathiq-primary" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">{user?.email}</p>
-            <p className="text-xs text-nav-foreground/60 capitalize">{role}</p>
+            <p className="text-sm font-bold truncate">{userName || user?.email}</p>
+            <p className="text-xs text-nav-foreground/60">{user?.email}</p>
           </div>
         </div>
       </div>

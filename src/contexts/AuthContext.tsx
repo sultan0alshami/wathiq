@@ -6,6 +6,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   role: UserRole | null;
+  userName: string | null;
   permissions: UserPermissions | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
@@ -18,6 +19,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [role, setRole] = useState<UserRole | null>(null);
+  const [userName, setUserName] = useState<string | null>(null);
   const [permissions, setPermissions] = useState<UserPermissions | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -43,6 +45,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         fetchUserRole(session.user.id);
       } else {
         setRole(null);
+        setUserName(null);
         setPermissions(null);
         setLoading(false);
       }
@@ -55,22 +58,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const { data, error } = await supabase
         .from('user_roles')
-        .select('role')
+        .select('role, name')
         .eq('user_id', userId)
         .single();
 
       if (error) {
         console.error('Error fetching user role:', error);
         setRole('marketing'); // Default role
+        setUserName('مستخدم');
         setPermissions(getUserPermissions('marketing'));
       } else {
         const userRole = (data?.role as UserRole) || 'marketing';
+        const name = data?.name || 'مستخدم';
         setRole(userRole);
+        setUserName(name);
         setPermissions(getUserPermissions(userRole));
       }
     } catch (error) {
       console.error('Error:', error);
       setRole('marketing');
+      setUserName('مستخدم');
       setPermissions(getUserPermissions('marketing'));
     } finally {
       setLoading(false);
@@ -95,6 +102,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user,
         session,
         role,
+        userName,
         permissions,
         loading,
         signIn,
