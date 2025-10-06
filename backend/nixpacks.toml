@@ -1,8 +1,0 @@
-[phases.setup]
-nixPkgs = ['python312', 'python312Packages.pip']
-
-[phases.install]
-cmds = ['pip install weasyprint', 'npm install']
-
-[start]
-cmd = 'node server.js'

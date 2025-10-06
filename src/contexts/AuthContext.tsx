@@ -25,24 +25,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchUserRole(session.user.id);
-      } else {
-        setLoading(false);
+        await fetchUserRole(session.user.id, session.user.email || undefined);
       }
+      setLoading(false);
     });
 
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchUserRole(session.user.id);
+        await fetchUserRole(session.user.id, session.user.email || undefined);
       } else {
         setRole(null);
         setUserName(null);
@@ -54,7 +53,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => subscription.unsubscribe();
   }, []);
 
-  const fetchUserRole = async (userId: string) => {
+  const inferRoleFromEmail = (email: string): UserRole => {
+    const prefix = (email.split('@')[0] || '').toLowerCase();
+    const candidates: UserRole[] = ['admin', 'manager', 'finance', 'sales', 'operations', 'marketing', 'customers', 'suppliers'];
+    return (candidates.includes(prefix as UserRole) ? (prefix as UserRole) : 'marketing');
+  };
+
+  const nameByRole: Record<UserRole, string> = {
+    admin: 'أحمد المدير',
+    manager: 'محمد المشرف',
+    finance: 'فاطمة المالية',
+    sales: 'خالد المبيعات',
+    operations: 'سارة العمليات',
+    marketing: 'عمر التسويق',
+    customers: 'ليلى العملاء',
+    suppliers: 'مازن الموردين',
+  };
+
+  const fetchUserRole = async (userId: string, emailForInference?: string) => {
     try {
       const { data, error } = await supabase
         .from('user_roles')
@@ -62,23 +78,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .eq('user_id', userId)
         .single();
 
-      if (error) {
-        console.error('Error fetching user role:', error);
-        setRole('marketing'); // Default role
-        setUserName('مستخدم');
-        setPermissions(getUserPermissions('marketing'));
+      const dbRole = (data?.role as UserRole) || null;
+      if (dbRole) {
+        const displayName = (data?.name as string) || nameByRole[dbRole];
+        setRole(dbRole);
+        setUserName(displayName);
+        setPermissions(getUserPermissions(dbRole));
       } else {
-        const userRole = (data?.role as UserRole) || 'marketing';
-        const name = data?.name || 'مستخدم';
-        setRole(userRole);
-        setUserName(name);
-        setPermissions(getUserPermissions(userRole));
+        const emailRole = inferRoleFromEmail(emailForInference || user?.email || '');
+        const displayName = nameByRole[emailRole];
+        setRole(emailRole);
+        setUserName(displayName);
+        setPermissions(getUserPermissions(emailRole));
       }
     } catch (error) {
       console.error('Error:', error);
-      setRole('marketing');
-      setUserName('مستخدم');
-      setPermissions(getUserPermissions('marketing'));
+      const emailRole = inferRoleFromEmail(emailForInference || user?.email || '');
+      setRole(emailRole);
+      setUserName(nameByRole[emailRole]);
+      setPermissions(getUserPermissions(emailRole));
     } finally {
       setLoading(false);
     }
@@ -93,7 +111,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+    } catch (_e) {
+      // ignore
+    } finally {
+      try {
+        if (typeof window !== 'undefined') {
+          // Remove Supabase persisted sessions
+          try { localStorage.removeItem('wathiq-auth'); } catch {}
+          Object.keys(localStorage).forEach((k) => {
+            if (k.startsWith('sb-')) localStorage.removeItem(k);
+          });
+          sessionStorage.clear();
+        }
+      } catch (_ignore) {}
+      setSession(null);
+      setUser(null);
+      setRole(null);
+      setUserName(null);
+      setPermissions(null);
+      setLoading(false);
+    }
   };
 
   return (

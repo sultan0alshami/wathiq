@@ -20,15 +20,15 @@ import { Button } from '@/components/ui/button';
 
 // Navigation items with permission requirements
 const navigationItems = [
-  { name: 'لوحة التحكم', href: '/', icon: LayoutDashboard, permission: null }, // Always visible
-  { name: 'التقارير', href: '/reports', icon: FileText, permission: null }, // Always visible
+  { name: 'لوحة التحكم', href: '/', icon: LayoutDashboard, permission: 'dashboard' },
+  { name: 'التقارير', href: '/reports', icon: FileText, permission: 'reports' },
   { name: 'المالية', href: '/finance', icon: DollarSign, permission: 'finance' },
   { name: 'المبيعات', href: '/sales', icon: TrendingUp, permission: 'sales' },
   { name: 'العمليات', href: '/operations', icon: Settings2, permission: 'operations' },
   { name: 'التسويق', href: '/marketing', icon: Megaphone, permission: 'marketing' },
   { name: 'العملاء', href: '/customers', icon: Users, permission: 'customers' },
   { name: 'الموردين', href: '/suppliers', icon: Building2, permission: 'suppliers' },
-  { name: 'الرسوم البيانية', href: '/charts', icon: BarChart3, permission: null }, // Always visible
+  { name: 'الرسوم البيانية', href: '/charts', icon: BarChart3, permission: 'charts' },
   { name: 'تحميل التقارير', href: '/download', icon: Download, permission: 'canExport' },
 ];
 
@@ -38,21 +38,17 @@ export const Sidebar: React.FC = () => {
   const { user, role, userName, permissions, signOut } = useAuth();
 
   const handleLogout = async () => {
-    await signOut();
-    navigate('/login');
+    try {
+      await signOut();
+    } finally {
+      navigate('/login', { replace: true });
+    }
   };
 
   // Filter navigation items based on user permissions
   const visibleNavigation = navigationItems.filter(item => {
-    // Items with no permission requirement are always visible
-    if (item.permission === null) return true;
-    
-    // Check if user has the required permission
-    if (permissions) {
-      return permissions[item.permission as keyof typeof permissions] === true;
-    }
-    
-    return false;
+    if (!permissions) return false;
+    return permissions[item.permission as keyof typeof permissions] === true;
   });
 
   return (

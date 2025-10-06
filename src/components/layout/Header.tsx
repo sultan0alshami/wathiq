@@ -27,10 +27,13 @@ export const Header: React.FC = () => {
     console.log("Search term:", value);
   };
 
-  const handleLogout = async () => {
-    await signOut();
-    navigate('/login');
-  };
+         const handleLogout = async () => {
+           try {
+             await signOut();
+           } finally {
+             navigate('/login', { replace: true });
+           }
+         };
 
   // Get role display name in Arabic
   const getRoleDisplayName = (role: string | null) => {
