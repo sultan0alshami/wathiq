@@ -59,16 +59,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return (candidates.includes(prefix as UserRole) ? (prefix as UserRole) : 'marketing');
   };
 
-  const nameByRole: Record<UserRole, string> = {
-    admin: 'أحمد المدير',
-    manager: 'محمد المشرف',
-    finance: 'فاطمة المالية',
-    sales: 'خالد المبيعات',
-    operations: 'سارة العمليات',
-    marketing: 'عمر التسويق',
-    customers: 'ليلى العملاء',
-    suppliers: 'مازن الموردين',
-  };
+  // No static fallback names. We always prefer DB value; if missing, show email.
 
   const fetchUserRole = async (userId: string, emailForInference?: string) => {
     try {
@@ -80,22 +71,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const dbRole = (data?.role as UserRole) || null;
       if (dbRole) {
-        const displayName = (data?.name as string) || nameByRole[dbRole];
+        const displayName = (data?.name as string) || (emailForInference || user?.email || '');
         setRole(dbRole);
         setUserName(displayName);
         setPermissions(getUserPermissions(dbRole));
       } else {
         const emailRole = inferRoleFromEmail(emailForInference || user?.email || '');
-        const displayName = nameByRole[emailRole];
         setRole(emailRole);
-        setUserName(displayName);
+        setUserName(emailForInference || user?.email || '');
         setPermissions(getUserPermissions(emailRole));
       }
     } catch (error) {
       console.error('Error:', error);
       const emailRole = inferRoleFromEmail(emailForInference || user?.email || '');
       setRole(emailRole);
-      setUserName(nameByRole[emailRole]);
+      setUserName(emailForInference || user?.email || '');
       setPermissions(getUserPermissions(emailRole));
     } finally {
       setLoading(false);
