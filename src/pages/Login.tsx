@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { getDefaultPathForRole } from '@/lib/supabase';
@@ -15,7 +15,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signIn, role } = useAuth();
+  const { signIn, role, user } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -23,7 +23,6 @@ export default function Login() {
     setError('');
     setLoading(true);
 
-    const start = performance.now();
     const { error } = await signIn(email, password);
 
     if (error) {
@@ -31,14 +30,17 @@ export default function Login() {
       setLoading(false);
     } else {
       // Redirect immediately to the base path for this role
-      const target = role ? getDefaultPathForRole(role) : '/admin';
-      // small debounce so AuthContext onAuthStateChange can publish user/role
-      const elapsed = performance.now() - start;
-      const delay = elapsed < 150 ? 150 - elapsed : 0;
-      setTimeout(() => navigate(target, { replace: true }), delay);
+      // navigation will occur in effect when role becomes available
       setLoading(false);
     }
   };
+
+  // Redirect when authenticated role is known
+  useEffect(() => {
+    if (user && role) {
+      navigate(getDefaultPathForRole(role), { replace: true });
+    }
+  }, [user, role, navigate]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-wathiq-primary/10 via-background to-wathiq-accent/10 p-4">
