@@ -64,6 +64,15 @@ To get a local copy up and running, follow these simple steps.
 
 The application will now be running on `http://localhost:5173` (or another port if 5173 is in use).
 
+## Deployment
+
+To deploy the frontend to Vercel, see `DEPLOY_TO_VERCEL.md`. You will need to set the following environment variables in the Vercel project:
+
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+
+Optionally add `VITE_API_URL` if you connect a backend.
+
 ## Contributing
 
 We welcome contributions! Please refer to our `CONTRIBUTING.md` (if available) for guidelines on how to contribute to this project.
