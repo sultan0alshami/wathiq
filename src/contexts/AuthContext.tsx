@@ -63,15 +63,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchUserRole = async (userId: string, emailForInference?: string) => {
     try {
+      // Use array response to avoid strict single/object Accept header that can 500 with some PostgREST setups
       const { data, error } = await supabase
         .from('user_roles')
         .select('role, name')
         .eq('user_id', userId)
-        .maybeSingle();
+        .limit(1);
 
-      const dbRole = (data?.role as UserRole) || null;
+      const row = Array.isArray(data) ? data[0] : (data as any);
+      const dbRole = (row?.role as UserRole) || null;
       if (dbRole) {
-        const displayName = (data?.name as string) || (emailForInference || user?.email || '');
+        const displayName = (row?.name as string) || (emailForInference || user?.email || '');
         setRole(dbRole);
         setUserName(displayName);
         setPermissions(getUserPermissions(dbRole));
