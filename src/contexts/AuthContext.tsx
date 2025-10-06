@@ -67,7 +67,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .from('user_roles')
         .select('role, name')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
 
       const dbRole = (data?.role as UserRole) || null;
       if (dbRole) {
