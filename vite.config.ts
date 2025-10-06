@@ -5,7 +5,6 @@ import { componentTagger } from "lovable-tagger";
 import tailwindcss from "tailwindcss";
 import autoprefixer from "autoprefixer";
 import postcssImport from 'postcss-import';
-import commonjs from 'rollup-plugin-commonjs';
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -24,7 +23,7 @@ export default defineConfig(({ mode }) => ({
   optimizeDeps: {
     exclude: ["jspdf-font-support"],
   },
-  plugins: [react(), mode === "development" && componentTagger(), commonjs()].filter(Boolean),
+  plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   css: {
     postcss: {
       plugins: [postcssImport(), tailwindcss(), autoprefixer()],
