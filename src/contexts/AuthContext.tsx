@@ -64,7 +64,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const fetchUserRole = async (userId: string, emailForInference?: string) => {
     try {
       // Use array response to avoid strict single/object Accept header that can 500 with some PostgREST setups
-      const { data, error } = await supabase
+      const { data, error: _err } = await supabase
         .from('user_roles')
         .select('role, name')
         .eq('user_id', userId)
@@ -104,13 +104,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOut = async () => {
     try {
-      await supabase.auth.signOut();
+      // Clear local session for this tab
+      await supabase.auth.signOut({ scope: 'local' as any });
     } catch (_e) {
       // ignore
     } finally {
       try {
         if (typeof window !== 'undefined') {
-          // Remove Supabase persisted sessions
+          // Remove any persisted tokens
           try { localStorage.removeItem('wathiq-auth'); } catch {}
           Object.keys(localStorage).forEach((k) => {
             if (k.startsWith('sb-')) localStorage.removeItem(k);
@@ -124,6 +125,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUserName(null);
       setPermissions(null);
       setLoading(false);
+      // Ensure a clean app state after logout (avoids stale SPA state)
+      if (typeof window !== 'undefined') window.location.assign('/login');
     }
   };
 
