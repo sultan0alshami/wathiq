@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { 
+import {
   LayoutDashboard, 
   FileText, 
   DollarSign, 
@@ -18,24 +18,26 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 
-// Navigation items with permission requirements
+// Navigation items with permission requirements.
+// `path` is appended to the base (/admin or /manager)
 const navigationItems = [
-  { name: 'لوحة التحكم', href: '/', icon: LayoutDashboard, permission: 'dashboard' },
-  { name: 'التقارير', href: '/reports', icon: FileText, permission: 'reports' },
-  { name: 'المالية', href: '/finance', icon: DollarSign, permission: 'finance' },
-  { name: 'المبيعات', href: '/sales', icon: TrendingUp, permission: 'sales' },
-  { name: 'العمليات', href: '/operations', icon: Settings2, permission: 'operations' },
-  { name: 'التسويق', href: '/marketing', icon: Megaphone, permission: 'marketing' },
-  { name: 'العملاء', href: '/customers', icon: Users, permission: 'customers' },
-  { name: 'الموردين', href: '/suppliers', icon: Building2, permission: 'suppliers' },
-  { name: 'الرسوم البيانية', href: '/charts', icon: BarChart3, permission: 'charts' },
-  { name: 'تحميل التقارير', href: '/download', icon: Download, permission: 'canExport' },
+  { name: 'لوحة التحكم', path: '', icon: LayoutDashboard, permission: 'dashboard' },
+  { name: 'التقارير', path: 'reports', icon: FileText, permission: 'reports' },
+  { name: 'المالية', path: 'finance', icon: DollarSign, permission: 'finance' },
+  { name: 'المبيعات', path: 'sales', icon: TrendingUp, permission: 'sales' },
+  { name: 'العمليات', path: 'operations', icon: Settings2, permission: 'operations' },
+  { name: 'التسويق', path: 'marketing', icon: Megaphone, permission: 'marketing' },
+  { name: 'العملاء', path: 'customers', icon: Users, permission: 'customers' },
+  { name: 'الموردين', path: 'suppliers', icon: Building2, permission: 'suppliers' },
+  { name: 'الرسوم البيانية', path: 'charts', icon: BarChart3, permission: 'charts' },
+  { name: 'تحميل التقارير', path: 'download', icon: Download, permission: 'canExport' },
 ];
 
 export const Sidebar: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, role, userName, permissions, signOut } = useAuth();
+  const basePath = role === 'admin' ? '/admin' : '/manager';
 
   const handleLogout = async () => {
     const ok = window.confirm('هل تريد تأكيد تسجيل الخروج؟');
@@ -85,13 +87,14 @@ export const Sidebar: React.FC = () => {
       <nav className="flex-1 p-4">
         <ul className="space-y-2">
           {visibleNavigation.map((item) => {
-            const isActive = location.pathname === item.href;
+            const href = item.path ? `${basePath}/${item.path}`.replace(/\/$/, '') : basePath;
+            const isActive = location.pathname === href;
             const Icon = item.icon;
             
             return (
               <li key={item.name}>
                 <NavLink
-                  to={item.href}
+                  to={href}
                   className={cn(
                     "flex items-center space-x-3 space-x-reverse px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 animate-hover",
                     isActive
