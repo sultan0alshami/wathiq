@@ -42,6 +42,20 @@ export default function Login() {
     }
   }, [user, role, navigate]);
 
+  // Prevent going forward to a protected page after returning to login
+  useEffect(() => {
+    if (window.location.pathname === '/') {
+      window.history.pushState(null, '', '/');
+    }
+    const onPopState = () => {
+      if (window.location.pathname === '/') {
+        window.history.pushState(null, '', '/');
+      }
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-wathiq-primary/10 via-background to-wathiq-accent/10 p-4">
       <Card className="w-full max-w-md shadow-2xl border-wathiq-primary/20">

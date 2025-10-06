@@ -129,8 +129,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUserName(null);
       setPermissions(null);
       setLoading(false);
-      // Ensure a clean app state after logout (avoids stale SPA state)
-      if (typeof window !== 'undefined') window.location.assign('/login');
+      // Ensure a clean app state after logout (avoid forward to dashboard)
+      if (typeof window !== 'undefined') window.location.replace('/');
     }
   };
 
