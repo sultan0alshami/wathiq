@@ -38,6 +38,8 @@ export const Sidebar: React.FC = () => {
   const { user, role, userName, permissions, signOut } = useAuth();
 
   const handleLogout = async () => {
+    const ok = window.confirm('هل تريد تأكيد تسجيل الخروج؟');
+    if (!ok) return;
     try {
       await signOut();
     } finally {

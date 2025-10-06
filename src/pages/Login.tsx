@@ -23,6 +23,7 @@ export default function Login() {
     setError('');
     setLoading(true);
 
+    const start = performance.now();
     const { error } = await signIn(email, password);
 
     if (error) {
@@ -31,7 +32,10 @@ export default function Login() {
     } else {
       // Redirect immediately to the base path for this role
       const target = role ? getDefaultPathForRole(role) : '/admin';
-      navigate(target, { replace: true });
+      // small debounce so AuthContext onAuthStateChange can publish user/role
+      const elapsed = performance.now() - start;
+      const delay = elapsed < 150 ? 150 - elapsed : 0;
+      setTimeout(() => navigate(target, { replace: true }), delay);
       setLoading(false);
     }
   };
