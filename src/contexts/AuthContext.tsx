@@ -63,12 +63,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchUserRole = async (userId: string, emailForInference?: string) => {
     try {
-      // Use array response to avoid strict single/object Accept header that can 500 with some PostgREST setups
-      const { data, error: _err } = await supabase
-        .from('user_roles')
-        .select('role, name')
-        .eq('user_id', userId)
-        .limit(1);
+      // Prefer a SECURITY DEFINER function to avoid RLS/accept header issues in production
+      // Create once in Supabase:
+      // create or replace function public.get_user_profile(uid uuid)
+      // returns table(role text, name text)
+      // language sql security definer set search_path = public as $$
+      //   select role, name from public.user_roles where user_id = uid limit 1;
+      // $$;
+      // grant execute on function public.get_user_profile(uuid) to authenticated;
+
+      const { data, error: _err } = await supabase.rpc('get_user_profile', { uid: userId });
 
       const row = Array.isArray(data) ? data[0] : (data as any);
       const dbRole = (row?.role as UserRole) || null;

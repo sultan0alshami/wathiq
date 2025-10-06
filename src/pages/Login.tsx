@@ -29,9 +29,9 @@ export default function Login() {
       setError('البريد الإلكتروني أو كلمة المرور غير صحيحة');
       setLoading(false);
     } else {
-      // After sign-in, navigate once AuthContext publishes role via onAuthStateChange
-      // Do not force navigate here; ProtectedRoute will send to the right place
-      navigate('/', { replace: true });
+      // Redirect immediately to the base path for this role
+      const target = role ? getDefaultPathForRole(role) : '/admin';
+      navigate(target, { replace: true });
       setLoading(false);
     }
   };

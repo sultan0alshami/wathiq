@@ -146,21 +146,21 @@ export const getUserPermissions = (role: UserRole): UserPermissions => {
 export const getDefaultPathForRole = (role: UserRole): string => {
   switch (role) {
     case 'admin':
-      return '/';
+      return '/admin';
     case 'manager':
-      return '/';
+      return '/manager';
     case 'finance':
-      return '/finance';
+      return '/manager/finance';
     case 'sales':
-      return '/sales';
+      return '/manager/sales';
     case 'operations':
-      return '/operations';
+      return '/manager/operations';
     case 'marketing':
-      return '/marketing';
+      return '/manager/marketing';
     case 'customers':
-      return '/customers';
+      return '/manager/customers';
     case 'suppliers':
-      return '/suppliers';
+      return '/manager/suppliers';
     default:
       return '/login';
   }
