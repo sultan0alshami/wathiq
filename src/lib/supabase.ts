@@ -4,10 +4,13 @@ import { STORAGE_KEYS } from '@/lib/storageKeys';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error(
-    '❌ Missing Supabase configuration. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file.'
-  );
+// Validate only in the browser to avoid failing static builds if envs are unset at build time.
+if (typeof window !== 'undefined') {
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error(
+      '❌ Missing Supabase configuration. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env (and Vercel envs).'
+    );
+  }
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
