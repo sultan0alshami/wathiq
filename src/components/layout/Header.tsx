@@ -68,7 +68,7 @@ export const Header: React.FC = () => {
           <ThemeToggle />
           
           {/* Notifications */}
-          <Button variant="ghost" size="sm" className="relative">
+          <Button variant="ghost" size="sm" className="relative" aria-label="الإشعارات" title="الإشعارات">
             <Bell className="w-5 h-5" />
             <span className="absolute -top-1 -left-1 bg-wathiq-accent text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
               3
@@ -78,7 +78,7 @@ export const Header: React.FC = () => {
           {/* User Menu with Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="flex items-center space-x-3 space-x-reverse hover:bg-wathiq-primary/10">
+              <Button variant="ghost" size="sm" className="flex items-center space-x-3 space-x-reverse hover:bg-wathiq-primary/10" aria-label="قائمة المستخدم" title="قائمة المستخدم">
                 <div className="text-right">
                   <p className="text-sm font-medium">{userName || user?.email}</p>
                   <p className="text-xs text-muted-foreground">{getRoleDisplayName(role)}</p>

@@ -17,7 +17,7 @@ import {
   RefreshCw,
   AlertCircle
 } from 'lucide-react';
-import { ExportProgress } from '@/services/EnhancedExportService';
+import { ExportProgress } from '@/services/ExportService';
 import { ARABIC_EXPORT_PROGRESS_DIALOG_MESSAGES } from '@/lib/arabicExportProgressDialogMessages';
 
 interface ExportProgressDialogProps {

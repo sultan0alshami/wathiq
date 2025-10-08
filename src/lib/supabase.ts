@@ -1,14 +1,21 @@
 import { createClient } from '@supabase/supabase-js';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error(
+    '❌ Missing Supabase configuration. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file.'
+  );
+}
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: false,
-    storageKey: 'wathiq-auth',
+    storageKey: STORAGE_KEYS.AUTH,
   },
 });
 
@@ -60,53 +67,53 @@ export const rolePermissions: Record<UserRole, UserPermissions> = {
     canManage: false,
   },
   finance: {
-    dashboard: false,
-    reports: false,
-    charts: false,
+    dashboard: true,
+    reports: true,
+    charts: true,
     finance: true,
     sales: false,
     operations: false,
     marketing: false,
     customers: false,
-    suppliers: false,
+    suppliers: true,
     canExport: false,
     canManage: false,
   },
   sales: {
-    dashboard: false,
-    reports: false,
-    charts: false,
+    dashboard: true,
+    reports: true,
+    charts: true,
     finance: false,
     sales: true,
     operations: false,
     marketing: false,
-    customers: false,
+    customers: true,
     suppliers: false,
     canExport: false,
     canManage: false,
   },
   operations: {
-    dashboard: false,
-    reports: false,
-    charts: false,
+    dashboard: true,
+    reports: true,
+    charts: true,
     finance: false,
     sales: false,
     operations: true,
     marketing: false,
     customers: false,
-    suppliers: false,
+    suppliers: true,
     canExport: false,
     canManage: false,
   },
   marketing: {
-    dashboard: false,
-    reports: false,
-    charts: false,
+    dashboard: true,
+    reports: true,
+    charts: true,
     finance: false,
     sales: false,
     operations: false,
     marketing: true,
-    customers: false,
+    customers: true,
     suppliers: false,
     canExport: false,
     canManage: false,

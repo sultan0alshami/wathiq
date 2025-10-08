@@ -35,6 +35,15 @@ export const Sales: React.FC = () => {
   const [meetings, setMeetings] = useState<SalesEntry[]>([]);
   const [dailySummary, setDailySummary] = useState('');
 
+  // Pagination
+  const ITEMS_PER_PAGE = 20;
+  const [currentPage, setCurrentPage] = useState(1);
+  useEffect(() => { setCurrentPage(1); }, [currentDate]);
+  const paginatedMeetings = React.useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return meetings.slice(start, start + ITEMS_PER_PAGE);
+  }, [meetings, currentPage]);
+
   // Meeting form states
   const [newMeetingCustomer, setNewMeetingCustomer] = useState('');
   const [newMeetingContact, setNewMeetingContact] = useState('');
@@ -410,50 +419,80 @@ export const Sales: React.FC = () => {
           {/* Meetings List */}
           {loading ? (
             <TableSkeleton rows={3} columns={4} />
+          ) : meetings.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <CalendarDays className="w-12 h-12 mx-auto mb-4 opacity-50" />
+              <p>{ARABIC_SALES_MESSAGES.NO_MEETINGS_ADDED}</p>
+            </div>
           ) : (
-            meetings.length > 0 && (
-              <div className="space-y-3">
-                {meetings.map((meeting) => (
-                  <Card key={meeting.id} className="border-l-4 border-l-primary">
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <h3 className="font-semibold text-lg">{meeting.customerName}</h3>
-                            <Badge variant="outline" className={
-                              meeting.outcome === 'positive' ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-950/20 dark:text-green-100 dark:border-green-800' :
-                              meeting.outcome === 'negative' ? 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/20 dark:text-red-100 dark:border-red-800' :
-                              'bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-950/20 dark:text-yellow-100 dark:border-yellow-800'
-                            }>
-                              {meeting.outcome === 'positive' ? ARABIC_SALES_MESSAGES.OUTCOME_SUCCESS :
-                               meeting.outcome === 'negative' ? ARABIC_SALES_MESSAGES.OUTCOME_FAILED : ARABIC_SALES_MESSAGES.OUTCOME_PENDING}
-                            </Badge>
-                          </div>
-                          <div className="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
-                            <p><span className="font-medium">{ARABIC_SALES_MESSAGES.CLIENT_NAME_LABEL}:</span> {meeting.contactNumber}</p>
-                            <p><span className="font-medium">{ARABIC_SALES_MESSAGES.CUSTOMER_PHONE_LABEL}:</span> {meeting.phoneNumber}</p>
-                            <p><span className="font-medium">{ARABIC_SALES_MESSAGES.MEETING_TIME_LABEL}:</span> {meeting.meetingTime || 'غير محدد'}</p>
-                            <p><span className="font-medium">{ARABIC_SALES_MESSAGES.MEETING_DATE_LABEL}:</span> {meeting.meetingDate.toLocaleDateString('ar-EG')}</p>
-                            {meeting.notes && (
-                              <p className="col-span-2"><span className="font-medium">{ARABIC_SALES_MESSAGES.NOTES_LABEL}:</span> {meeting.notes}</p>
-                            )}
-                          </div>
+            <div className="space-y-3">
+              {paginatedMeetings.map((meeting) => (
+                <Card key={meeting.id} className="border-l-4 border-l-primary">
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3 className="font-semibold text-lg">{meeting.customerName}</h3>
+                          <Badge variant="outline" className={
+                            meeting.outcome === 'positive' ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-950/20 dark:text-green-100 dark:border-green-800' :
+                            meeting.outcome === 'negative' ? 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/20 dark:text-red-100 dark:border-red-800' :
+                            'bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-950/20 dark:text-yellow-100 dark:border-yellow-800'
+                          }>
+                            {meeting.outcome === 'positive' ? ARABIC_SALES_MESSAGES.OUTCOME_SUCCESS :
+                             meeting.outcome === 'negative' ? ARABIC_SALES_MESSAGES.OUTCOME_FAILED : ARABIC_SALES_MESSAGES.OUTCOME_PENDING}
+                          </Badge>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => confirmRemoveMeeting(meeting.id)}
-                          className="text-red-600 hover:bg-red-100"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                          {ARABIC_SALES_MESSAGES.DELETE_CONFIRM_ITEM_NAME}
-                        </Button>
+                        <div className="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
+                          <p><span className="font-medium">{ARABIC_SALES_MESSAGES.CLIENT_NAME_LABEL}:</span> {meeting.contactNumber}</p>
+                          <p><span className="font-medium">{ARABIC_SALES_MESSAGES.CUSTOMER_PHONE_LABEL}:</span> {meeting.phoneNumber}</p>
+                          <p><span className="font-medium">{ARABIC_SALES_MESSAGES.MEETING_TIME_LABEL}:</span> {meeting.meetingTime || 'غير محدد'}</p>
+                          <p><span className="font-medium">{ARABIC_SALES_MESSAGES.MEETING_DATE_LABEL}:</span> {meeting.meetingDate.toLocaleDateString('ar-EG')}</p>
+                          {meeting.notes && (
+                            <p className="col-span-2"><span className="font-medium">{ARABIC_SALES_MESSAGES.NOTES_LABEL}:</span> {meeting.notes}</p>
+                          )}
+                        </div>
                       </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => confirmRemoveMeeting(meeting.id)}
+                        className="text-red-600 hover:bg-red-100"
+                        aria-label={`حذف ${ARABIC_SALES_MESSAGES.MEETING_ITEM_NAME}`}
+                        title={`حذف ${ARABIC_SALES_MESSAGES.MEETING_ITEM_NAME}`}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        {ARABIC_SALES_MESSAGES.DELETE_CONFIRM_ITEM_NAME}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+              {/* Pagination Controls */}
+              <div className="flex items-center justify-between pt-4">
+                <span className="text-sm text-muted-foreground">
+                  {Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, meetings.length)}-
+                  {Math.min(currentPage * ITEMS_PER_PAGE, meetings.length)} من {meetings.length}
+                </span>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    السابق
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => (p * ITEMS_PER_PAGE < meetings.length ? p + 1 : p))}
+                    disabled={currentPage * ITEMS_PER_PAGE >= meetings.length}
+                  >
+                    التالي
+                  </Button>
+                </div>
               </div>
-            )
+            </div>
           )}
         </CardContent>
       </Card>

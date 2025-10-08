@@ -1,7 +1,9 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { getDefaultPathForRole } from '@/lib/supabase';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ShieldX } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -46,7 +48,35 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   const required = pathPermissionMap[pathname];
   if (required && permissions && permissions[required] !== true) {
     const fallback = role ? getDefaultPathForRole(role) : '/login';
-    return <Navigate to={fallback} replace />;
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 bg-background">
+        <Card className="max-w-md w-full text-center shadow-lg">
+          <CardHeader className="space-y-4">
+            <div className="w-16 h-16 mx-auto bg-destructive/10 rounded-full flex items-center justify-center">
+              <ShieldX className="w-8 h-8 text-destructive" />
+            </div>
+            <CardTitle className="text-2xl">غير مصرح بالوصول</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-muted-foreground">
+              عذراً، ليس لديك صلاحية للوصول إلى هذا القسم.
+              <br />
+              يرجى التواصل مع المدير للحصول على الصلاحيات المطلوبة.
+            </p>
+            <div className="pt-4">
+              <Button
+                className="w-full"
+                onClick={() => {
+                  window.location.href = fallback;
+                }}
+              >
+                العودة إلى لوحة التحكم
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   return <>{children}</>;

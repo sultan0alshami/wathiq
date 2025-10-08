@@ -73,6 +73,52 @@ To deploy the frontend to Vercel, see `DEPLOY_TO_VERCEL.md`. You will need to se
 
 Optionally add `VITE_API_URL` if you connect a backend.
 
+### Backend (Node.js) Configuration
+
+If you run the backend (`backend/server.js`) for PDF generation:
+
+- Environment variables (in `backend/.env`):
+  - `PYTHON_PATH` (e.g. `python3` or absolute path) — used to spawn Python
+  - `FRONTEND_URL` (e.g. `https://wathiq.vercel.app`) — used in CORS allowlist
+  - Optional WhatsApp Cloud API:
+    - `WHATSAPP_TOKEN`
+    - `WHATSAPP_PHONE_ID`
+    - `MANAGER_PHONE`
+
+- Security hardening:
+  - CORS allowlist enforced (`FRONTEND_URL`, `VERCEL_URL`, localhost dev ports)
+  - Basic in-memory rate limiting for `/generate-pdf` (10 requests / 15 min / IP)
+  - Portable Python path via `PYTHON_PATH` (no hardcoded OS paths)
+
+### Supabase (SQL Migrations & Policies)
+
+Apply the SQL in `supabase/001_schema.sql` to create minimal tables, the `user_roles` mapping, required RPC, and enable RLS policies. For reference, the RPC function is:
+
+```sql
+CREATE OR REPLACE FUNCTION public.get_user_profile(uid uuid)
+RETURNS TABLE(role text, name text)
+LANGUAGE sql 
+SECURITY DEFINER 
+SET search_path = public 
+AS $$
+  SELECT role, name 
+  FROM public.user_roles 
+  WHERE user_id = uid 
+  LIMIT 1;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.get_user_profile(uuid) TO authenticated;
+```
+
+RLS policies in `001_schema.sql` enforce:
+- finance_entries: admin/manager/finance may access own rows
+- sales_entries: admin/manager/sales may access own rows
+
+Run migrations:
+```bash
+psql "$SUPABASE_CONN" -f supabase/001_schema.sql
+```
+
 ## Contributing
 
 We welcome contributions! Please refer to our `CONTRIBUTING.md` (if available) for guidelines on how to contribute to this project.
@@ -86,3 +132,20 @@ Distributed under the MIT License. See `LICENSE` for more information.
 [Sultan Alshami] - [sultan12alshami@gmail.com/+966534820384]
 
 Project Link: [https://github.com/sultan0alshami/wathiq](https://github.com/sultan0alshami/wathiq)
+
+## Changelog
+
+### 2025-10-07
+- Added environment validation to Supabase client (`src/lib/supabase.ts`)
+- Aligned role permissions with documented matrix
+- Improved unauthorized UX in `src/components/ProtectedRoute.tsx`
+- Implemented route-level code splitting in `src/App.tsx`
+- Standardized storage keys via `src/lib/storageKeys.ts`
+- Centralized export interface via `src/services/ExportService.ts` and updated imports
+- Removed orphan/unused pages: `src/pages/Index.tsx`, `src/pages/DataManagement.tsx`
+- Hardened backend: portable `PYTHON_PATH`, CORS allowlist, rate limiting
+- Removed unused deps from `package.json`
+ - Added Supabase SQL migrations & RLS (`supabase/001_schema.sql`)
+ - Removed React Query provider/dependency; added Jest/RTL tests + CI coverage
+ - Implemented Zustand store for shared client state
+ - Standardized storage keys across services

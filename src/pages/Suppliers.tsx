@@ -28,6 +28,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Supplier, SupplierDocument } from '@/lib/mockData';
 import { format } from 'date-fns';
 import { useFormValidation, ValidationMessage, ValidationRules } from '@/components/ui/enhanced-form-validation';
+import { SafeHTML } from '@/components/SafeHTML';
 import { DeleteConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { CardSkeleton, TableSkeleton } from '@/components/ui/loading-skeleton';
 import { ARABIC_SUPPLIERS_MESSAGES } from '@/lib/arabicSuppliersMessages';
@@ -41,6 +42,10 @@ export const Suppliers: React.FC = () => {
   const [isDeleteConfirmationOpen, setIsDeleteConfirmationOpen] = useState(false);
   const [supplierToDelete, setSupplierToDelete] = useState<string | null>(null);
   const [dataLoading, setDataLoading] = useState(true); // New state for data loading
+
+  // Pagination
+  const ITEMS_PER_PAGE = 20;
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Use localStorage for suppliers data
   const { value: suppliers, setValue: setSuppliers } = useDataWithDate<Supplier[]>(
@@ -527,7 +532,7 @@ export const Suppliers: React.FC = () => {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  suppliers.map((supplier: Supplier) => (
+                  suppliers.slice((currentPage - 1) * ITEMS_PER_PAGE, (currentPage - 1) * ITEMS_PER_PAGE + ITEMS_PER_PAGE).map((supplier: Supplier) => (
                     <TableRow key={supplier.id}>
                       <TableCell>
                         <div>
@@ -581,6 +586,8 @@ export const Suppliers: React.FC = () => {
                             variant="ghost"
                             size="sm"
                             onClick={() => handleDeleteSupplier(supplier.id)}
+                            aria-label={ARABIC_SUPPLIERS_MESSAGES.DELETE_CONFIRMATION_ITEM_NAME}
+                            title={ARABIC_SUPPLIERS_MESSAGES.DELETE_CONFIRMATION_ITEM_NAME}
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
@@ -591,6 +598,41 @@ export const Suppliers: React.FC = () => {
                 )}
               </TableBody>
             </Table>
+            {/* Supplier notes (sanitized) */}
+            {suppliers.map((s: Supplier) => (
+              s.notes ? (
+                <div key={`notes-${s.id}`} className="mt-2 text-sm text-muted-foreground">
+                  <SafeHTML html={s.notes} />
+                </div>
+              ) : null
+            ))}
+            {/* Pagination Controls */}
+            {suppliers.length > ITEMS_PER_PAGE && (
+              <div className="flex items-center justify-between pt-4">
+                <span className="text-sm text-muted-foreground">
+                  {Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, suppliers.length)}-
+                  {Math.min(currentPage * ITEMS_PER_PAGE, suppliers.length)} من {suppliers.length}
+                </span>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    السابق
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => (p * ITEMS_PER_PAGE < suppliers.length ? p + 1 : p))}
+                    disabled={currentPage * ITEMS_PER_PAGE >= suppliers.length}
+                  >
+                    التالي
+                  </Button>
+                </div>
+              </div>
+            )}
           )}
         </CardContent>
       </Card>

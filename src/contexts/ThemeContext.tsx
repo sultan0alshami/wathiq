@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 
 type Theme = 'light' | 'dark' | 'system';
 
@@ -13,7 +14,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [theme, setThemeState] = useState<Theme>(() => {
     // Check localStorage first
-    const stored = localStorage.getItem('wathiq-theme') as Theme;
+    const stored = localStorage.getItem(STORAGE_KEYS.AUTH.replace('auth','theme')) as Theme;
     if (stored && ['light', 'dark', 'system'].includes(stored)) {
       return stored;
     }
@@ -42,9 +43,9 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     
     // Store in localStorage (only if not 'system')
     if (theme !== 'system') {
-      localStorage.setItem('wathiq-theme', theme);
+      localStorage.setItem(STORAGE_KEYS.AUTH.replace('auth','theme'), theme);
     } else {
-      localStorage.removeItem('wathiq-theme'); // Clear stored theme if it's 'system'
+      localStorage.removeItem(STORAGE_KEYS.AUTH.replace('auth','theme')); // Clear stored theme if it's 'system'
     }
   }, [theme]);
 

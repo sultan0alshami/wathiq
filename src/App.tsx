@@ -1,19 +1,19 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { DashboardLayout } from "./components/layout/DashboardLayout";
-import { ManagerDashboard } from "./components/pages/ManagerDashboard";
-import { EnhancedFinance } from "./pages/EnhancedFinance";
-import { Sales } from "./pages/Sales";
-import { Operations } from "./pages/Operations";
-import { Marketing } from "./pages/Marketing";
-import { Customers } from "./pages/Customers";
-import { Suppliers } from "./pages/Suppliers";
-import { Reports } from "./pages/Reports";
-import { Charts } from "./pages/Charts";
-import { Download } from "./pages/Download";
+import { lazy, Suspense } from "react";
+const ManagerDashboard = lazy(() => import("./components/pages/ManagerDashboard").then(m => ({ default: m.ManagerDashboard })));
+const EnhancedFinance = lazy(() => import("./pages/EnhancedFinance").then(m => ({ default: m.EnhancedFinance })));
+const Sales = lazy(() => import("./pages/Sales").then(m => ({ default: m.Sales })));
+const Operations = lazy(() => import("./pages/Operations").then(m => ({ default: m.Operations })));
+const Marketing = lazy(() => import("./pages/Marketing").then(m => ({ default: m.Marketing })));
+const Customers = lazy(() => import("./pages/Customers").then(m => ({ default: m.Customers })));
+const Suppliers = lazy(() => import("./pages/Suppliers").then(m => ({ default: m.Suppliers })));
+const Reports = lazy(() => import("./pages/Reports").then(m => ({ default: m.Reports })));
+const Charts = lazy(() => import("./pages/Charts").then(m => ({ default: m.Charts })));
+const Download = lazy(() => import("./pages/Download").then(m => ({ default: m.Download })));
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import { DateProvider } from "./contexts/DateContext";
@@ -21,19 +21,17 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { ErrorBoundary } from "./components/ui/error-boundary";
 import ProtectedRoute from "./components/ProtectedRoute";
 
-const queryClient = new QueryClient();
 
 // Removed Placeholder components
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <AuthProvider>
-        <DateProvider>
-          <Toaster />
-          <Sonner />
-          <ErrorBoundary>
-            <BrowserRouter>
+  <TooltipProvider>
+    <AuthProvider>
+      <DateProvider>
+        <Toaster />
+        <Sonner />
+        <ErrorBoundary>
+          <BrowserRouter>
               <Routes>
                        {/* Root goes to Login */}
                        <Route path="/" element={<Login />} />
@@ -47,16 +45,20 @@ const App = () => (
                            </ProtectedRoute>
                          }
                        >
-                         <Route index element={<ManagerDashboard />} />
-                         <Route path="reports" element={<Reports />} />
-                         <Route path="finance" element={<EnhancedFinance />} />
-                         <Route path="sales" element={<Sales />} />
-                         <Route path="operations" element={<Operations />} />
-                         <Route path="marketing" element={<Marketing />} />
-                         <Route path="customers" element={<Customers />} />
-                         <Route path="suppliers" element={<Suppliers />} />
-                         <Route path="charts" element={<Charts />} />
-                         <Route path="download" element={<Download />} />
+                         <Route index element={
+                           <Suspense fallback={<div className="p-8 text-center">جاري التحميل...</div>}>
+                             <ManagerDashboard />
+                           </Suspense>
+                         } />
+                         <Route path="reports" element={<Suspense fallback={<div className="p-8 text-center">جاري التحميل...</div>}><Reports /></Suspense>} />
+                         <Route path="finance" element={<Suspense fallback={<div className="p-8 text-center">جاري التحميل...</div>}><EnhancedFinance /></Suspense>} />
+                         <Route path="sales" element={<Suspense fallback={<div className="p-8 text-center">جاري التحميل...</div>}><Sales /></Suspense>} />
+                         <Route path="operations" element={<Suspense fallback={<div className="p-8 text-center">جاري التحميل...</div>}><Operations /></Suspense>} />
+                         <Route path="marketing" element={<Suspense fallback={<div className="p-8 text-center">جاري التحميل...</div>}><Marketing /></Suspense>} />
+                         <Route path="customers" element={<Suspense fallback={<div className="p-8 text-center">جاري التحميل...</div>}><Customers /></Suspense>} />
+                         <Route path="suppliers" element={<Suspense fallback={<div className="p-8 text-center">جاري التحميل...</div>}><Suppliers /></Suspense>} />
+                         <Route path="charts" element={<Suspense fallback={<div className="p-8 text-center">جاري التحميل...</div>}><Charts /></Suspense>} />
+                         <Route path="download" element={<Suspense fallback={<div className="p-8 text-center">جاري التحميل...</div>}><Download /></Suspense>} />
                        </Route>
 
                        {/* Manager base (same layout) */}
@@ -68,16 +70,20 @@ const App = () => (
                            </ProtectedRoute>
                          }
                        >
-                         <Route index element={<ManagerDashboard />} />
-                         <Route path="reports" element={<Reports />} />
-                         <Route path="finance" element={<EnhancedFinance />} />
-                         <Route path="sales" element={<Sales />} />
-                         <Route path="operations" element={<Operations />} />
-                         <Route path="marketing" element={<Marketing />} />
-                         <Route path="customers" element={<Customers />} />
-                         <Route path="suppliers" element={<Suppliers />} />
-                         <Route path="charts" element={<Charts />} />
-                         <Route path="download" element={<Download />} />
+                         <Route index element={
+                           <Suspense fallback={<div className="p-8 text-center">جاري التحميل...</div>}>
+                             <ManagerDashboard />
+                           </Suspense>
+                         } />
+                         <Route path="reports" element={<Suspense fallback={<div className="p-8 text-center">جاري التحميل...</div>}><Reports /></Suspense>} />
+                         <Route path="finance" element={<Suspense fallback={<div className="p-8 text-center">جاري التحميل...</div>}><EnhancedFinance /></Suspense>} />
+                         <Route path="sales" element={<Suspense fallback={<div className="p-8 text-center">جاري التحميل...</div>}><Sales /></Suspense>} />
+                         <Route path="operations" element={<Suspense fallback={<div className="p-8 text-center">جاري التحميل...</div>}><Operations /></Suspense>} />
+                         <Route path="marketing" element={<Suspense fallback={<div className="p-8 text-center">جاري التحميل...</div>}><Marketing /></Suspense>} />
+                         <Route path="customers" element={<Suspense fallback={<div className="p-8 text-center">جاري التحميل...</div>}><Customers /></Suspense>} />
+                         <Route path="suppliers" element={<Suspense fallback={<div className="p-8 text-center">جاري التحميل...</div>}><Suppliers /></Suspense>} />
+                         <Route path="charts" element={<Suspense fallback={<div className="p-8 text-center">جاري التحميل...</div>}><Charts /></Suspense>} />
+                         <Route path="download" element={<Suspense fallback={<div className="p-8 text-center">جاري التحميل...</div>}><Download /></Suspense>} />
                        </Route>
 
                        {/* Legacy /login path redirect to root */}
@@ -85,11 +91,10 @@ const App = () => (
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
-          </ErrorBoundary>
-        </DateProvider>
-      </AuthProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
+        </ErrorBoundary>
+      </DateProvider>
+    </AuthProvider>
+  </TooltipProvider>
 );
 
 export default App;

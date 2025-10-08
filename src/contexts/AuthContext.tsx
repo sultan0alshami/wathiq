@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase, UserRole, UserPermissions, getUserPermissions } from '@/lib/supabase';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 
 interface AuthContextType {
   user: User | null;
@@ -116,9 +117,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         if (typeof window !== 'undefined') {
           // Remove any persisted tokens
-          try { localStorage.removeItem('wathiq-auth'); } catch {}
+          try { localStorage.removeItem(STORAGE_KEYS.AUTH); } catch {}
           Object.keys(localStorage).forEach((k) => {
-            if (k.startsWith('sb-')) localStorage.removeItem(k);
+            if (k.startsWith(STORAGE_KEYS.SUPABASE_PREFIX)) localStorage.removeItem(k);
           });
           sessionStorage.clear();
         }

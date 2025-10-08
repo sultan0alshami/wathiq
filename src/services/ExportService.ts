@@ -2,6 +2,8 @@ import { format } from 'date-fns';
 import { DailyData, FinanceEntry, SalesEntry, OperationEntry, MarketingTask, Customer, getDataForDate } from '@/lib/mockData';
 import { formatCurrency, formatNumber } from '@/lib/numberUtils';
 import { ArabicPDFService } from './ArabicPDFService'; // Import the ArabicPDFService
+import { EnhancedExportService } from './EnhancedExportService';
+export type { ExportProgress, BulkExportOptions } from './EnhancedExportService';
 import { ARABIC_NOTES } from '@/lib/arabicConstants';
 
 export class ExportService {
@@ -173,5 +175,22 @@ export class ExportService {
     const csv = this.toCSV(mergedData, ['section', 'field', 'value', 'notes']);
     const filename = `merged-daily-report-${format(date, 'yyyy-MM-dd')}.csv`;
     this.downloadCSV(filename, csv);
+  }
+
+  // --- Consolidated enhanced APIs ---
+  static onProgress(exportId: string, callback: (progress: import('./EnhancedExportService').ExportProgress) => void) {
+    EnhancedExportService.onProgress(exportId, callback);
+  }
+
+  static cleanupProgress(exportId: string) {
+    EnhancedExportService.cleanupProgress(exportId);
+  }
+
+  static async generateArabicPDF(date: Date, exportId: string): Promise<void> {
+    return EnhancedExportService.generateArabicPDF(date, exportId);
+  }
+
+  static async bulkExport(options: import('./EnhancedExportService').BulkExportOptions): Promise<string> {
+    return EnhancedExportService.bulkExport(options);
   }
 }

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import DOMPurify from 'dompurify';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Trash2, Plus, Users, Phone, Mail, Calendar, Search, Filter, Award, UserPlus } from 'lucide-react';
@@ -35,6 +36,10 @@ export const Customers: React.FC = () => {
   const [sourceFilter, setSourceFilter] = useState<string>('all');
   const [isLoading, setIsLoading] = useState(true);
 
+  // Pagination
+  const ITEMS_PER_PAGE = 20;
+  const [currentPage, setCurrentPage] = useState(1);
+
   useEffect(() => {
     // Simulate fetching data
     const timer = setTimeout(() => {
@@ -60,7 +65,7 @@ export const Customers: React.FC = () => {
 
   const [nameValidation, setNameValidation] = useState(validateField('', [ValidationRules.required()]));
   const [emailValidation, setEmailValidation] = useState(validateField('', [ValidationRules.required(), ValidationRules.email()]));
-  const [phoneValidation, setPhoneValidation] = useState(validateField('', [])); // No specific phone validation rule yet
+  const [phoneValidation, setPhoneValidation] = useState(validateField('', [ValidationRules.phone(ARABIC_CUSTOMERS_MESSAGES.VALIDATION_PHONE_INVALID || 'رقم الهاتف غير صالح')]));
 
   const addCustomer = () => {
     const isFormValid = validateForm({
@@ -162,6 +167,11 @@ export const Customers: React.FC = () => {
     
     return matchesSearch && matchesStatus && matchesSource;
   });
+
+  const paginatedCustomers = React.useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredCustomers.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredCustomers, currentPage]);
 
   // Statistics
   const totalCustomers = customers.length;
@@ -408,7 +418,7 @@ export const Customers: React.FC = () => {
             </div>
           ) : (
             <div className="space-y-4">
-              {filteredCustomers.map((customer) => (
+              {paginatedCustomers.map((customer) => (
                 <Card key={customer.id} className="border-l-4 border-l-primary">
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between">
@@ -458,9 +468,10 @@ export const Customers: React.FC = () => {
                         </div>
 
                         {customer.notes && (
-                          <p className="text-sm text-muted-foreground mb-3 p-2 bg-background-muted rounded">
-                            {customer.notes}
-                          </p>
+                          <div
+                            className="text-sm text-muted-foreground mb-3 p-2 bg-background-muted rounded"
+                            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(customer.notes) }}
+                          />
                         )}
 
                         <div className="flex gap-2">
@@ -487,6 +498,8 @@ export const Customers: React.FC = () => {
                         size="sm"
                         onClick={() => removeCustomer(customer.id)}
                         className="text-red-600 hover:bg-red-100"
+                        aria-label={`${ARABIC_CUSTOMERS_MESSAGES.DELETE_CONFIRM_ITEM_NAME}`}
+                        title={`${ARABIC_CUSTOMERS_MESSAGES.DELETE_CONFIRM_ITEM_NAME}`}
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
@@ -494,6 +507,31 @@ export const Customers: React.FC = () => {
                   </CardContent>
                 </Card>
               ))}
+              {/* Pagination Controls */}
+              <div className="flex items-center justify-between pt-4">
+                <span className="text-sm text-muted-foreground">
+                  {Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, filteredCustomers.length)}-
+                  {Math.min(currentPage * ITEMS_PER_PAGE, filteredCustomers.length)} من {filteredCustomers.length}
+                </span>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    السابق
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => (p * ITEMS_PER_PAGE < filteredCustomers.length ? p + 1 : p))}
+                    disabled={currentPage * ITEMS_PER_PAGE >= filteredCustomers.length}
+                  >
+                    التالي
+                  </Button>
+                </div>
+              </div>
             </div>
           )}
         </CardContent>

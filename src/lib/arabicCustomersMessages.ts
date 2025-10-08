@@ -1,4 +1,5 @@
 export const ARABIC_CUSTOMERS_MESSAGES = {
+  VALIDATION_PHONE_INVALID: 'رقم الهاتف غير صالح',
   PAGE_TITLE: 'العملاء',
   TODAY_DATE: 'اليوم:',
   TOTAL_CUSTOMERS: 'إجمالي العملاء',

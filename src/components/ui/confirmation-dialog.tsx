@@ -71,12 +71,14 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
             {description}
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <AlertDialogFooter className="flex gap-2">
-          <AlertDialogCancel onClick={handleCancel}>
+      <AlertDialogFooter className="flex gap-2">
+          <AlertDialogCancel onClick={handleCancel} aria-label={cancelText} title={cancelText}>
             {cancelText}
           </AlertDialogCancel>
           <AlertDialogAction
             onClick={handleConfirm}
+            aria-label={confirmText}
+            title={confirmText}
             className={
               variant === 'destructive'
                 ? 'bg-destructive hover:bg-destructive/90'

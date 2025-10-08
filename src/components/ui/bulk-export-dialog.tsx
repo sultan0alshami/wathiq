@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
-import { BulkExportOptions } from '@/services/EnhancedExportService';
+import { BulkExportOptions } from '@/services/ExportService';
 
 interface BulkExportDialogProps {
   onExport: (options: BulkExportOptions) => void;

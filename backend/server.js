@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const { spawn } = require('child_process');
@@ -54,7 +55,7 @@ async function sendWhatsAppDocument(pdfBuffer, filename) {
 
 async function runDailyReportAndSend() {
   try {
-    const pythonExecutable = path.join('C:', 'Users', 'sulta', 'AppData', 'Local', 'Programs', 'Python', 'Python313', 'python.exe');
+    const pythonExecutable = process.env.PYTHON_PATH || (process.platform === 'win32' ? 'python' : 'python3');
     const scriptPath = path.join(__dirname, 'generate_pdf.py');
     const dateStr = new Date().toISOString().slice(0, 10);
     // Expect the frontend-style payload to be available; fallback to a minimal shape
@@ -62,7 +63,7 @@ async function runDailyReportAndSend() {
     const jsonData = JSON.stringify(payload);
     const tempFilePath = path.join(__dirname, `temp_data_${Date.now()}.json`);
     await fs.writeFile(tempFilePath, jsonData);
-    const pythonProcess = spawn(pythonExecutable, [scriptPath, tempFilePath], { shell: true });
+    const pythonProcess = spawn(pythonExecutable, [scriptPath, tempFilePath]);
     let pdfBuffer = Buffer.from('');
     let errorOutput = '';
     await new Promise((resolve) => {
@@ -94,21 +95,53 @@ const port = 5000; // Choose a different port than your React app
 
 const corsOptions = {
   origin: (origin, callback) => {
-    callback(null, true); // reflect request origin
+    const allowedOrigins = [
+      'http://localhost:5173',
+      'http://localhost:8080',
+      process.env.FRONTEND_URL,
+      process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
+    ].filter(Boolean);
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.warn(`CORS blocked origin: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    }
   },
   methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
   optionsSuccessStatus: 200,
 };
 app.use(cors(corsOptions));
 app.options('/generate-pdf', cors(corsOptions));
 app.use(express.json());
 
-app.post('/generate-pdf', async (req, res) => {
+// Simple in-memory rate limiting (per IP)
+const rateWindowMs = 15 * 60 * 1000; // 15 minutes
+const maxRequests = 10;
+const ipHits = new Map();
+
+function rateLimitMiddleware(req, res, next) {
+  const now = Date.now();
+  const ip = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'unknown';
+  const entry = ipHits.get(ip) || { count: 0, start: now };
+  if (now - entry.start > rateWindowMs) {
+    entry.count = 0;
+    entry.start = now;
+  }
+  entry.count += 1;
+  ipHits.set(ip, entry);
+  if (entry.count > maxRequests) {
+    return res.status(429).json({ message: 'Too many PDF generation requests. Please try again later.' });
+  }
+  next();
+}
+
+app.post('/generate-pdf', rateLimitMiddleware, async (req, res) => {
   console.log('Received request to generate PDF');
   const { data, date } = req.body; // Data from your frontend
 
-  const pythonExecutable = path.join('C:', 'Users', 'sulta', 'AppData', 'Local', 'Programs', 'Python', 'Python313', 'python.exe');
+  const pythonExecutable = process.env.PYTHON_PATH || (process.platform === 'win32' ? 'python' : 'python3');
   const scriptPath = path.join(__dirname, 'generate_pdf.py');
   const jsonData = JSON.stringify({ ...data, date });
 
@@ -118,7 +151,7 @@ app.post('/generate-pdf', async (req, res) => {
     tempFilePath = path.join(__dirname, `temp_data_${Date.now()}.json`);
     await fs.writeFile(tempFilePath, jsonData);
 
-    const pythonProcess = spawn(pythonExecutable, [scriptPath, tempFilePath], { shell: true });
+    const pythonProcess = spawn(pythonExecutable, [scriptPath, tempFilePath]);
 
     let pdfBuffer = Buffer.from('');
     let errorOutput = '';

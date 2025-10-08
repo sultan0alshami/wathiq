@@ -40,19 +40,15 @@ export const useChartData = (days: number = 30) => {
 
   // Get liquidity data for the last N days
   const liquidityData = useMemo((): LiquidityDataPoint[] => {
-    setIsLoading(true);
     try {
-      const data = dateRange.map(date => {
+      return dateRange.map(date => {
         const dailyData = getDataForDate(date);
-        
         const income = dailyData.finance.entries
           .filter(entry => entry.type === 'income')
           .reduce((sum, entry) => sum + entry.amount, 0);
-        
         const expenses = dailyData.finance.entries
           .filter(entry => entry.type === 'expense')
           .reduce((sum, entry) => sum + entry.amount, 0);
-        
         return {
           date: format(date, 'dd/MM'),
           value: dailyData.finance.currentLiquidity,
@@ -62,16 +58,17 @@ export const useChartData = (days: number = 30) => {
           label: format(date, 'yyyy-MM-dd')
         };
       });
-      
-      setError(null);
-      return data;
     } catch (err) {
       setError('خطأ في تحميل بيانات السيولة');
       console.error('Error loading liquidity data:', err);
       return [];
-    } finally {
-      setIsLoading(false);
     }
+  }, [dateRange]);
+
+  useEffect(() => {
+    setIsLoading(true);
+    const t = setTimeout(() => setIsLoading(false), 0);
+    return () => clearTimeout(t);
   }, [dateRange]);
 
   // Get income vs expenses data

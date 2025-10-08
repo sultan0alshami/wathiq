@@ -59,6 +59,15 @@ export const Operations: React.FC = () => {
   const [expectedNextDay, setExpectedNextDay] = useState<number>(0);
   const [deleteOperationId, setDeleteOperationId] = useState<string | null>(null);
 
+  // Pagination
+  const ITEMS_PER_PAGE = 20;
+  const [currentPage, setCurrentPage] = useState(1);
+  useEffect(() => { setCurrentPage(1); }, [currentDate]);
+  const paginatedOperations = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return operations.slice(start, start + ITEMS_PER_PAGE);
+  }, [operations, currentPage]);
+
   const [expectedNextDayInput, setExpectedNextDayInput] = useState<string>('0');
 
   // Form states
@@ -392,7 +401,7 @@ export const Operations: React.FC = () => {
             </div>
           ) : (
             <div className="space-y-3">
-              {operations.map((operation) => (
+              {paginatedOperations.map((operation) => (
                 <Card key={operation.id} className="border-l-4 border-l-primary">
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between">
@@ -435,6 +444,8 @@ export const Operations: React.FC = () => {
                         size="sm"
                         onClick={() => setDeleteOperationId(operation.id)}
                         className="text-red-600 hover:bg-red-100"
+                        aria-label={`حذف ${ARABIC_OPERATIONS_MESSAGES.OPERATION_ITEM_NAME}`}
+                        title={`حذف ${ARABIC_OPERATIONS_MESSAGES.OPERATION_ITEM_NAME}`}
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
@@ -442,6 +453,31 @@ export const Operations: React.FC = () => {
                   </CardContent>
                 </Card>
               ))}
+              {/* Pagination Controls */}
+              <div className="flex items-center justify-between pt-4">
+                <span className="text-sm text-muted-foreground">
+                  {Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, operations.length)}-
+                  {Math.min(currentPage * ITEMS_PER_PAGE, operations.length)} من {operations.length}
+                </span>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    السابق
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => (p * ITEMS_PER_PAGE < operations.length ? p + 1 : p))}
+                    disabled={currentPage * ITEMS_PER_PAGE >= operations.length}
+                  >
+                    التالي
+                  </Button>
+                </div>
+              </div>
             </div>
           )}
         </CardContent>

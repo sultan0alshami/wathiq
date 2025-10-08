@@ -5,10 +5,12 @@ import { ARABIC_MESSAGES } from '@/lib/arabicMessages';
 
 export interface StorageBackup extends BackupData {}
 
+import { STORAGE_KEYS } from '@/lib/storageKeys';
+
 export class StorageService {
   private static readonly VERSION = '1.0.0';
-  private static readonly KEY_PREFIX = 'wathiq_data_';
-  private static readonly BACKUP_KEY = 'wathiq_backup_';
+  private static readonly KEY_PREFIX = STORAGE_KEYS.DATA_PREFIX;
+  private static readonly BACKUP_KEY = STORAGE_KEYS.BACKUP_PREFIX;
 
   // Get all stored dates
   /**

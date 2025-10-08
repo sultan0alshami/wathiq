@@ -34,6 +34,13 @@ export const EnhancedFinance: React.FC = () => {
   const { validateField } = useFormValidation();
   const { shouldUseCards } = useMobileDataDisplay(entries);
 
+  // Pagination
+  const ITEMS_PER_PAGE = 20;
+  const [currentPage, setCurrentPage] = useState(1);
+  useEffect(() => {
+    setCurrentPage(1); // reset when date or entries change
+  }, [currentDate]);
+
   // Form states
   const [newEntryTitle, setNewEntryTitle] = useState('');
   const [newEntryAmount, setNewEntryAmount] = useState('');
@@ -122,6 +129,11 @@ export const EnhancedFinance: React.FC = () => {
     },
     [filteredEntries]
   );
+
+  const paginatedEntries = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredEntries.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredEntries, currentPage]);
 
   const addEntry = useCallback(() => {
     const isFormValid = titleValidation.isValid && amountValidation.isValid;
@@ -470,7 +482,7 @@ export const EnhancedFinance: React.FC = () => {
             </div>
           ) : (
             <div className="space-y-3">
-              {filteredEntries.map((entry) => (
+              {paginatedEntries.map((entry) => (
                 <div key={entry.id} className={`flex items-center justify-between p-4 rounded-lg border ${getEntryColor(entry.type)}`}>
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
@@ -490,11 +502,38 @@ export const EnhancedFinance: React.FC = () => {
                     size="sm"
                     onClick={() => setDeleteEntry(entry.id)}
                     className="text-red-600 hover:bg-red-100 dark:hover:bg-red-950/20"
+                    aria-label={`حذف ${ARABIC_ENHANCED_FINANCE_MESSAGES.FINANCIAL_TRANSACTION_ITEM_NAME}`}
+                    title={`حذف ${ARABIC_ENHANCED_FINANCE_MESSAGES.FINANCIAL_TRANSACTION_ITEM_NAME}`}
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
               ))}
+              {/* Pagination Controls */}
+              <div className="flex items-center justify-between pt-4">
+                <span className="text-sm text-muted-foreground">
+                  {Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, filteredEntries.length)}-
+                  {Math.min(currentPage * ITEMS_PER_PAGE, filteredEntries.length)} من {filteredEntries.length}
+                </span>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    السابق
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => (p * ITEMS_PER_PAGE < filteredEntries.length ? p + 1 : p))}
+                    disabled={currentPage * ITEMS_PER_PAGE >= filteredEntries.length}
+                  >
+                    التالي
+                  </Button>
+                </div>
+              </div>
             </div>
           )}
         </CardContent>

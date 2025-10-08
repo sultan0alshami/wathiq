@@ -20,8 +20,7 @@ import {
 } from 'lucide-react';
 import { useDateContext } from '@/contexts/DateContext';
 import { getDataForDate } from '@/lib/mockData';
-import { ExportService } from '@/services/ExportService';
-import { EnhancedExportService, ExportProgress, BulkExportOptions } from '@/services/EnhancedExportService';
+import { ExportService, ExportProgress, BulkExportOptions } from '@/services/ExportService';
 import { ExportProgressDialog } from '@/components/ui/export-progress-dialog';
 import { BulkExportDialog } from '@/components/ui/bulk-export-dialog';
 import { useToast } from '@/hooks/use-toast';
@@ -204,7 +203,7 @@ export const Download: React.FC = () => {
     setShowProgressDialog(true);
 
     // Set up progress callback
-    EnhancedExportService.onProgress(exportId, (progress) => {
+    ExportService.onProgress(exportId, (progress) => {
       setExportProgresses(prev => 
         prev.map(p => p.id === exportId ? progress : p)
       );
@@ -213,7 +212,7 @@ export const Download: React.FC = () => {
     try {
       if (item.type === 'pdf') {
         // Use enhanced Arabic PDF export for all PDF types
-        await EnhancedExportService.generateArabicPDF(currentDate, exportId);
+        await ExportService.generateArabicPDF(currentDate, exportId);
       } else {
         // Note: Progress tracking for non-PDF types is currently mocked via setTimeout.
         // In a real application, this would involve actual integration with ExportService
@@ -282,14 +281,14 @@ export const Download: React.FC = () => {
     setShowProgressDialog(true);
 
     // Set up progress callback
-    EnhancedExportService.onProgress(exportId, (progress) => {
+    ExportService.onProgress(exportId, (progress) => {
       setExportProgresses(prev => 
         prev.map(p => p.id === exportId ? progress : p)
       );
     });
 
     try {
-      const zipFilename = await EnhancedExportService.bulkExport(options);
+      const zipFilename = await ExportService.bulkExport(options);
       
       toast({
         title: "تم التصدير المجمع بنجاح",
@@ -323,7 +322,7 @@ export const Download: React.FC = () => {
     try {
       if (exportItem.originalOptions) {
         // Retry bulk export
-        await EnhancedExportService.bulkExport(exportItem.originalOptions);
+        await ExportService.bulkExport(exportItem.originalOptions);
       } else if (exportItem.originalItem) {
         // Retry individual export
         await handleDownload(exportItem.originalItem); // Re-use the existing handleDownload logic
@@ -388,6 +387,8 @@ export const Download: React.FC = () => {
             onClick={() => setShowProgressDialog(true)}
             variant="outline"
             className="hover:bg-wathiq-primary/10"
+            aria-label="عرض حالة التصدير"
+            title="عرض حالة التصدير"
           >
             <Zap className="w-4 h-4 ml-2" />
             حالة التصدير
@@ -542,6 +543,8 @@ export const Download: React.FC = () => {
                         size="sm"
                         onClick={() => handleDownload(item)}
                         className="hover:bg-wathiq-primary/10 hover:text-wathiq-primary"
+                        aria-label={`تحميل ${item.name}`}
+                        title={`تحميل ${item.name}`}
                       >
                         <DownloadIcon className="w-4 h-4" />
                       </Button>

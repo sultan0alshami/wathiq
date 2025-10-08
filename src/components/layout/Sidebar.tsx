@@ -49,7 +49,7 @@ export const Sidebar: React.FC = () => {
     }
   };
 
-  // Filter navigation items based on user permissions
+  // Filter navigation items based on user permissions from context (hooks cannot be used in loops)
   const visibleNavigation = navigationItems.filter(item => {
     if (!permissions) return false;
     return permissions[item.permission as keyof typeof permissions] === true;

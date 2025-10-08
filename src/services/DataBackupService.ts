@@ -14,9 +14,11 @@ export interface BackupData {
   };
 }
 
+import { STORAGE_KEYS } from '@/lib/storageKeys';
+
 export class DataBackupService {
   private static readonly BACKUP_VERSION = '1.0.0';
-  private static readonly KEY_PREFIX = 'wathiq_daily_';
+  private static readonly KEY_PREFIX = STORAGE_KEYS.DATA_PREFIX; // unify on data prefix per day
   // Cache for backup statistics to avoid redundant computations
   private static cachedBackupStats: {
     totalDays: number;
@@ -251,7 +253,7 @@ export class DataBackupService {
         start: sortedDates[0] || '',
         end: sortedDates[sortedDates.length - 1] || ''
       },
-      lastBackup: localStorage.getItem('wathiq_last_backup') || null
+      lastBackup: localStorage.getItem(STORAGE_KEYS.BACKUP_PREFIX + 'last_backup') || null
     };
 
     return this.cachedBackupStats;
@@ -262,7 +264,7 @@ export class DataBackupService {
     let lastModified = 0;
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key?.startsWith(this.KEY_PREFIX) || key === 'wathiq_last_backup' || key === 'wathiq_last_clear') {
+      if (key?.startsWith(this.KEY_PREFIX) || key === STORAGE_KEYS.BACKUP_PREFIX + 'last_backup' || key === STORAGE_KEYS.BACKUP_PREFIX + 'last_clear') {
         // This is a simplified approach. A more robust solution might involve
         // storing a timestamp alongside each item or using a dedicated change listener.
         // For now, we assume any read/write of relevant keys could mean a modification.
@@ -295,7 +297,7 @@ export class DataBackupService {
       keysToDelete.forEach(key => localStorage.removeItem(key));
       
       // Record the clearing action
-      localStorage.setItem('wathiq_last_clear', new Date().toISOString());
+      localStorage.setItem(STORAGE_KEYS.BACKUP_PREFIX + 'last_clear', new Date().toISOString());
       this.invalidateCache(); // Invalidate cache after clearing data
       
       return true;
@@ -342,12 +344,12 @@ export class DataBackupService {
    * @param intervalDays The number of days after which an auto-backup should be triggered. Defaults to 7 days.
    */
   static setupAutoBackup(intervalDays: number = 7): void {
-    const lastBackup = localStorage.getItem('wathiq_last_backup');
+    const lastBackup = localStorage.getItem(STORAGE_KEYS.BACKUP_PREFIX + 'last_backup');
     const now = new Date();
     
     if (!lastBackup) {
       // First time setup: record current date as last backup date
-      localStorage.setItem('wathiq_last_backup', now.toISOString());
+      localStorage.setItem(STORAGE_KEYS.BACKUP_PREFIX + 'last_backup', now.toISOString());
       return;
     }
     
@@ -358,7 +360,7 @@ export class DataBackupService {
       // Trigger auto backup and update last backup date
       try {
         this.exportBackup();
-        localStorage.setItem('wathiq_last_backup', now.toISOString());
+        localStorage.setItem(STORAGE_KEYS.BACKUP_PREFIX + 'last_backup', now.toISOString());
         // TODO: Consider adding user notification for successful auto-backup
       } catch (error) {
         console.error('Auto backup failed:', error);
