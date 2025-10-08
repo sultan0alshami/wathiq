@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { STORAGE_KEYS } from '@/lib/storageKeys';
+import { supabase } from '@/lib/supabase';
 
 export type NotificationType = 'info' | 'success' | 'warning' | 'error';
 
@@ -39,6 +40,26 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
       localStorage.setItem(STORAGE_KEY, JSON.stringify(notifications));
     } catch {}
   }, [notifications]);
+
+  // Subscribe to Supabase realtime notifications for this user and broadcasts
+  useEffect(() => {
+    const channel = supabase
+      .channel('notifications-feed')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, (payload) => {
+        const row = payload.new as any;
+        // Accept if broadcast or targeted to current user
+        addNotification({
+          type: (row.type as NotificationType) || 'info',
+          title: row.title || 'إشعار',
+          message: row.message || undefined,
+        });
+      })
+      .subscribe();
+
+    return () => {
+      try { supabase.removeChannel(channel); } catch {}
+    };
+  }, []);
 
   const unreadCount = useMemo(() => notifications.filter(n => !n.read).length, [notifications]);
 

@@ -117,7 +117,12 @@ RLS policies in `001_schema.sql` enforce:
 Run migrations:
 ```bash
 psql "$SUPABASE_CONN" -f supabase/001_schema.sql
+psql "$SUPABASE_CONN" -f supabase/002_notifications.sql
 ```
+
+#### Realtime notifications
+
+The app subscribes to inserts on `public.notifications` via Supabase Realtime (see `src/contexts/NotificationsContext.tsx`). Insert rows with either `user_id = <target>` or `is_broadcast = true` and they will appear under the bell menu.
 
 ## Contributing
 
