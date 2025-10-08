@@ -108,46 +108,46 @@ All colors MUST be HSL. RTL support enabled.
   }
 
   .dark {
-    /* Increased contrast for dark theme */
-    --background: 222 60% 6%;        /* darker background */
-    --foreground: 210 40% 98%;        /* bright text */
-    --background-secondary: 220 16% 10%; /* section background */
-    --background-muted: 220 16% 14%;     /* muted blocks */
+    /* Increased contrast for dark theme (more separation) */
+    --background: 220 40% 6%;        /* global background */
+    --foreground: 210 40% 98%;
+    --background-secondary: 220 24% 10%; /* section surface */
+    --background-muted: 220 22% 13%;     /* muted surface */
 
-    --card: 222 60% 7%;
+    --card: 220 26% 12%;
     --card-foreground: 210 40% 98%;
-    --card-header: 220 16% 12%;
+    --card-header: 220 24% 14%;
 
-    --popover: 222 60% 7%;
+    --popover: 220 26% 12%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 184 82% 45%;          /* teal accent pops on dark */
+    --primary: 184 82% 50%;          /* brighter teal */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 217 32% 14%;        /* darker surfaces */
+    --secondary: 220 22% 16%;        /* darker panels */
     --secondary-foreground: 210 40% 98%;
 
-    --muted: 217 28% 14%;
-    --muted-foreground: 210 16% 78%;  /* lighter muted text */
+    --muted: 220 20% 16%;
+    --muted-foreground: 210 16% 82%;  /* brighter muted text */
 
-    --accent: 47 65% 51%;            /* gold accent */
-    --accent-foreground: 0 0% 0%;
+    --accent: 47 65% 54%;
+    --accent-foreground: 0 0% 5%;
 
-    --destructive: 0 72% 46%;
+    --destructive: 0 78% 46%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 217 28% 24%;           /* stronger borders */
-    --border-strong: 215 28% 32%;
-    --input: 217 28% 22%;
-    --ring: 184 82% 45%;
+    --border: 220 16% 26%;           /* stronger border */
+    --border-strong: 220 18% 34%;
+    --input: 220 16% 26%;
+    --ring: 184 82% 50%;
     --sidebar-background: 220 20% 9%;
     --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 184 82% 45%;
+    --sidebar-primary: 184 82% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 220 16% 14%;
     --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 220 16% 18%;
-    --sidebar-ring: 184 82% 45%;
+    --sidebar-border: 220 16% 20%;
+    --sidebar-ring: 184 82% 50%;
   }
 
   /* RTL Support */
