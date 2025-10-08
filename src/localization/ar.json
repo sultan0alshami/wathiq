@@ -124,13 +124,15 @@
       "sales": "تقرير المبيعات اليومي",
       "operations": "تقرير العمليات اليومي",
       "marketing": "تقرير التسويق اليومي",
+      "customers": "تقرير العملاء اليومي",
       "merged": "التقرير المجمع اليومي"
     },
     "reportSections": {
       "finance": "المالية",
       "sales": "المبيعات",
       "operations": "العمليات",
-      "marketing": "التسويق"
+      "marketing": "التسويق",
+      "customers": "العملاء"
     },
     "status": {
       "completed": "مكتمل",
@@ -141,6 +143,7 @@
       "sales": "نظام المبيعات",
       "operations": "نظام العمليات",
       "marketing": "نظام التسويق",
+      "customers": "نظام العملاء",
       "system": "النظام"
     },
     "statsCards": {
