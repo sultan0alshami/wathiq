@@ -1,5 +1,6 @@
 // Mock data management for the Wathiq system
 import { format } from 'date-fns';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 
 export interface FinanceEntry {
   id: string;
@@ -328,10 +329,39 @@ export const generateMockDataForDate = (date: Date): DailyData => {
   };
 };
 
-// Get or create data for a specific date
+// Return EMPTY data for a specific date (no auto-mock for production)
+export const getEmptyDataForDate = (date: Date): DailyData => {
+  const dateStr = format(date, 'yyyy-MM-dd');
+  return {
+    date: dateStr,
+    finance: {
+      currentLiquidity: 0,
+      entries: []
+    },
+    sales: {
+      customersContacted: 0,
+      entries: [],
+      dailySummary: ''
+    },
+    operations: {
+      totalOperations: 0,
+      entries: [],
+      expectedNextDay: 0
+    },
+    marketing: {
+      tasks: [],
+      yesterdayDone: [],
+      plannedTasks: []
+    },
+    customers: [],
+    suppliers: []
+  };
+};
+
+// Get data for a specific date (no auto-generation). Returns empty structure if none stored
 export const getDataForDate = (date: Date): DailyData => {
   const dateStr = format(date, 'yyyy-MM-dd');
-  const storageKey = `wathiq_data_${dateStr}`;
+  const storageKey = `${STORAGE_KEYS.DATA_PREFIX}${dateStr}`;
   
   try {
     const stored = localStorage.getItem(storageKey);
@@ -369,17 +399,15 @@ export const getDataForDate = (date: Date): DailyData => {
   } catch (error) {
     console.warn('Error loading data for date:', dateStr, error);
   }
-  
-  // Generate and store new mock data
-  const newData = generateMockDataForDate(date);
-  saveDataForDate(date, newData);
-  return newData;
+
+  // No existing data: return empty structure without saving
+  return getEmptyDataForDate(date);
 };
 
 // Save data for a specific date
 export const saveDataForDate = (date: Date, data: DailyData) => {
   const dateStr = format(date, 'yyyy-MM-dd');
-  const storageKey = `wathiq_data_${dateStr}`;
+  const storageKey = `${STORAGE_KEYS.DATA_PREFIX}${dateStr}`;
   
   try {
     localStorage.setItem(storageKey, JSON.stringify(data));
