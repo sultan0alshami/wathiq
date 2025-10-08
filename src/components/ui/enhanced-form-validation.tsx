@@ -120,7 +120,11 @@ export const ValidationRules = {
   }),
 
   email: (message = 'البريد الإلكتروني غير صالح'): ValidationRule => ({
-    validate: (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value),
+    // Treat empty values as valid so the field can be optional; if required, combine with ValidationRules.required()
+    validate: (value) => {
+      if (value === '' || value === undefined || value === null) return true;
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+    },
     message
   }),
 

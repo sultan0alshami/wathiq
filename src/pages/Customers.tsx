@@ -18,7 +18,7 @@ import { TableSkeleton } from '@/components/ui/loading-skeleton';
 interface Customer {
   id: string;
   name: string;
-  email: string;
+  email?: string;
   phone: string;
   company?: string;
   status: 'new' | 'contacted' | 'interested' | 'converted' | 'inactive';
@@ -64,13 +64,13 @@ export const Customers: React.FC = () => {
   const { validateField, validateForm } = useFormValidation();
 
   const [nameValidation, setNameValidation] = useState(validateField('', [ValidationRules.required()]));
-  const [emailValidation, setEmailValidation] = useState(validateField('', [ValidationRules.required(), ValidationRules.email()]));
+  const [emailValidation, setEmailValidation] = useState(validateField('', [ValidationRules.email()]));
   const [phoneValidation, setPhoneValidation] = useState(validateField('', [ValidationRules.phone(ARABIC_CUSTOMERS_MESSAGES.VALIDATION_PHONE_INVALID || 'رقم الهاتف غير صالح')]));
 
   const addCustomer = () => {
     const isFormValid = validateForm({
       newName: { value: newName, rules: [ValidationRules.required()] },
-      newEmail: { value: newEmail, rules: [ValidationRules.required(), ValidationRules.email()] },
+      newEmail: { value: newEmail, rules: [ValidationRules.email()] },
       newPhone: { value: newPhone, rules: [] },
     });
 
@@ -78,7 +78,7 @@ export const Customers: React.FC = () => {
       const customer: Customer = {
         id: Date.now().toString(),
         name: newName,
-        email: newEmail,
+        email: newEmail || undefined,
         phone: newPhone,
         company: newCompany,
         status: newStatus,
@@ -160,7 +160,7 @@ export const Customers: React.FC = () => {
   // Filter customers
   const filteredCustomers = customers.filter(customer => {
     const matchesSearch = customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (customer.email?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
                          (customer.company?.toLowerCase().includes(searchTerm.toLowerCase()) || false);
     const matchesStatus = statusFilter === 'all' || customer.status === statusFilter;
     const matchesSource = sourceFilter === 'all' || customer.source === sourceFilter;
@@ -267,7 +267,7 @@ export const Customers: React.FC = () => {
                 value={newEmail}
                 onChange={(e) => {
                   setNewEmail(e.target.value);
-                  setEmailValidation(validateField(e.target.value, [ValidationRules.required(), ValidationRules.email()]));
+                  setEmailValidation(validateField(e.target.value, [ValidationRules.email()]));
                 }}
               />
               <ValidationMessage result={emailValidation} />
@@ -349,7 +349,7 @@ export const Customers: React.FC = () => {
               <Button
                 onClick={addCustomer}
                 className="bg-primary hover:bg-primary/90"
-                disabled={!nameValidation.isValid || !emailValidation.isValid}
+                disabled={!nameValidation.isValid}
               >
                 <Plus className="w-4 h-4 ml-2" />
                 {ARABIC_CUSTOMERS_MESSAGES.ADD_CUSTOMER_BUTTON}
@@ -434,10 +434,12 @@ export const Customers: React.FC = () => {
                         </div>
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground mb-3">
-                          <div className="flex items-center gap-2">
-                            <Mail className="w-4 h-4" />
-                            <span>{customer.email}</span>
-                          </div>
+                          {customer.email && (
+                            <div className="flex items-center gap-2">
+                              <Mail className="w-4 h-4" />
+                              <span>{customer.email}</span>
+                            </div>
+                          )}
                           {customer.phone && (
                             <div className="flex items-center gap-2">
                               <Phone className="w-4 h-4" />

@@ -9,7 +9,7 @@ export const ARABIC_CUSTOMERS_MESSAGES = {
   ADD_CUSTOMER_TITLE: 'إضافة عميل جديد',
   NAME_LABEL: 'الاسم *',
   NAME_PLACEHOLDER: 'اسم العميل الكامل',
-  EMAIL_LABEL: 'البريد الإلكتروني *',
+  EMAIL_LABEL: 'البريد الإلكتروني',
   EMAIL_PLACEHOLDER: 'example@domain.com',
   PHONE_LABEL: 'رقم الهاتف',
   PHONE_PLACEHOLDER: '05xxxxxxxx',

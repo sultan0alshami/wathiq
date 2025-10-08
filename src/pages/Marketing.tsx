@@ -70,7 +70,7 @@ export const Marketing: React.FC = () => {
   ]);
 
   const newCustomerEmailValidation = validateField(newCustomerEmail, [
-    ValidationRules.required("البريد الإلكتروني مطلوب"),
+    // Email optional; validate only if provided
     ValidationRules.email("صيغة البريد الإلكتروني غير صالحة")
   ]);
 
@@ -163,7 +163,7 @@ export const Marketing: React.FC = () => {
         id: Date.now().toString(),
         name: newCustomerName,
         phone: newCustomerPhone,
-        email: newCustomerEmail,
+        email: newCustomerEmail || undefined,
         arrivalDate: newCustomerArrival ? new Date(newCustomerArrival) : new Date(),
         contacted: false,
         cameBack: false,
