@@ -132,6 +132,17 @@ export const Reports: React.FC = () => {
       submittedBy: getSubmittedBy('marketing'),
       submittedAt: getSubmittedAt()
     },
+    {
+      id: 5,
+      title: ar.reports.reportTitles.customers,
+      section: 'customers',
+      date: currentDate,
+      status: dailyData.customers.length > 0 ? ar.reports.status.completed : ar.reports.status.pending,
+      type: 'daily',
+      size: calculateReportSize(dailyData.customers),
+      submittedBy: getSubmittedBy('customers' as any),
+      submittedAt: getSubmittedAt()
+    },
   ];
 
   const filteredReports = useMemo(() => {
@@ -165,6 +176,9 @@ export const Reports: React.FC = () => {
           break;
         case 'marketing':
           triggerDownloadWithProgress(ExportService.exportMarketingCSV, `marketing-${formatDate(currentDate, 'yyyy-MM-dd')}.csv`, report.title);
+          break;
+        case 'customers':
+          triggerDownloadWithProgress(ExportService.exportCustomersCSV, `customers-${formatDate(currentDate, 'yyyy-MM-dd')}.csv`, report.title);
           break;
       }
     }
