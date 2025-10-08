@@ -111,9 +111,12 @@ All colors MUST be HSL. RTL support enabled.
     /* Increased contrast for dark theme */
     --background: 222 60% 6%;        /* darker background */
     --foreground: 210 40% 98%;        /* bright text */
+    --background-secondary: 220 16% 10%; /* section background */
+    --background-muted: 220 16% 14%;     /* muted blocks */
 
     --card: 222 60% 7%;
     --card-foreground: 210 40% 98%;
+    --card-header: 220 16% 12%;
 
     --popover: 222 60% 7%;
     --popover-foreground: 210 40% 98%;
@@ -133,7 +136,8 @@ All colors MUST be HSL. RTL support enabled.
     --destructive: 0 72% 46%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 217 28% 22%;           /* stronger borders */
+    --border: 217 28% 24%;           /* stronger borders */
+    --border-strong: 215 28% 32%;
     --input: 217 28% 22%;
     --ring: 184 82% 45%;
     --sidebar-background: 220 20% 9%;
