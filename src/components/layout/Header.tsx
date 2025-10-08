@@ -20,7 +20,7 @@ export const Header: React.FC = () => {
   const [searchTerm, setSearchTerm] = React.useState('');
   const { userName, user, role, signOut } = useAuth();
   const navigate = useNavigate();
-  const { notifications, unreadCount, markAllRead } = useNotifications();
+  const { notifications, unreadCount, markAllRead, markRead } = useNotifications();
 
   // TODO: Implement global search functionality when a search context or service is available.
   const handleSearchChange = (value: string) => {
@@ -92,10 +92,18 @@ export const Header: React.FC = () => {
                 notifications.map(n => (
                   <div key={n.id} className="px-3 py-2 border-t border-border/60">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">{n.title}</span>
+                      <span className="text-sm font-medium flex items-center gap-2">
+                        {!n.read && <span className="inline-block w-2 h-2 rounded-full bg-accent" />}
+                        {n.title}
+                      </span>
                       <span className="text-xs text-muted-foreground">{new Date(n.createdAt).toLocaleTimeString('ar-EG')}</span>
                     </div>
                     {n.message && (<div className="text-xs text-muted-foreground mt-1">{n.message}</div>)}
+                    {!n.read && (
+                      <div className="mt-2">
+                        <Button size="sm" variant="outline" onClick={() => markRead(n.id)}>تمييز كمقروء</Button>
+                      </div>
+                    )}
                   </div>
                 ))
               )}

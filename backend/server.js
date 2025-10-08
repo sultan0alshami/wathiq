@@ -5,6 +5,7 @@ const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs').promises; // Import fs.promises for async file operations
 const cron = require('node-cron');
+const fetch = require('node-fetch');
 
 // WhatsApp Cloud API config via environment variables
 const WHATSAPP_TOKEN = process.env.WHATSAPP_TOKEN || '';
@@ -168,6 +169,29 @@ app.post('/generate-pdf', rateLimitMiddleware, async (req, res) => {
       if (code === 0) {
         // Fire-and-forget WhatsApp send (if configured)
         sendWhatsAppDocument(pdfBuffer, `wathiq-report-${Date.now()}.pdf`).catch(() => {});
+        // Emit a broadcast notification to Supabase if configured
+        try {
+          if (process.env.SUPABASE_SERVICE_URL && process.env.SUPABASE_SERVICE_KEY) {
+            await fetch(`${process.env.SUPABASE_SERVICE_URL}/rest/v1/notifications`, {
+              method: 'POST',
+              headers: {
+                apikey: process.env.SUPABASE_SERVICE_KEY,
+                Authorization: `Bearer ${process.env.SUPABASE_SERVICE_KEY}`,
+                'Content-Type': 'application/json',
+                Prefer: 'return=minimal',
+              },
+              body: JSON.stringify({
+                user_id: null,
+                is_broadcast: true,
+                type: 'success',
+                title: 'تم إنشاء تقرير PDF',
+                message: 'تم إنشاء التقرير بنجاح وهو متاح للتنزيل.',
+              }),
+            });
+          }
+        } catch (e) {
+          console.warn('Notification emit failed:', e?.message);
+        }
         res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
         res.setHeader('Vary', 'Origin');
         res.setHeader('Content-Type', 'application/pdf');
