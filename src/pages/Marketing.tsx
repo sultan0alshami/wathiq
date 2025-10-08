@@ -535,7 +535,7 @@ export const Marketing: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Planned */}
               <div className="space-y-3">
-                <div className="flex items-center gap-2 p-3 bg-blue-100 rounded-lg">
+                <div className="flex items-center gap-2 p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
                   <CalendarIcon className="w-5 h-5 text-blue-600" />
                   <h3 className="font-semibold text-blue-800">مخطط ({getTasksByStatus('planned').length})</h3>
                 </div>
@@ -568,7 +568,7 @@ export const Marketing: React.FC = () => {
 
               {/* In Progress */}
               <div className="space-y-3">
-                <div className="flex items-center gap-2 p-3 bg-yellow-100 rounded-lg">
+                <div className="flex items-center gap-2 p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
                   <Clock className="w-5 h-5 text-yellow-600" />
                   <h3 className="font-semibold text-yellow-800">قيد التنفيذ ({getTasksByStatus('in-progress').length})</h3>
                 </div>
@@ -601,7 +601,7 @@ export const Marketing: React.FC = () => {
 
               {/* Done */}
               <div className="space-y-3">
-                <div className="flex items-center gap-2 p-3 bg-green-100 rounded-lg">
+                <div className="flex items-center gap-2 p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
                   <CheckCircle className="w-5 h-5 text-green-600" />
                   <h3 className="font-semibold text-green-800">منجز ({getTasksByStatus('completed').length})</h3>
                 </div>
