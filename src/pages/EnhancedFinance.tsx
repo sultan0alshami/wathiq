@@ -451,7 +451,7 @@ export const EnhancedFinance: React.FC = () => {
           <Button
             onClick={addEntry}
             disabled={!titleValidation.isValid || !amountValidation.isValid || !categoryValidation.isValid}
-            className="bg-primary hover:bg-primary/90"
+            variant="default"
           >
             <Plus className="w-4 h-4 ml-2" />
             {ARABIC_ENHANCED_FINANCE_MESSAGES.ADD_TRANSACTION_BUTTON}

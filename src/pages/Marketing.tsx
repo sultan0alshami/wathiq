@@ -425,7 +425,7 @@ export const Marketing: React.FC = () => {
               value={newYesterdayTask}
               onChange={(e) => setNewYesterdayTask(e.target.value)}
             />
-            <Button onClick={addYesterdayTask} className="bg-primary hover:bg-primary/90">
+            <Button onClick={addYesterdayTask} variant="default">
               <Plus className="w-4 h-4 ml-2" />
               إضافة
             </Button>
@@ -517,7 +517,7 @@ export const Marketing: React.FC = () => {
               </Popover>
             </div>
             <div className="md:col-span-3">
-              <Button onClick={addTask} className="bg-primary hover:bg-primary/90" disabled={loading || !newTaskTitleValidation.isValid || !newTaskAssigneeValidation.isValid}>
+              <Button onClick={addTask} variant="default" disabled={loading || !newTaskTitleValidation.isValid || !newTaskAssigneeValidation.isValid}>
                 {loading && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
                 إضافة مهمة
               </Button>
@@ -704,7 +704,7 @@ export const Marketing: React.FC = () => {
               />
             </div>
             <div className="md:col-span-3">
-              <Button onClick={addCustomer} className="bg-primary hover:bg-primary/90" disabled={loading || !newCustomerNameValidation.isValid || !newCustomerEmailValidation.isValid || !newCustomerPhoneValidation.isValid}>
+              <Button onClick={addCustomer} variant="default" disabled={loading || !newCustomerNameValidation.isValid || !newCustomerEmailValidation.isValid || !newCustomerPhoneValidation.isValid}>
                 {loading && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
                 إضافة عميل
               </Button>

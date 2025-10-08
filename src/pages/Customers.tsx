@@ -348,7 +348,7 @@ export const Customers: React.FC = () => {
             <div className="md:col-span-2">
               <Button
                 onClick={addCustomer}
-                className="bg-primary hover:bg-primary/90"
+                variant="default"
                 disabled={!nameValidation.isValid}
               >
                 <Plus className="w-4 h-4 ml-2" />

@@ -377,7 +377,7 @@ export const Operations: React.FC = () => {
               />
             </div>
             <div className="md:col-span-2">
-              <Button onClick={addOperation} disabled={loading || !newTaskValidation.isValid || !newOwnerValidation.isValid} className="bg-primary hover:bg-primary/90">
+            <Button onClick={addOperation} disabled={loading || !newTaskValidation.isValid || !newOwnerValidation.isValid} variant="default">
                 {loading ? <Loader2 className="w-4 h-4 ml-2 animate-spin" /> : <Plus className="w-4 h-4 ml-2" />}
                 {ARABIC_OPERATIONS_MESSAGES.ADD_OPERATION_BUTTON}
               </Button>

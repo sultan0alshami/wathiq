@@ -409,7 +409,7 @@ export const Sales: React.FC = () => {
               <ValidationMessage result={meetingNotesValidation} />
             </div>
             <div className="md:col-span-2">
-              <Button onClick={addMeeting} disabled={loading || !customerNameValidation.isValid || !contactNumberValidation.isValid || !phoneNumberValidation.isValid || !meetingTimeValidation.isValid || !meetingOutcomeValidation.isValid || !meetingNotesValidation.isValid} className="bg-primary hover:bg-primary/90">
+            <Button onClick={addMeeting} disabled={loading || !customerNameValidation.isValid || !contactNumberValidation.isValid || !phoneNumberValidation.isValid || !meetingTimeValidation.isValid || !meetingOutcomeValidation.isValid || !meetingNotesValidation.isValid} variant="default">
                 {loading ? <Loader2 className="w-4 h-4 ml-2 animate-spin" /> : <Plus className="w-4 h-4 ml-2" />}
                 {ARABIC_SALES_MESSAGES.ADD_MEETING_BUTTON}
               </Button>
