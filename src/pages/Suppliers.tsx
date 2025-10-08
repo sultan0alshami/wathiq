@@ -513,6 +513,7 @@ export const Suppliers: React.FC = () => {
           {dataLoading ? (
             <TableSkeleton />
           ) : (
+            <>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -633,6 +634,7 @@ export const Suppliers: React.FC = () => {
                 </div>
               </div>
             )}
+            </>
           )}
         </CardContent>
       </Card>
