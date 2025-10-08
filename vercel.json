@@ -1,6 +1,7 @@
 {
   "version": 2,
   "routes": [
+    { "src": "/api/(.*)", "dest": "https://wathiq-backend.vercel.app/$1" },
     { "src": "^/login$", "headers": { "Location": "/" }, "status": 308 },
     { "handle": "filesystem" },
     { "src": "/(.*)", "dest": "/index.html" }

@@ -142,8 +142,15 @@ export class ExportService {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('Failed to generate PDF report:', error);
-      throw new Error('فشل في إنشاء تقرير PDF');
+      console.error('Failed to generate PDF report via backend, falling back to client PDF:', error);
+      // Fallback: generate a basic client-side PDF so the user still gets a file
+      try {
+        const exportId = `fallback-${Date.now()}`;
+        await EnhancedExportService.generateBasicArabicPDF(date, exportId);
+      } catch (fallbackErr) {
+        console.error('Fallback PDF generation also failed:', fallbackErr);
+        throw new Error('فشل في إنشاء تقرير PDF');
+      }
     }
   }
 
