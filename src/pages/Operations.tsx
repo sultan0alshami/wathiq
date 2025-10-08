@@ -264,7 +264,7 @@ export const Operations: React.FC = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="border-red-200 bg-red-50">
+          <Card className="border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-800">
             <CardContent className="p-4">
               <div className="flex items-center gap-2">
                 <AlertCircle className="w-5 h-5 text-red-600" />
@@ -276,7 +276,7 @@ export const Operations: React.FC = () => {
             </CardContent>
           </Card>
 
-          <Card className="border-yellow-200 bg-yellow-50">
+          <Card className="border-yellow-200 bg-yellow-50 dark:bg-yellow-950/20 dark:border-yellow-800">
             <CardContent className="p-4">
               <div className="flex items-center gap-2">
                 <Clock className="w-5 h-5 text-yellow-600" />
@@ -288,7 +288,7 @@ export const Operations: React.FC = () => {
             </CardContent>
           </Card>
 
-          <Card className="border-green-200 bg-green-50">
+          <Card className="border-green-200 bg-green-50 dark:bg-green-950/20 dark:border-green-800">
             <CardContent className="p-4">
               <div className="flex items-center gap-2">
                 <CheckCircle className="w-5 h-5 text-green-600" />

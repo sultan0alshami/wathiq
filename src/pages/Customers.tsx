@@ -191,7 +191,7 @@ export const Customers: React.FC = () => {
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="border-blue-200 bg-blue-50">
+        <Card className="border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-800">
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
               <Users className="w-5 h-5 text-blue-600" />
@@ -203,7 +203,7 @@ export const Customers: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card className="border-green-200 bg-green-50">
+        <Card className="border-green-200 bg-green-50 dark:bg-green-950/20 dark:border-green-800">
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
               <UserPlus className="w-5 h-5 text-green-600" />
@@ -215,7 +215,7 @@ export const Customers: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card className="border-purple-200 bg-purple-50">
+        <Card className="border-purple-200 bg-purple-50 dark:bg-purple-950/20 dark:border-purple-800">
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
               <Award className="w-5 h-5 text-purple-600" />

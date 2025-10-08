@@ -411,7 +411,7 @@ export const Suppliers: React.FC = () => {
                 {uploadedFiles.length > 0 && (
                   <div className="mt-2 space-y-1">
                     {uploadedFiles.map((file, index) => (
-                      <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                      <div key={index} className="flex items-center justify-between bg-gray-50 dark:bg-gray-900 p-2 rounded">
                         <span className="text-sm">{file.name}</span>
                         <Button
                           variant="ghost"

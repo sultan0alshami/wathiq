@@ -242,7 +242,7 @@ export const Sales: React.FC = () => {
           </>
         ) : (
           <>
-            <Card className="border-blue-200 bg-blue-50">
+            <Card className="border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-800">
               <CardContent className="p-4">
                 <div className="flex items-center gap-2">
                   <Users className="w-5 h-5 text-blue-600" />
@@ -254,7 +254,7 @@ export const Sales: React.FC = () => {
               </CardContent>
             </Card>
 
-            <Card className="border-green-200 bg-green-50">
+            <Card className="border-green-200 bg-green-50 dark:bg-green-950/20 dark:border-green-800">
               <CardContent className="p-4">
                 <div className="flex items-center gap-2">
                   <ClipboardCheck className="w-5 h-5 text-green-600" />
@@ -266,7 +266,7 @@ export const Sales: React.FC = () => {
               </CardContent>
             </Card>
 
-            <Card className="border-purple-200 bg-purple-50">
+            <Card className="border-purple-200 bg-purple-50 dark:bg-purple-950/20 dark:border-purple-800">
               <CardContent className="p-4">
                 <div className="flex items-center gap-2">
                   <Calendar className="w-5 h-5 text-purple-600" />
