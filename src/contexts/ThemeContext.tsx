@@ -18,12 +18,7 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     if (stored && ['light', 'dark', 'system'].includes(stored)) {
       return stored;
     }
-    
-    // Default to system preference if no stored theme or invalid stored theme
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      return 'dark';
-    }
-    
+    // Default to light
     return 'light';
   });
 
