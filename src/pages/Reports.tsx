@@ -289,7 +289,7 @@ export const Reports: React.FC = () => {
             </SelectContent>
           </Select>
 
-          <Button variant="default" size="sm" onClick={handleBulkDownload}>
+          <Button variant="secondary" size="sm" className="dark:border dark:border-border-strong" onClick={handleBulkDownload}>
             <Download className="w-4 h-4 ml-2" />
             {ar.reports.header.bulkDownload}
           </Button>

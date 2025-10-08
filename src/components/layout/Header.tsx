@@ -14,11 +14,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useNotifications } from '@/contexts/NotificationsContext';
 
 export const Header: React.FC = () => {
   const [searchTerm, setSearchTerm] = React.useState('');
   const { userName, user, role, signOut } = useAuth();
   const navigate = useNavigate();
+  const { notifications, unreadCount, markAllRead } = useNotifications();
 
   // TODO: Implement global search functionality when a search context or service is available.
   const handleSearchChange = (value: string) => {
@@ -68,12 +70,37 @@ export const Header: React.FC = () => {
           <ThemeToggle />
           
           {/* Notifications */}
-          <Button variant="ghost" size="sm" className="relative" aria-label="الإشعارات" title="الإشعارات">
-            <Bell className="w-5 h-5" />
-            <span className="absolute -top-1 -left-1 bg-wathiq-accent text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-              3
-            </span>
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="relative" aria-label="الإشعارات" title="الإشعارات">
+                <Bell className="w-5 h-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -left-1 bg-wathiq-accent text-white text-xs rounded-full min-w-5 h-5 px-1 flex items-center justify-center">
+                    {unreadCount}
+                  </span>
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-80 max-h-96 overflow-auto">
+              <div className="flex items-center justify-between px-2 py-1">
+                <span className="text-sm text-muted-foreground">الإشعارات</span>
+                <Button variant="ghost" size="sm" onClick={markAllRead}>تحديد الكل كمقروء</Button>
+              </div>
+              {notifications.length === 0 ? (
+                <div className="px-3 py-6 text-sm text-muted-foreground text-center">لا توجد إشعارات</div>
+              ) : (
+                notifications.map(n => (
+                  <div key={n.id} className="px-3 py-2 border-t border-border/60">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">{n.title}</span>
+                      <span className="text-xs text-muted-foreground">{new Date(n.createdAt).toLocaleTimeString('ar-EG')}</span>
+                    </div>
+                    {n.message && (<div className="text-xs text-muted-foreground mt-1">{n.message}</div>)}
+                  </div>
+                ))
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           {/* User Menu with Dropdown */}
           <DropdownMenu>
