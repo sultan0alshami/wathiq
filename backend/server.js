@@ -5,7 +5,7 @@ const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs').promises; // Import fs.promises for async file operations
 const cron = require('node-cron');
-const fetch = require('node-fetch');
+// Use Node.js 18+ built-in fetch/FormData/Blob
 
 // WhatsApp Cloud API config via environment variables
 const WHATSAPP_TOKEN = process.env.WHATSAPP_TOKEN || '';
@@ -92,7 +92,7 @@ cron.schedule('0 18 * * *', () => {
 });
 
 const app = express();
-const port = 5000; // Choose a different port than your React app
+const port = process.env.PORT || 5000; // Honor Cloud Run/Heroku-style PORT
 
 const corsOptions = {
   origin: (origin, callback) => {
@@ -234,6 +234,6 @@ app.post('/generate-pdf', rateLimitMiddleware, async (req, res) => {
   }
 });
 
-app.listen(port, () => {
-  console.log(`Backend server listening at http://localhost:${port}`);
+app.listen(port, '0.0.0.0', () => {
+  console.log(`Backend server listening on 0.0.0.0:${port}`);
 });
