@@ -79,8 +79,8 @@ const NavigationMenuViewport = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <NavigationMenuPrimitive.Viewport
     className={cn(
-      "absolute left-0 top-full flex justify-center", // Moved from wrapper div
-      "origin-top-center relative mt-1.5 h-[var(--radix-navigation-menu-viewport-height)] w-full overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-90 md:w-[var(--radix-navigation-menu-viewport-width)]",
+      "absolute left-0 top-full flex justify-center",
+      "origin-top-center relative mt-1.5 h-[var(--radix-navigation-menu-viewport-height)] w-full overflow-hidden rounded-md border border-border/70 bg-popover/90 text-popover-foreground shadow-lg backdrop-blur-md supports-[backdrop-filter]:bg-popover/70 supports-[backdrop-filter]:backdrop-blur-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-90 md:w-[var(--radix-navigation-menu-viewport-width)]",
       className,
     )}
     ref={ref}
