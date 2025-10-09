@@ -104,6 +104,9 @@ def generate_pdf(data):
             h1, h2 {
                 color: #105962; /* wathiq-primary */
             }
+            .header h1 {
+                color: #ffffff;
+            }
             .header {
                 background-color: #105962; /* wathiq-primary */
                 color: white;
