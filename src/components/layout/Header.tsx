@@ -81,7 +81,10 @@ export const Header: React.FC = () => {
                 )}
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-80 max-h-96 overflow-auto">
+            <DropdownMenuContent
+              align="end"
+              className="w-80 max-h-96 overflow-auto border border-border/70 shadow-lg bg-card/90 backdrop-blur-md supports-[backdrop-filter]:bg-card/70 supports-[backdrop-filter]:backdrop-blur-md"
+            >
               <div className="flex items-center justify-between px-2 py-1">
                 <span className="text-sm text-muted-foreground">الإشعارات</span>
                 <Button variant="ghost" size="sm" onClick={markAllRead}>تحديد الكل كمقروء</Button>
@@ -123,7 +126,10 @@ export const Header: React.FC = () => {
                 </div>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuContent
+              align="end"
+              className="w-56 border border-border/70 shadow-lg bg-card/90 backdrop-blur-md supports-[backdrop-filter]:bg-card/70 supports-[backdrop-filter]:backdrop-blur-md"
+            >
               <DropdownMenuLabel className="text-right">
                 <div className="flex flex-col space-y-1">
                   <p className="text-sm font-medium">{userName}</p>
