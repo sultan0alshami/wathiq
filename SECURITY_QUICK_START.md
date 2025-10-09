@@ -115,22 +115,19 @@ ON CONFLICT (user_id) DO UPDATE SET role = EXCLUDED.role, name = EXCLUDED.name;
 
 ---
 
-### Step 4: Run Automated Tests (3 minutes)
+### Step 4: Run Automated Tests (Optional - Currently Under Development)
 
+**Note:** The automated test suite is available in `__tests__/auth-integration.test.tsx` but requires additional Jest configuration for Vite/ES modules. For now, **manual testing (Step 3) is the primary verification method.**
+
+If you want to set up automated tests:
 ```bash
-# Run the new auth integration tests
+# This will currently fail due to Jest/Vite ESM compatibility
 npm test -- auth-integration.test.tsx
 
-# Expected output:
-# ✓ Finance role access control (4 tests)
-# ✓ Sales role access control (2 tests)
-# ✓ Operations role access control (2 tests)
-# ✓ Marketing role access control (2 tests)
-# ✓ Admin role access control (1 test)
-# ✓ Manager role access control (1 test)
-# ✓ Unauthenticated access (1 test)
-# ✓ Loading state (1 test)
+# TODO: Configure Jest to work with Vite's import.meta.env
 ```
+
+**For now, skip this step and rely on manual testing above** ✅
 
 ---
 
