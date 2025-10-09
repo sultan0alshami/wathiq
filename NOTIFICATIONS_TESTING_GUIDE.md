@@ -96,7 +96,7 @@ VALUES (
 -- Replace with your actual user ID
 INSERT INTO public.notifications (user_id, type, title, message, is_broadcast, created_at)
 VALUES (
-  'YOUR_USER_ID_HERE',
+  '7b601100-e2ab-41eb-85b5-765d2e3107fc',
   'success',
   'إشعار خاص',
   'هذا إشعار خاص بك فقط',

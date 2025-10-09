@@ -81,7 +81,8 @@ export const Header: React.FC = () => {
           {/* Theme Toggle */}
           <ThemeToggle />
 
-          {/* Admin User Management (Admin Only) */}
+          {/* Admin User Management (Admin Only) - TODO: Create /admin/users page */}
+          {/* Temporarily disabled until admin page is created
           {isAdmin && (
             <Button
               variant="outline"
@@ -94,6 +95,7 @@ export const Header: React.FC = () => {
               <span className="hidden sm:inline">المستخدمين</span>
             </Button>
           )}
+          */}
           
           {/* Notifications */}
           <DropdownMenu>
