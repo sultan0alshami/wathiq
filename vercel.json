@@ -1,8 +1,8 @@
 {
   "version": 2,
   "routes": [
-    { "handle": "filesystem" },
     { "src": "^/login$", "headers": { "Location": "/" }, "status": 308 },
+    { "handle": "filesystem" },
     { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
