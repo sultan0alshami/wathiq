@@ -254,14 +254,29 @@ if __name__ == '__main__':
     # Clean up the temporary file (optional, as Node.js handles deletion)
     # os.remove(temp_file_path)
 
-    # Assuming font files are in a 'fonts' subdirectory within backend
+    # Resolve fonts and assets
     script_dir = path.dirname(path.abspath(__file__))
     font_dir = path.join(script_dir, 'fonts')
     assets_dir = path.join(script_dir, 'assets')
-    
-    # Pass the font paths to the HTML generator
-    input_data['font_path_regular'] = path.join(font_dir, 'Dubai-Regular.ttf')
-    input_data['font_path_bold'] = path.join(font_dir, 'Dubai-Bold.ttf')
+
+    # Prefer bundled Dubai fonts if present; otherwise, fall back to system Arabic fonts (Amiri/DejaVu)
+    dubai_regular = path.join(font_dir, 'Dubai-Regular.ttf')
+    dubai_bold = path.join(font_dir, 'Dubai-Bold.ttf')
+    if path.exists(dubai_regular) and path.exists(dubai_bold):
+        input_data['font_path_regular'] = dubai_regular
+        input_data['font_path_bold'] = dubai_bold
+    else:
+        # Common Debian paths
+        amiri_regular = '/usr/share/fonts/truetype/amiri/Amiri-Regular.ttf'
+        amiri_bold = '/usr/share/fonts/truetype/amiri/Amiri-Bold.ttf'
+        dejavu_regular = '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
+        dejavu_bold = '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'
+        if path.exists(amiri_regular) and path.exists(amiri_bold):
+            input_data['font_path_regular'] = amiri_regular
+            input_data['font_path_bold'] = amiri_bold
+        else:
+            input_data['font_path_regular'] = dejavu_regular
+            input_data['font_path_bold'] = dejavu_bold
     input_data['logo_path'] = path.join(assets_dir, 'logo.png')
 
     pdf_output = generate_pdf(input_data)
