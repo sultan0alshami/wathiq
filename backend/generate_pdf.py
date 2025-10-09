@@ -1,5 +1,6 @@
 import sys
 import json
+import base64
 from weasyprint import HTML, CSS
 import weasyprint
 import pydyf
@@ -187,7 +188,7 @@ def generate_pdf(data):
     </head>
     <body>
         <div class="header">
-            <img class="logo" src="file:///$logo_path" alt="Wathiq Logo" />
+            <img class="logo" src="$logo_data_uri" alt="Wathiq Logo" />
             <div class="company-name">Wathiq - واثق</div>
             <h1>تقرير واثق اليومي الشامل</h1>
             <p>التاريخ: $date</p>
@@ -232,7 +233,7 @@ def generate_pdf(data):
         date=data['date'],
         font_regular=data['font_path_regular'],
         font_bold=data['font_path_bold'],
-        logo_path=data['logo_path'],
+        logo_data_uri=data['logo_data_uri'],
         current_liquidity=data['finance']['currentLiquidity'],
         customers_contacted=data['sales']['customersContacted'],
         html_entries=html_entries,
@@ -289,7 +290,7 @@ if __name__ == '__main__':
         else:
             input_data['font_path_regular'] = dejavu_regular
             input_data['font_path_bold'] = dejavu_bold
-    input_data['logo_path'] = path.join(assets_dir, 'logo.png')
+    logo_path = path.join(assets_dir, 'logo.png')
 
     # Convert font paths to file URIs for WeasyPrint
     def to_file_uri(p):
@@ -300,7 +301,12 @@ if __name__ == '__main__':
 
     input_data['font_path_regular'] = to_file_uri(input_data['font_path_regular'])
     input_data['font_path_bold'] = to_file_uri(input_data['font_path_bold'])
-    input_data['logo_path'] = to_file_uri(input_data['logo_path'])
+
+    # Read logo binary and encode as data URI
+    with open(logo_path, 'rb') as logo_file:
+        logo_bytes = logo_file.read()
+        logo_base64 = base64.b64encode(logo_bytes).decode('utf-8')
+        input_data['logo_data_uri'] = f"data:image/png;base64,{logo_base64}"
 
     pdf_output = generate_pdf(input_data)
 
