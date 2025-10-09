@@ -2,6 +2,7 @@ import React from 'react';
 import { Bell, User, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { DateTabs } from '@/components/ui/date-tabs';
 import { SearchInput } from '@/components/ui/search-input';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
@@ -29,13 +30,17 @@ export const Header: React.FC = () => {
     console.log("Search term:", value);
   };
 
-         const handleLogout = async () => {
-           try {
-             await signOut();
-           } finally {
-             navigate('/login', { replace: true });
-           }
-         };
+  const [confirmOpen, setConfirmOpen] = React.useState(false);
+
+  const requestLogout = () => setConfirmOpen(true);
+
+  const confirmLogout = async () => {
+    try {
+      await signOut();
+    } finally {
+      navigate('/login', { replace: true });
+    }
+  };
 
   // Get role display name in Arabic
   const getRoleDisplayName = (role: string | null) => {
@@ -138,7 +143,7 @@ export const Header: React.FC = () => {
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem 
-                onClick={handleLogout}
+                onClick={requestLogout}
                 className="text-red-600 focus:text-red-600 focus:bg-red-50 cursor-pointer"
               >
                 <LogOut className="w-4 h-4 ml-2" />
@@ -153,6 +158,16 @@ export const Header: React.FC = () => {
       <div className="flex justify-center">
         <DateTabs />
       </div>
+      <ConfirmationDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="تأكيد تسجيل الخروج"
+        description="هل تريد بالفعل تسجيل الخروج من النظام؟"
+        confirmText="تسجيل الخروج"
+        cancelText="إلغاء"
+        onConfirm={confirmLogout}
+        variant="warning"
+      />
     </header>
   );
 };
