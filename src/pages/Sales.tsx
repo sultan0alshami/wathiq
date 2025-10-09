@@ -21,6 +21,7 @@ import { DeleteConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { CalendarDays, ClipboardCheck } from 'lucide-react';
 import { KPICardSkeleton, TableSkeleton } from '@/components/ui/loading-skeleton';
 import { format } from 'date-fns';
+import { AuthService } from '@/services/AuthService';
 import { ARABIC_SALES_MESSAGES } from '@/lib/arabicSalesMessages';
 import { ar as arLocale } from 'date-fns/locale/ar';
 
@@ -159,6 +160,9 @@ export const Sales: React.FC = () => {
     setLoading(true);
     setIsDeleteDialogOpen(false);
     try {
+      // Server-side authorization check
+      await AuthService.requireAccess('sales');
+      
       const updatedMeetings = meetings.filter(meeting => meeting.id !== meetingToDelete);
       setMeetings(updatedMeetings);
       
@@ -173,11 +177,16 @@ export const Sales: React.FC = () => {
         description: ARABIC_SALES_MESSAGES.TOAST_DELETE_SUCCESS_DESCRIPTION,
       });
     } catch (error) {
-      toast({
-        title: ARABIC_SALES_MESSAGES.TOAST_DELETE_ERROR_TITLE,
-        description: ARABIC_SALES_MESSAGES.TOAST_DELETE_ERROR_DESCRIPTION,
-        variant: "destructive",
-      });
+      // If error is from auth, toast already shown
+      if (error instanceof Error && error.message.startsWith('Unauthorized')) {
+        console.error('Unauthorized delete attempt:', error);
+      } else {
+        toast({
+          title: ARABIC_SALES_MESSAGES.TOAST_DELETE_ERROR_TITLE,
+          description: ARABIC_SALES_MESSAGES.TOAST_DELETE_ERROR_DESCRIPTION,
+          variant: "destructive",
+        });
+      }
     } finally {
       setLoading(false);
       setMeetingToDelete(null);

@@ -14,6 +14,7 @@ import { useMemo } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import ar from '@/localization/ar.json';
+import { AuthService } from '@/services/AuthService';
 
 export const Reports: React.FC = () => {
   const { currentDate, formatDate } = useDateContext();
@@ -184,8 +185,23 @@ export const Reports: React.FC = () => {
     }
   };
 
-  const handleBulkDownload = () => {
-    triggerDownloadWithProgress(ExportService.exportMergedDailyCSV, `merged-daily-report-${formatDate(currentDate, 'yyyy-MM-dd')}.csv`, ar.reports.reportTitles.merged);
+  const handleBulkDownload = async () => {
+    try {
+      // Check export permission before expensive operation
+      const canExport = await AuthService.canAccessResource('reports');
+      if (!canExport) {
+        toast({
+          title: 'غير مصرح',
+          description: 'ليس لديك صلاحية لتصدير التقارير',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      triggerDownloadWithProgress(ExportService.exportMergedDailyCSV, `merged-daily-report-${formatDate(currentDate, 'yyyy-MM-dd')}.csv`, ar.reports.reportTitles.merged);
+    } catch (err) {
+      console.error('Error checking export permission:', err);
+    }
   };
 
   const getStatusBadge = (status: string) => {

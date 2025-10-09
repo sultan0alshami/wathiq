@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bell, User, LogOut } from 'lucide-react';
+import { Bell, User, LogOut, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
@@ -7,6 +7,7 @@ import { DateTabs } from '@/components/ui/date-tabs';
 import { SearchInput } from '@/components/ui/search-input';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useAuth } from '@/contexts/AuthContext';
+import { AuthService } from '@/services/AuthService';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,6 +23,12 @@ export const Header: React.FC = () => {
   const { userName, user, role, signOut } = useAuth();
   const navigate = useNavigate();
   const { notifications, unreadCount, markAllRead, markRead } = useNotifications();
+  const [isAdmin, setIsAdmin] = React.useState(false);
+
+  // Check if user is admin for conditional rendering
+  React.useEffect(() => {
+    AuthService.isAdmin().then(setIsAdmin);
+  }, [role]);
 
   // TODO: Implement global search functionality when a search context or service is available.
   const handleSearchChange = (value: string) => {
@@ -73,6 +80,20 @@ export const Header: React.FC = () => {
         <div className="flex items-center space-x-4 space-x-reverse">
           {/* Theme Toggle */}
           <ThemeToggle />
+
+          {/* Admin User Management (Admin Only) */}
+          {isAdmin && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate('/admin/users')}
+              className="gap-2"
+              title="إدارة المستخدمين"
+            >
+              <Users className="w-4 h-4" />
+              <span className="hidden sm:inline">المستخدمين</span>
+            </Button>
+          )}
           
           {/* Notifications */}
           <DropdownMenu>

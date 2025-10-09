@@ -20,6 +20,7 @@ import { useDebounce, useMemoizedCalculations } from '@/hooks/usePerformance';
 import { useMobileDataDisplay } from '@/hooks/useMobileOptimization';
 import { useToast } from '@/hooks/use-toast';
 import { ARABIC_ENHANCED_FINANCE_MESSAGES } from '@/lib/arabicEnhancedFinanceMessages';
+import { AuthService } from '@/services/AuthService';
 
 export const EnhancedFinance: React.FC = () => {
   const { currentDate, formatDate } = useDateContext();
@@ -179,22 +180,30 @@ export const EnhancedFinance: React.FC = () => {
   }, [newEntryTitle, newEntryAmount, newEntryType, newEntryCategory, newEntryDescription, 
       currentDate, currentLiquidity, entries, titleValidation.isValid, amountValidation.isValid, toast]);
 
-  const removeEntry = useCallback((id: string) => {
-    const entryToDelete = entries.find(e => e.id === id);
-    const updatedEntries = entries.filter(entry => entry.id !== id);
-    setEntries(updatedEntries);
-    
-    // Update localStorage
-    updateSectionData(currentDate, 'finance', {
-      currentLiquidity,
-      entries: updatedEntries,
-    });
-
-    if (entryToDelete) {
-      toast({
-        title: ARABIC_ENHANCED_FINANCE_MESSAGES.TRANSACTION_DELETED_TITLE,
-        description: ARABIC_ENHANCED_FINANCE_MESSAGES.TRANSACTION_DELETED_DESCRIPTION(entryToDelete.title),
+  const removeEntry = useCallback(async (id: string) => {
+    try {
+      // Server-side authorization check before deletion
+      await AuthService.requireAccess('finance');
+      
+      const entryToDelete = entries.find(e => e.id === id);
+      const updatedEntries = entries.filter(entry => entry.id !== id);
+      setEntries(updatedEntries);
+      
+      // Update localStorage
+      updateSectionData(currentDate, 'finance', {
+        currentLiquidity,
+        entries: updatedEntries,
       });
+
+      if (entryToDelete) {
+        toast({
+          title: ARABIC_ENHANCED_FINANCE_MESSAGES.TRANSACTION_DELETED_TITLE,
+          description: ARABIC_ENHANCED_FINANCE_MESSAGES.TRANSACTION_DELETED_DESCRIPTION(entryToDelete.title),
+        });
+      }
+    } catch (err) {
+      // requireAccess() already showed error toast
+      console.error('Unauthorized delete attempt:', err);
     }
   }, [entries, currentDate, currentLiquidity, toast]);
 

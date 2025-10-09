@@ -10,6 +10,7 @@ import { Trash2, Plus, Settings2, CheckCircle, Clock, AlertCircle, Loader2, Gaug
 import { useToast } from '@/hooks/use-toast';
 import { useDateContext } from '@/contexts/DateContext';
 import { getDataForDate, updateSectionData, type OperationEntry } from '@/lib/mockData';
+import { AuthService } from '@/services/AuthService';
 import { ValidationMessage, useFormValidation, ValidationRules } from '@/components/ui/enhanced-form-validation';
 import { DeleteConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { KPICardSkeleton, TableSkeleton } from '@/components/ui/loading-skeleton';
@@ -165,6 +166,9 @@ export const Operations: React.FC = () => {
   const removeOperation = async (id: string) => {
     setLoading(true);
     try {
+      // Server-side authorization check
+      await AuthService.requireAccess('operations');
+      
       const updatedOperations = operations.filter(op => op.id !== id);
       setOperations(updatedOperations);
       
@@ -179,11 +183,16 @@ export const Operations: React.FC = () => {
         description: ARABIC_OPERATIONS_MESSAGES.TOAST_DELETE_SUCCESS_DESCRIPTION,
       });
     } catch (error) {
-      toast({
-        title: ARABIC_OPERATIONS_MESSAGES.TOAST_DELETE_ERROR_TITLE,
-        description: ARABIC_OPERATIONS_MESSAGES.TOAST_DELETE_ERROR_DESCRIPTION,
-        variant: "destructive",
-      });
+      // If error is from auth, toast already shown
+      if (error instanceof Error && error.message.startsWith('Unauthorized')) {
+        console.error('Unauthorized delete attempt:', error);
+      } else {
+        toast({
+          title: ARABIC_OPERATIONS_MESSAGES.TOAST_DELETE_ERROR_TITLE,
+          description: ARABIC_OPERATIONS_MESSAGES.TOAST_DELETE_ERROR_DESCRIPTION,
+          variant: "destructive",
+        });
+      }
     } finally {
       setLoading(false);
     }
