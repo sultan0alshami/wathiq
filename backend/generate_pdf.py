@@ -269,11 +269,16 @@ if __name__ == '__main__':
         # Common Debian paths
         amiri_regular = '/usr/share/fonts/truetype/amiri/Amiri-Regular.ttf'
         amiri_bold = '/usr/share/fonts/truetype/amiri/Amiri-Bold.ttf'
+        noto_regular = '/usr/share/fonts/truetype/noto/NotoNaskhArabic-Regular.ttf'
+        noto_bold = '/usr/share/fonts/truetype/noto/NotoNaskhArabic-Bold.ttf'
         dejavu_regular = '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
         dejavu_bold = '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'
         if path.exists(amiri_regular) and path.exists(amiri_bold):
             input_data['font_path_regular'] = amiri_regular
             input_data['font_path_bold'] = amiri_bold
+        elif path.exists(noto_regular) and path.exists(noto_bold):
+            input_data['font_path_regular'] = noto_regular
+            input_data['font_path_bold'] = noto_bold
         else:
             input_data['font_path_regular'] = dejavu_regular
             input_data['font_path_bold'] = dejavu_bold

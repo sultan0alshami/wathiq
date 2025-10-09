@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y \
     libffi-dev \
     libfontconfig1 \
     fonts-dejavu-core \
-    fonts-amiri \
+    fonts-noto-core \
     && rm -rf /var/lib/apt/lists/*
 
 # Create app directory
