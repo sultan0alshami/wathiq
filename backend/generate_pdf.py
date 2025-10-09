@@ -72,7 +72,7 @@ def generate_pdf(data):
         """
 
     html_template = Template(
-        """
+        '''
     <!DOCTYPE html>
     <html lang="ar" dir="rtl">
     <head>
@@ -81,13 +81,13 @@ def generate_pdf(data):
         <style>
             @font-face {
                 font-family: 'Dubai';
-                src: url('file:///$font_regular') format('truetype');
+                src: url("$font_regular") format('opentype');
                 font-weight: normal;
                 font-style: normal;
             }
             @font-face {
                 font-family: 'Dubai';
-                src: url('file:///$font_bold') format('truetype');
+                src: url("$font_bold") format('opentype');
                 font-weight: bold;
                 font-style: normal;
             }
@@ -223,7 +223,7 @@ def generate_pdf(data):
 
     </body>
     </html>
-        """
+        '''
     )
 
     final_html_content = html_template.substitute(
@@ -283,6 +283,14 @@ if __name__ == '__main__':
             input_data['font_path_regular'] = dejavu_regular
             input_data['font_path_bold'] = dejavu_bold
     input_data['logo_path'] = path.join(assets_dir, 'logo.png')
+
+    # Convert font paths to file URIs for WeasyPrint
+    def to_file_uri(p):
+        return 'file://' + path.abspath(p).replace('\\', '/')
+
+    input_data['font_path_regular'] = to_file_uri(input_data['font_path_regular'])
+    input_data['font_path_bold'] = to_file_uri(input_data['font_path_bold'])
+    input_data['logo_path'] = to_file_uri(input_data['logo_path'])
 
     pdf_output = generate_pdf(input_data)
 

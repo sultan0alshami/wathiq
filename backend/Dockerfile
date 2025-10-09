@@ -21,7 +21,7 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm ci --omit=dev
 
-# Copy the rest of the backend code
+# Copy the rest of the backend code (including fonts)
 COPY . .
 
 # Python deps for WeasyPrint (pin pydyf to match WeasyPrint API)
