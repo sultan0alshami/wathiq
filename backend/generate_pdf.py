@@ -293,10 +293,10 @@ if __name__ == '__main__':
 
     # Convert font paths to file URIs for WeasyPrint
     def to_file_uri(p):
-        # Ensure spaces and special characters are encoded for file URI
-        from urllib.parse import quote
-        abs_path = path.abspath(p).replace('\\', '/')
-        return 'file://' + quote(abs_path)
+        abs_path = path.abspath(p)
+        if os.name == 'nt':
+            return 'file:///' + abs_path.replace('\\', '/')
+        return 'file://' + abs_path
 
     input_data['font_path_regular'] = to_file_uri(input_data['font_path_regular'])
     input_data['font_path_bold'] = to_file_uri(input_data['font_path_bold'])
