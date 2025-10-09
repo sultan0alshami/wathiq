@@ -189,7 +189,7 @@ def generate_pdf(data):
     </head>
     <body>
         <div class="header">
-            <img class="logo" src="file:///$lgo_path_bytes" alt="Wathiq Logo" />
+            <img class="logo" src="$logo_path_bytes" alt="Wathiq Logo" />
             <div class="company-name">Wathiq - واثق</div>
             <h1>تقرير واثق اليومي الشامل</h1>
             <p>التاريخ: $date</p>
@@ -269,7 +269,7 @@ if __name__ == '__main__':
     assets_dir = path.join(script_dir, 'assets')
 
     # Prefer bundled Dubai fonts if present; otherwise, fall back to system Arabic fonts (Amiri/DejaVu)
-    dubai_regular = path.join(font_dir, 'Dubai-Regular.ttf')
+    dubai_regular = path.join(font_dir, 'Dubai-Regular.otf')
     dubai_bold = path.join(font_dir, 'Dubai-Bold.ttf')
     if path.exists(dubai_regular) and path.exists(dubai_bold):
         input_data['font_path_regular'] = dubai_regular
@@ -291,7 +291,7 @@ if __name__ == '__main__':
         else:
             input_data['font_path_regular'] = dejavu_regular
             input_data['font_path_bold'] = dejavu_bold
-    input_data['logo_path_bytes'] = path.join(assets_dir, 'logo.png')
+    logo_path = path.join(assets_dir, 'logo.png')
 
     # Convert font paths to file URIs for WeasyPrint
     def to_file_uri(p):
@@ -302,7 +302,7 @@ if __name__ == '__main__':
 
     input_data['font_path_regular'] = to_file_uri(input_data['font_path_regular'])
     input_data['font_path_bold'] = to_file_uri(input_data['font_path_bold'])
-    input_data['logo_path_bytes'] = to_file_uri(input_data['logo_path_bytes'])
+    input_data['logo_path_bytes'] = to_file_uri(logo_path)
 
     pdf_output = generate_pdf(input_data)
 
