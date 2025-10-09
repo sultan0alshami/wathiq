@@ -2,8 +2,8 @@ import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import { AuthProvider } from '@/contexts/AuthContext';
-import type { AuthContextType, UserPermissions } from '@/contexts/AuthContext';
+import * as AuthContext from '@/contexts/AuthContext';
+import type { UserPermissions } from '@/lib/supabase';
 
 // Mock components for different sections
 const DashboardPage = () => <div>Dashboard Page</div>;
@@ -13,8 +13,11 @@ const OperationsPage = () => <div>Operations Page</div>;
 const MarketingPage = () => <div>Marketing Page</div>;
 const UnauthorizedPage = () => <div>غير مصرح - Unauthorized</div>;
 
-// Helper to create mock auth context
-const createMockAuth = (role: string | null, loading = false): AuthContextType => {
+// Mock useAuth hook
+const mockUseAuth = jest.spyOn(AuthContext, 'useAuth');
+
+// Helper to create mock auth return value
+const createMockAuth = (role: string | null, loading = false) => {
   const rolePermissions: Record<string, UserPermissions> = {
     admin: {
       dashboard: true,
@@ -130,12 +133,13 @@ const TestWrapper: React.FC<{
   children: React.ReactNode;
 }> = ({ role, loading = false, initialRoute, children }) => {
   const authValue = createMockAuth(role, loading);
+  
+  // Mock the useAuth hook to return our test values
+  mockUseAuth.mockReturnValue(authValue);
 
   return (
     <MemoryRouter initialEntries={[initialRoute]}>
-      <AuthProvider value={authValue}>
-        {children}
-      </AuthProvider>
+      {children}
     </MemoryRouter>
   );
 };
