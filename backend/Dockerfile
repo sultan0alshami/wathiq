@@ -24,9 +24,8 @@ RUN npm ci --omit=dev
 # Copy the rest of the backend code
 COPY . .
 
-# Python deps for WeasyPrint
-# If generate_pdf.py uses WeasyPrint directly, install it here
-RUN pip3 install --no-cache-dir weasyprint==61.2
+# Python deps for WeasyPrint (pin pydyf to match WeasyPrint API)
+RUN pip3 install --no-cache-dir weasyprint==61.2 pydyf==0.11.0
 
 # Expose the port (Cloud Run provides $PORT)
 ENV PORT=8080
