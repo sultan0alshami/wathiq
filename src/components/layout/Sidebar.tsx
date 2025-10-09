@@ -17,6 +17,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 
 // Navigation items with permission requirements.
 // `path` is appended to the base (/admin or /manager)
@@ -39,9 +40,13 @@ export const Sidebar: React.FC = () => {
   const { user, role, userName, permissions, signOut } = useAuth();
   const basePath = role === 'admin' ? '/admin' : '/manager';
 
-  const handleLogout = async () => {
-    const ok = window.confirm('هل تريد تأكيد تسجيل الخروج؟');
-    if (!ok) return;
+  const [confirmOpen, setConfirmOpen] = React.useState(false);
+
+  const handleLogout = () => {
+    setConfirmOpen(true);
+  };
+
+  const confirmLogout = async () => {
     try {
       await signOut();
     } finally {
@@ -125,6 +130,16 @@ export const Sidebar: React.FC = () => {
           © 2024 شركة واثق
         </div>
       </div>
+      <ConfirmationDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="تأكيد تسجيل الخروج"
+        description="هل تريد بالفعل تسجيل الخروج من النظام؟"
+        confirmText="تسجيل الخروج"
+        cancelText="إلغاء"
+        onConfirm={confirmLogout}
+        variant="warning"
+      />
     </div>
   );
 };
