@@ -23,7 +23,7 @@ RUN npm ci --omit=dev
 COPY backend/. .
 
 # Python deps for WeasyPrint (pin pydyf to match WeasyPrint API)
-RUN pip3 install --no-cache-dir weasyprint==61.2 pydyf==0.11.0
+RUN pip3 install --no-cache-dir weasyprint==61.2 pydyf==0.12.0
 
 # Cloud Run/Koyeb default port
 ENV PORT=8080

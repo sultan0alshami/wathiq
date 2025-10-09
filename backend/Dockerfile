@@ -25,7 +25,7 @@ RUN npm ci --omit=dev
 COPY . .
 
 # Python deps for WeasyPrint (pin pydyf to match WeasyPrint API)
-RUN pip3 install --no-cache-dir weasyprint==61.2 pydyf==0.11.0
+RUN pip3 install --no-cache-dir weasyprint==61.2 pydyf==0.12.0
 
 # Expose the port (Cloud Run provides $PORT)
 ENV PORT=8080

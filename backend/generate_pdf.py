@@ -1,6 +1,8 @@
 import sys
 import json
 from weasyprint import HTML, CSS
+import weasyprint
+import pydyf
 from os import path
 from string import Template
 
@@ -250,6 +252,11 @@ if __name__ == '__main__':
     with open(temp_file_path, 'r', encoding='utf-8') as f:
         input_json = f.read()
     input_data = json.loads(input_json)
+
+    # Log versions for debugging
+    sys.stderr.write(f"WeasyPrint version: {getattr(weasyprint, '__version__', 'unknown')}\n")
+    sys.stderr.write(f"pydyf version: {getattr(pydyf, '__version__', 'unknown')}\n")
+    sys.stderr.flush()
 
     # Clean up the temporary file (optional, as Node.js handles deletion)
     # os.remove(temp_file_path)
