@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bell, User, LogOut, Users } from 'lucide-react';
+import { Bell, User, LogOut, Users, CheckCircle, Info, AlertTriangle, XCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
@@ -16,7 +16,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useNotifications } from '@/contexts/NotificationsContext';
+import { useNotifications, NotificationType } from '@/contexts/NotificationsContext';
 
 export const Header: React.FC = () => {
   const [searchTerm, setSearchTerm] = React.useState('');
@@ -46,6 +46,21 @@ export const Header: React.FC = () => {
       await signOut();
     } finally {
       navigate('/login', { replace: true });
+    }
+  };
+
+  // Get notification icon based on type
+  const getNotificationIcon = (type: NotificationType) => {
+    switch (type) {
+      case 'success':
+        return <CheckCircle className="w-4 h-4 text-green-500" />;
+      case 'error':
+        return <XCircle className="w-4 h-4 text-red-500" />;
+      case 'warning':
+        return <AlertTriangle className="w-4 h-4 text-yellow-500" />;
+      case 'info':
+      default:
+        return <Info className="w-4 h-4 text-blue-500" />;
     }
   };
 
@@ -122,19 +137,31 @@ export const Header: React.FC = () => {
               ) : (
                 notifications.map(n => (
                   <div key={n.id} className="px-3 py-2 border-t border-border/60">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium flex items-center gap-2">
-                        {!n.read && <span className="inline-block w-2 h-2 rounded-full bg-accent" />}
-                        {n.title}
-                      </span>
-                      <span className="text-xs text-muted-foreground">{new Date(n.createdAt).toLocaleTimeString('ar-EG')}</span>
-                    </div>
-                    {n.message && (<div className="text-xs text-muted-foreground mt-1">{n.message}</div>)}
-                    {!n.read && (
-                      <div className="mt-2">
-                        <Button size="sm" variant="outline" onClick={() => markRead(n.id)}>تمييز كمقروء</Button>
+                    <div className="flex items-start gap-2">
+                      {/* Notification Icon */}
+                      <div className="mt-0.5">
+                        {getNotificationIcon(n.type)}
                       </div>
-                    )}
+                      
+                      {/* Notification Content */}
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-sm font-medium flex items-center gap-2">
+                            {!n.read && <span className="inline-block w-2 h-2 rounded-full bg-accent" />}
+                            {n.title}
+                          </span>
+                          <span className="text-xs text-muted-foreground whitespace-nowrap">
+                            {new Date(n.createdAt).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+                        {n.message && (<div className="text-xs text-muted-foreground mt-1">{n.message}</div>)}
+                        {!n.read && (
+                          <div className="mt-2">
+                            <Button size="sm" variant="outline" onClick={() => markRead(n.id)}>تمييز كمقروء</Button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 ))
               )}
