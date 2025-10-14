@@ -17,6 +17,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useNotifications, NotificationType } from '@/contexts/NotificationsContext';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export const Header: React.FC = () => {
   const [searchTerm, setSearchTerm] = React.useState('');
@@ -24,6 +25,7 @@ export const Header: React.FC = () => {
   const navigate = useNavigate();
   const { notifications, unreadCount, markAllRead, markRead } = useNotifications();
   const [isAdmin, setIsAdmin] = React.useState(false);
+  const isMobile = useIsMobile();
 
   // Check if user is admin for conditional rendering
   React.useEffect(() => {
@@ -78,21 +80,21 @@ export const Header: React.FC = () => {
   };
 
   return (
-    <header className="bg-card border-b border-border-strong px-6 py-4 space-y-4">
+    <header className={`bg-card border-b border-border-strong space-y-4 ${isMobile ? 'px-4 py-3' : 'px-6 py-4'}`}>
       {/* Top Row - Search and User Actions */}
-      <div className="flex items-center justify-between">
+      <div className={`flex items-center ${isMobile ? 'flex-col gap-3' : 'justify-between'}`}>
         {/* Global Search */}
-        <div className="flex-1 max-w-md">
+        <div className={`${isMobile ? 'w-full order-2' : 'flex-1 max-w-md'}`}>
           <SearchInput
             value={searchTerm}
             onChange={handleSearchChange}
             placeholder="البحث العام..."
-            className="w-full"
+            className={`w-full ${isMobile ? 'min-h-[44px] text-base' : ''}`}
           />
         </div>
 
         {/* Actions */}
-        <div className="flex items-center space-x-4 space-x-reverse">
+        <div className={`flex items-center ${isMobile ? 'w-full justify-between order-1' : 'space-x-4 space-x-reverse'}`}>
           {/* Theme Toggle */}
           <ThemeToggle />
 
@@ -126,7 +128,7 @@ export const Header: React.FC = () => {
             </DropdownMenuTrigger>
             <DropdownMenuContent
               align="end"
-              className="w-80 max-h-96 overflow-auto border border-border/70 shadow-lg bg-card/90 backdrop-blur-md supports-[backdrop-filter]:bg-card/70 supports-[backdrop-filter]:backdrop-blur-md"
+              className={`max-h-96 overflow-auto border border-border/70 shadow-lg bg-card/90 backdrop-blur-md supports-[backdrop-filter]:bg-card/70 supports-[backdrop-filter]:backdrop-blur-md ${isMobile ? 'w-screen max-w-sm mx-4' : 'w-80'}`}
             >
               <div className="flex items-center justify-between px-2 py-1">
                 <span className="text-sm text-muted-foreground">الإشعارات</span>
@@ -136,28 +138,41 @@ export const Header: React.FC = () => {
                 <div className="px-3 py-6 text-sm text-muted-foreground text-center">لا توجد إشعارات</div>
               ) : (
                 notifications.map(n => (
-                  <div key={n.id} className="px-3 py-2 border-t border-border/60">
+                  <div key={n.id} className={`border-t border-border/60 ${isMobile ? 'px-4 py-3' : 'px-3 py-2'}`}>
                     <div className="flex items-start gap-2">
                       {/* Notification Icon */}
-                      <div className="mt-0.5">
+                      <div className="mt-0.5 flex-shrink-0">
                         {getNotificationIcon(n.type)}
                       </div>
                       
                       {/* Notification Content */}
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-sm font-medium flex items-center gap-2">
-                            {!n.read && <span className="inline-block w-2 h-2 rounded-full bg-accent" />}
-                            {n.title}
-                          </span>
-                          <span className="text-xs text-muted-foreground whitespace-nowrap">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            {!n.read && <span className="inline-block w-2 h-2 rounded-full bg-accent flex-shrink-0" />}
+                            <span className={`font-medium break-words ${isMobile ? 'text-sm' : 'text-sm'}`}>
+                              {n.title}
+                            </span>
+                          </div>
+                          <span className="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0">
                             {new Date(n.createdAt).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}
                           </span>
                         </div>
-                        {n.message && (<div className="text-xs text-muted-foreground mt-1">{n.message}</div>)}
+                        {n.message && (
+                          <div className={`text-muted-foreground mt-1 break-words ${isMobile ? 'text-sm' : 'text-xs'}`}>
+                            {n.message}
+                          </div>
+                        )}
                         {!n.read && (
                           <div className="mt-2">
-                            <Button size="sm" variant="outline" onClick={() => markRead(n.id)}>تمييز كمقروء</Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              onClick={() => markRead(n.id)}
+                              className={isMobile ? 'min-h-[36px] text-sm' : ''}
+                            >
+                              تمييز كمقروء
+                            </Button>
                           </div>
                         )}
                       </div>
@@ -183,7 +198,7 @@ export const Header: React.FC = () => {
             </DropdownMenuTrigger>
             <DropdownMenuContent
               align="end"
-              className="w-56 border border-border/70 shadow-lg bg-card/90 backdrop-blur-md supports-[backdrop-filter]:bg-card/70 supports-[backdrop-filter]:backdrop-blur-md"
+              className={`border border-border/70 shadow-lg bg-card/90 backdrop-blur-md supports-[backdrop-filter]:bg-card/70 supports-[backdrop-filter]:backdrop-blur-md ${isMobile ? 'w-48' : 'w-56'}`}
             >
               <DropdownMenuLabel className="text-right">
                 <div className="flex flex-col space-y-1">
@@ -194,7 +209,7 @@ export const Header: React.FC = () => {
               <DropdownMenuSeparator />
               <DropdownMenuItem 
                 onClick={requestLogout}
-                className="text-red-600 focus:text-red-600 focus:bg-red-50 cursor-pointer"
+                className={`text-red-600 focus:text-red-600 focus:bg-red-50 cursor-pointer ${isMobile ? 'min-h-[44px] text-base' : ''}`}
               >
                 <LogOut className="w-4 h-4 ml-2" />
                 <span>تسجيل الخروج</span>
@@ -205,8 +220,10 @@ export const Header: React.FC = () => {
       </div>
 
       {/* Bottom Row - Date Navigation */}
-      <div className="flex justify-center">
-        <DateTabs />
+      <div className={`flex justify-center ${isMobile ? 'px-2' : ''}`}>
+        <div className={isMobile ? 'w-full overflow-x-auto' : ''}>
+          <DateTabs />
+        </div>
       </div>
       <ConfirmationDialog
         open={confirmOpen}
