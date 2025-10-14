@@ -17,7 +17,7 @@ WORKDIR /app
 
 # Install Node dependencies (leverage caching)
 COPY backend/package.json backend/package-lock.json* ./
-RUN npm ci --omit=dev
+RUN npm install --omit=dev
 
 # Copy backend source
 COPY backend/. .
