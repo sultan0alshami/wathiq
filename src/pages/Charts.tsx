@@ -17,11 +17,13 @@ import { useToast } from '@/hooks/use-toast';
 import { formatCurrency, formatChartNumber } from '@/lib/numberUtils';
 import { CHART_COLORS } from '@/lib/chartColors'; // Import the centralized chart colors
 import { ChartSkeleton } from '@/components/ui/loading-skeleton'; // Import ChartSkeleton
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export const Charts: React.FC = () => {
   const { currentDate, formatDate } = useDateContext();
   const { toast } = useToast();
   const [selectedPeriod, setSelectedPeriod] = useState('30');
+  const isMobile = useIsMobile();
   
   const { 
     liquidityData, 
@@ -38,11 +40,13 @@ export const Charts: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">الرسوم البيانية والتحليلات</h1>
-          <p className="text-muted-foreground mt-1">
+      {/* Header - Mobile Optimized */}
+      <div className={`flex ${isMobile ? 'flex-col gap-4' : 'justify-between items-center'}`}>
+        <div className={isMobile ? 'text-center' : ''}>
+          <h1 className={`font-bold text-foreground ${isMobile ? 'text-2xl' : 'text-3xl'}`}>
+            الرسوم البيانية والتحليلات
+          </h1>
+          <p className={`text-muted-foreground mt-1 ${isMobile ? 'text-sm' : ''}`}>
             تحليل مرئي للبيانات والاتجاهات - {formatDate(currentDate, 'dd/MM/yyyy')}
           </p>
         </div>
@@ -50,16 +54,16 @@ export const Charts: React.FC = () => {
           variant="outline" 
           onClick={refresh}
           disabled={isLoading}
-          className="hover:bg-wathiq-primary/10"
+          className={`hover:bg-wathiq-primary/10 ${isMobile ? 'min-h-[44px] w-full' : ''}`}
           aria-label={isLoading ? 'جاري تحديث البيانات' : 'تحديث البيانات'}
         >
           <RefreshCw className={`w-4 h-4 ml-2 ${isLoading ? 'animate-spin' : ''}`} />
-          تحديث
+          {isMobile ? 'تحديث البيانات' : 'تحديث'}
         </Button>
       </div>
 
-      {/* Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* Statistics - Mobile Optimized */}
+      <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-3'}`}>
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">إجمالي الإيرادات</CardTitle>
@@ -97,8 +101,8 @@ export const Charts: React.FC = () => {
         </Card>
       </div>
 
-      {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Charts - Mobile Optimized */}
+      <div className={`grid gap-6 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-2'}`}>
         {isLoading ? (
           <>
             <ChartSkeleton />
@@ -114,7 +118,7 @@ export const Charts: React.FC = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
+                <ResponsiveContainer width="100%" height={isMobile ? 250 : 300}>
                   <AreaChart data={liquidityData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" />
@@ -148,7 +152,7 @@ export const Charts: React.FC = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
+                <ResponsiveContainer width="100%" height={isMobile ? 250 : 300}>
                   <PieChart>
                     <Pie
                       data={expenseCategoriesData}
@@ -170,10 +174,13 @@ export const Charts: React.FC = () => {
         )}
       </div>
 
-      {/* Period Selection */}
-      <div className="flex justify-end">
+      {/* Period Selection - Mobile Optimized */}
+      <div className={`flex ${isMobile ? 'justify-center' : 'justify-end'}`}>
         <Select onValueChange={setSelectedPeriod} value={selectedPeriod}>
-          <SelectTrigger className="w-[180px]" aria-label="اختر الفترة الزمنية">
+          <SelectTrigger 
+            className={`${isMobile ? 'w-full max-w-xs min-h-[44px] text-base' : 'w-[180px]'}`}
+            aria-label="اختر الفترة الزمنية"
+          >
             <SelectValue placeholder="اختر الفترة" />
           </SelectTrigger>
           <SelectContent>
