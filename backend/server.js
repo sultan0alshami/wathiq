@@ -5,7 +5,25 @@ const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs').promises; // Import fs.promises for async file operations
 const cron = require('node-cron');
-// Use Node.js 18+ built-in fetch/FormData/Blob
+const { createClient } = require('@supabase/supabase-js');
+
+// Initialize Supabase client for notifications
+let supabase = null;
+if (process.env.SUPABASE_SERVICE_URL && process.env.SUPABASE_SERVICE_KEY) {
+  supabase = createClient(
+    process.env.SUPABASE_SERVICE_URL,
+    process.env.SUPABASE_SERVICE_KEY,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    }
+  );
+  console.log('[Backend] ✅ Supabase client initialized');
+} else {
+  console.warn('[Backend] ⚠️ Supabase credentials not found in environment');
+}
 
 // WhatsApp Cloud API config via environment variables
 const WHATSAPP_TOKEN = process.env.WHATSAPP_TOKEN || '';
@@ -171,40 +189,33 @@ app.post('/generate-pdf', rateLimitMiddleware, async (req, res) => {
         sendWhatsAppDocument(pdfBuffer, `wathiq-report-${Date.now()}.pdf`).catch(() => {});
         
         // Emit a broadcast notification to Supabase if configured
-        if (process.env.SUPABASE_SERVICE_URL && process.env.SUPABASE_SERVICE_KEY) {
+        if (supabase) {
           console.log('[Backend] Attempting to emit Supabase notification...');
-          console.log('[Backend] Supabase URL:', process.env.SUPABASE_SERVICE_URL);
           
           try {
-            const notificationResponse = await fetch(`${process.env.SUPABASE_SERVICE_URL}/rest/v1/notifications`, {
-              method: 'POST',
-              headers: {
-                apikey: process.env.SUPABASE_SERVICE_KEY,
-                Authorization: `Bearer ${process.env.SUPABASE_SERVICE_KEY}`,
-                'Content-Type': 'application/json',
-                Prefer: 'return=minimal',
-              },
-              body: JSON.stringify({
+            const { data, error } = await supabase
+              .from('notifications')
+              .insert({
                 user_id: null,
                 is_broadcast: true,
                 type: 'success',
                 title: 'تم إنشاء تقرير PDF',
                 message: `تم إنشاء التقرير بتاريخ ${date || 'اليوم'} بنجاح وهو متاح للتنزيل.`,
                 created_at: new Date().toISOString(),
-              }),
-            });
+              });
             
-            if (notificationResponse.ok) {
-              console.log('[Backend] ✅ Supabase notification emitted successfully!');
+            if (error) {
+              console.error('[Backend] ❌ Failed to emit notification:', error.message);
+              console.error('[Backend] Error details:', error);
             } else {
-              const errorText = await notificationResponse.text();
-              console.error('[Backend] ❌ Failed to emit notification. Status:', notificationResponse.status, 'Response:', errorText);
+              console.log('[Backend] ✅ Supabase notification emitted successfully!');
             }
           } catch (e) {
             console.error('[Backend] ❌ Notification emit error:', e?.message || e);
+            console.error('[Backend] Error stack:', e?.stack);
           }
         } else {
-          console.warn('[Backend] ⚠️ Supabase service URL or KEY not configured. Skipping notification.');
+          console.warn('[Backend] ⚠️ Supabase client not initialized. Skipping notification.');
         }
         res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
         res.setHeader('Vary', 'Origin');
