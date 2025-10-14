@@ -18,6 +18,7 @@ import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import { DateProvider } from "./contexts/DateContext";
 import { AuthProvider } from "./contexts/AuthContext";
+import { NotificationsProvider } from "./contexts/NotificationsContext";
 import { ErrorBoundary } from "./components/ui/error-boundary";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -27,11 +28,12 @@ import ProtectedRoute from "./components/ProtectedRoute";
 const App = () => (
   <TooltipProvider>
     <AuthProvider>
-      <DateProvider>
-        <Toaster />
-        <Sonner />
-        <ErrorBoundary>
-          <BrowserRouter>
+      <NotificationsProvider>
+        <DateProvider>
+          <Toaster />
+          <Sonner />
+          <ErrorBoundary>
+            <BrowserRouter>
               <Routes>
                        {/* Root goes to Login */}
                        <Route path="/" element={<Login />} />
@@ -91,8 +93,9 @@ const App = () => (
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
-        </ErrorBoundary>
-      </DateProvider>
+          </ErrorBoundary>
+        </DateProvider>
+      </NotificationsProvider>
     </AuthProvider>
   </TooltipProvider>
 );
