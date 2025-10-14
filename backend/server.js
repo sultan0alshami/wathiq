@@ -195,6 +195,7 @@ app.post('/generate-pdf', rateLimitMiddleware, async (req, res) => {
         // Emit a broadcast notification to Supabase if configured
         if (process.env.SUPABASE_SERVICE_URL && process.env.SUPABASE_SERVICE_KEY) {
           console.log('[Backend] Attempting to emit Supabase notification...');
+          console.log('[Backend] Using URL:', process.env.SUPABASE_SERVICE_URL);
           
           // Try Supabase client first
           try {
