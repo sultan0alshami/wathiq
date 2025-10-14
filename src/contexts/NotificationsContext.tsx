@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { STORAGE_KEYS } from '@/lib/storageKeys';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from './AuthContext';
 
 export type NotificationType = 'info' | 'success' | 'warning' | 'error';
 
@@ -30,16 +31,25 @@ const NotificationsContext = createContext<NotificationsContextType | undefined>
 export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const { user, loading: authLoading } = useAuth();
 
-  // Load notifications from Supabase on mount
+  // Load notifications from Supabase when user is authenticated
   useEffect(() => {
     const loadNotifications = async () => {
+      // Wait for auth to complete
+      if (authLoading) {
+        console.log('[NotificationsContext] Waiting for authentication...');
+        return;
+      }
+
+      if (!user) {
+        console.log('[NotificationsContext] No user authenticated, skipping notification load');
+        setLoading(false);
+        return;
+      }
+
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          setLoading(false);
-          return;
-        }
+        console.log('[NotificationsContext] Loading notifications for user:', user.id);
 
         // Fetch notifications for this user + broadcasts
         const { data, error } = await supabase
@@ -77,14 +87,19 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
     };
 
     loadNotifications();
-  }, []);
+  }, [authLoading, user]);
 
   // Subscribe to Supabase Realtime for new notifications
   useEffect(() => {
     const setupRealtime = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      // Wait for auth to complete
+      if (authLoading) {
+        console.log('[NotificationsContext] Waiting for auth before setting up Realtime...');
+        return;
+      }
+
       if (!user) {
-        console.log('[NotificationsContext] No user, skipping Realtime subscription');
+        console.log('[NotificationsContext] No user authenticated, skipping Realtime subscription');
         return;
       }
 
@@ -138,7 +153,7 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
     };
 
     setupRealtime();
-  }, []);
+  }, [authLoading, user]);
 
   const unreadCount = useMemo(() => notifications.filter(n => !n.read).length, [notifications]);
 
@@ -169,17 +184,17 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
     });
 
     // Also update in Supabase
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
+    if (user) {
+      try {
         await supabase
           .from('notifications')
           .update({ read_at: new Date().toISOString() })
           .or(`user_id.eq.${user.id},is_broadcast.eq.true`)
           .is('read_at', null);
+        console.log('[NotificationsContext] Marked all notifications as read in database');
+      } catch (err) {
+        console.error('[NotificationsContext] Error marking all as read:', err);
       }
-    } catch (err) {
-      console.error('[NotificationsContext] Error marking all as read:', err);
     }
   };
 
