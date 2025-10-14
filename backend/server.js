@@ -169,10 +169,14 @@ app.post('/generate-pdf', rateLimitMiddleware, async (req, res) => {
       if (code === 0) {
         // Fire-and-forget WhatsApp send (if configured)
         sendWhatsAppDocument(pdfBuffer, `wathiq-report-${Date.now()}.pdf`).catch(() => {});
+        
         // Emit a broadcast notification to Supabase if configured
-        try {
-          if (process.env.SUPABASE_SERVICE_URL && process.env.SUPABASE_SERVICE_KEY) {
-            await fetch(`${process.env.SUPABASE_SERVICE_URL}/rest/v1/notifications`, {
+        if (process.env.SUPABASE_SERVICE_URL && process.env.SUPABASE_SERVICE_KEY) {
+          console.log('[Backend] Attempting to emit Supabase notification...');
+          console.log('[Backend] Supabase URL:', process.env.SUPABASE_SERVICE_URL);
+          
+          try {
+            const notificationResponse = await fetch(`${process.env.SUPABASE_SERVICE_URL}/rest/v1/notifications`, {
               method: 'POST',
               headers: {
                 apikey: process.env.SUPABASE_SERVICE_KEY,
@@ -185,12 +189,22 @@ app.post('/generate-pdf', rateLimitMiddleware, async (req, res) => {
                 is_broadcast: true,
                 type: 'success',
                 title: 'تم إنشاء تقرير PDF',
-                message: 'تم إنشاء التقرير بنجاح وهو متاح للتنزيل.',
+                message: `تم إنشاء التقرير بتاريخ ${date || 'اليوم'} بنجاح وهو متاح للتنزيل.`,
+                created_at: new Date().toISOString(),
               }),
             });
+            
+            if (notificationResponse.ok) {
+              console.log('[Backend] ✅ Supabase notification emitted successfully!');
+            } else {
+              const errorText = await notificationResponse.text();
+              console.error('[Backend] ❌ Failed to emit notification. Status:', notificationResponse.status, 'Response:', errorText);
+            }
+          } catch (e) {
+            console.error('[Backend] ❌ Notification emit error:', e?.message || e);
           }
-        } catch (e) {
-          console.warn('Notification emit failed:', e?.message);
+        } else {
+          console.warn('[Backend] ⚠️ Supabase service URL or KEY not configured. Skipping notification.');
         }
         res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
         res.setHeader('Vary', 'Origin');
