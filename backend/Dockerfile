@@ -19,7 +19,7 @@ WORKDIR /app
 
 # Install backend dependencies first (leverage caching)
 COPY package.json package-lock.json* ./
-RUN npm ci --omit=dev
+RUN npm install --omit=dev
 
 # Copy the rest of the backend code (including fonts)
 COPY . .
