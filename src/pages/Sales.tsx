@@ -198,6 +198,33 @@ export const Sales: React.FC = () => {
     }
   };
 
+  const clearForm = () => {
+    setNewMeetingCustomer('');
+    setNewMeetingContact('');
+    setNewMeetingPhoneNumber('');
+    setNewMeetingNotes('');
+    setNewMeetingTime('');
+    setNewMeetingOutcome('pending');
+    
+    // Reset validation states
+    setCustomerNameValidation(validateField('', [ValidationRules.required(ARABIC_SALES_MESSAGES.MEETING_TITLE_REQUIRED), ValidationRules.minLength(3, ARABIC_SALES_MESSAGES.MEETING_TITLE_MIN_LENGTH)]));
+    setContactNumberValidation(validateField('', [ValidationRules.required(ARABIC_SALES_MESSAGES.CLIENT_NAME_REQUIRED)]));
+    setPhoneNumberValidation(validateField('', [ValidationRules.required(ARABIC_SALES_MESSAGES.CUSTOMER_PHONE_LABEL), ValidationRules.phone(ARABIC_SALES_MESSAGES.VALIDATION_PHONE_INVALID)]));
+    setMeetingTimeValidation(validateField('', [ValidationRules.required(ARABIC_SALES_MESSAGES.MEETING_DATE_REQUIRED)]));
+    setMeetingOutcomeValidation(validateField('', [ValidationRules.required(ARABIC_SALES_MESSAGES.OUTCOME_REQUIRED)]));
+    setMeetingNotesValidation(validateField('', [ValidationRules.maxLength(500, ARABIC_SALES_MESSAGES.NOTES_MAX_LENGTH)]));
+  };
+
+  // Mobile form validation object
+  const formValidations = {
+    customerName: customerNameValidation,
+    contactNumber: contactNumberValidation,
+    phoneNumber: phoneNumberValidation,
+    meetingTime: meetingTimeValidation,
+    outcome: meetingOutcomeValidation,
+    notes: meetingNotesValidation,
+  };
+
   const updateCustomersContacted = async (count: number) => {
     setNewCustomersContacted(count);
     try {
@@ -237,10 +264,15 @@ export const Sales: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-primary">{ARABIC_SALES_MESSAGES.PAGE_TITLE}</h1>
-        <Badge variant="outline" className="text-lg px-4 py-2">
+      {/* Header - Mobile Optimized */}
+      <div className={`flex items-center ${isMobile ? 'flex-col gap-3 text-center' : 'justify-between'}`}>
+        <h1 className={`font-bold text-primary ${isMobile ? 'text-2xl' : 'text-3xl'}`}>
+          {ARABIC_SALES_MESSAGES.PAGE_TITLE}
+        </h1>
+        <Badge 
+          variant="outline" 
+          className={`px-4 py-2 ${isMobile ? 'text-base' : 'text-lg'}`}
+        >
           {ARABIC_SALES_MESSAGES.TODAY_DATE} {format(currentDate, 'dd/MM/yyyy', { locale: arLocale })}
         </Badge>
       </div>
@@ -289,8 +321,46 @@ export const Sales: React.FC = () => {
           <CardTitle className="text-primary">{ARABIC_SALES_MESSAGES.ADD_MEETING_TITLE}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Add Meeting Form */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-background-muted rounded-lg border">
+          {/* Add Meeting Form - Mobile Optimized */}
+          {isMobile ? (
+            <MobileSalesForm
+              customerName={newMeetingCustomer}
+              contactNumber={newMeetingContact}
+              phoneNumber={newMeetingPhoneNumber}
+              meetingTime={newMeetingTime}
+              outcome={newMeetingOutcome}
+              notes={newMeetingNotes}
+              onCustomerNameChange={(value) => {
+                setNewMeetingCustomer(value);
+                setCustomerNameValidation(validateField(value, [ValidationRules.required(ARABIC_SALES_MESSAGES.MEETING_TITLE_REQUIRED), ValidationRules.minLength(3, ARABIC_SALES_MESSAGES.MEETING_TITLE_MIN_LENGTH)]));
+              }}
+              onContactNumberChange={(value) => {
+                setNewMeetingContact(value);
+                setContactNumberValidation(validateField(value, [ValidationRules.required(ARABIC_SALES_MESSAGES.CLIENT_NAME_REQUIRED)]));
+              }}
+              onPhoneNumberChange={(value) => {
+                setNewMeetingPhoneNumber(value);
+                setPhoneNumberValidation(validateField(value, [ValidationRules.required(ARABIC_SALES_MESSAGES.CUSTOMER_PHONE_LABEL), ValidationRules.phone(ARABIC_SALES_MESSAGES.VALIDATION_PHONE_INVALID)]));
+              }}
+              onMeetingTimeChange={(value) => {
+                setNewMeetingTime(value);
+                setMeetingTimeValidation(validateField(value, [ValidationRules.required(ARABIC_SALES_MESSAGES.MEETING_DATE_REQUIRED)]));
+              }}
+              onOutcomeChange={(value) => {
+                setNewMeetingOutcome(value as 'positive' | 'negative' | 'pending');
+                setMeetingOutcomeValidation(validateField(value, [ValidationRules.required(ARABIC_SALES_MESSAGES.OUTCOME_REQUIRED)]));
+              }}
+              onNotesChange={(value) => {
+                setNewMeetingNotes(value);
+                setMeetingNotesValidation(validateField(value, [ValidationRules.maxLength(500, ARABIC_SALES_MESSAGES.NOTES_MAX_LENGTH)]));
+              }}
+              onSubmit={addMeeting}
+              onReset={clearForm}
+              validations={formValidations}
+              isSubmitting={loading}
+            />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-background-muted rounded-lg border">
             <div className="space-y-2">
               <Label>{ARABIC_SALES_MESSAGES.MEETING_TITLE_LABEL}</Label>
               <Input
@@ -384,8 +454,9 @@ export const Sales: React.FC = () => {
               </Button>
             </div>
           </div>
+          )}  {/* Close mobile/desktop form conditional */}
 
-          {/* Meetings List */}
+          {/* Meetings List - Mobile Optimized */}
           {loading ? (
             <TableSkeleton rows={3} columns={4} />
           ) : meetings.length === 0 ? (
@@ -394,6 +465,13 @@ export const Sales: React.FC = () => {
               <p>{ARABIC_SALES_MESSAGES.NO_MEETINGS_ADDED}</p>
             </div>
           ) : (
+            <>
+              {isMobile ? (
+                <MobileSalesTable 
+                  meetings={paginatedMeetings} 
+                  onDelete={confirmRemoveMeeting}
+                />
+              ) : (
             <div className="space-y-3">
               {paginatedMeetings.map((meeting) => (
                 <Card key={meeting.id} className="border-l-4 border-l-primary">
@@ -462,6 +540,39 @@ export const Sales: React.FC = () => {
                 </div>
               </div>
             </div>
+              )}  {/* Close desktop table */}
+              
+              {/* Mobile Pagination */}
+              {meetings.length > ITEMS_PER_PAGE && (
+                <div className={`flex justify-between items-center pt-4 ${isMobile ? 'flex-col gap-2' : 'flex-row'}`}>
+                  <span className="text-sm text-muted-foreground">
+                    {ARABIC_SALES_MESSAGES.PAGINATION_INFO.replace('{current}', currentPage.toString())
+                      .replace('{total}', Math.ceil(meetings.length / ITEMS_PER_PAGE).toString())
+                      .replace('{count}', meetings.length.toString())}
+                  </span>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className={isMobile ? 'min-h-[44px] px-6' : ''}
+                    >
+                      السابق
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(p => (p * ITEMS_PER_PAGE < meetings.length ? p + 1 : p))}
+                      disabled={currentPage * ITEMS_PER_PAGE >= meetings.length}
+                      className={isMobile ? 'min-h-[44px] px-6' : ''}
+                    >
+                      التالي
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>
@@ -473,7 +584,7 @@ export const Sales: React.FC = () => {
         itemName={ARABIC_SALES_MESSAGES.DELETE_CONFIRM_ITEM_NAME}
       />
 
-      {/* Daily Summary */}
+      {/* Daily Summary - Mobile Optimized */}
       <Card>
         <CardHeader>
           <CardTitle className="text-primary">{ARABIC_SALES_MESSAGES.PAGE_TITLE}</CardTitle>
@@ -484,8 +595,8 @@ export const Sales: React.FC = () => {
               placeholder={ARABIC_SALES_MESSAGES.NOTES_PLACEHOLDER}
               value={dailySummary}
               onChange={(e) => updateDailySummary(e.target.value)}
-              rows={4}
-              className="w-full"
+              rows={isMobile ? 3 : 4}
+              className={`w-full ${isMobile ? 'min-h-[120px] text-base' : ''}`}
             />
           </div>
         </CardContent>
