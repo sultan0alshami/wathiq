@@ -6,8 +6,9 @@ const path = require('path');
 const fs = require('fs').promises; // Import fs.promises for async file operations
 const cron = require('node-cron');
 const { createClient } = require('@supabase/supabase-js');
+const fetch = require('node-fetch'); // Use node-fetch explicitly
 
-// Initialize Supabase client for notifications
+// Initialize Supabase client for notifications with custom fetch
 let supabase = null;
 if (process.env.SUPABASE_SERVICE_URL && process.env.SUPABASE_SERVICE_KEY) {
   supabase = createClient(
@@ -17,10 +18,13 @@ if (process.env.SUPABASE_SERVICE_URL && process.env.SUPABASE_SERVICE_KEY) {
       auth: {
         autoRefreshToken: false,
         persistSession: false
+      },
+      global: {
+        fetch: fetch // Use node-fetch instead of built-in fetch
       }
     }
   );
-  console.log('[Backend] ✅ Supabase client initialized');
+  console.log('[Backend] ✅ Supabase client initialized with node-fetch');
 } else {
   console.warn('[Backend] ⚠️ Supabase credentials not found in environment');
 }
@@ -189,9 +193,10 @@ app.post('/generate-pdf', rateLimitMiddleware, async (req, res) => {
         sendWhatsAppDocument(pdfBuffer, `wathiq-report-${Date.now()}.pdf`).catch(() => {});
         
         // Emit a broadcast notification to Supabase if configured
-        if (supabase) {
+        if (process.env.SUPABASE_SERVICE_URL && process.env.SUPABASE_SERVICE_KEY) {
           console.log('[Backend] Attempting to emit Supabase notification...');
           
+          // Try Supabase client first
           try {
             const { data, error } = await supabase
               .from('notifications')
@@ -205,17 +210,47 @@ app.post('/generate-pdf', rateLimitMiddleware, async (req, res) => {
               });
             
             if (error) {
-              console.error('[Backend] ❌ Failed to emit notification:', error.message);
-              console.error('[Backend] Error details:', error);
+              console.error('[Backend] ❌ Supabase client failed:', error.message);
+              throw new Error(`Supabase client error: ${error.message}`);
             } else {
-              console.log('[Backend] ✅ Supabase notification emitted successfully!');
+              console.log('[Backend] ✅ Supabase notification emitted successfully via client!');
             }
           } catch (e) {
-            console.error('[Backend] ❌ Notification emit error:', e?.message || e);
-            console.error('[Backend] Error stack:', e?.stack);
+            console.error('[Backend] ⚠️ Supabase client failed, trying direct HTTP...');
+            console.error('[Backend] Client error:', e?.message);
+            
+            // Fallback to direct HTTP request
+            try {
+              const response = await fetch(`${process.env.SUPABASE_SERVICE_URL}/rest/v1/notifications`, {
+                method: 'POST',
+                headers: {
+                  'apikey': process.env.SUPABASE_SERVICE_KEY,
+                  'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_KEY}`,
+                  'Content-Type': 'application/json',
+                  'Prefer': 'return=minimal'
+                },
+                body: JSON.stringify({
+                  user_id: null,
+                  is_broadcast: true,
+                  type: 'success',
+                  title: 'تم إنشاء تقرير PDF',
+                  message: `تم إنشاء التقرير بتاريخ ${date || 'اليوم'} بنجاح وهو متاح للتنزيل.`,
+                  created_at: new Date().toISOString(),
+                })
+              });
+              
+              if (response.ok) {
+                console.log('[Backend] ✅ Supabase notification emitted successfully via HTTP!');
+              } else {
+                const errorText = await response.text();
+                console.error('[Backend] ❌ HTTP request failed:', response.status, errorText);
+              }
+            } catch (httpError) {
+              console.error('[Backend] ❌ Both client and HTTP failed:', httpError?.message);
+            }
           }
         } else {
-          console.warn('[Backend] ⚠️ Supabase client not initialized. Skipping notification.');
+          console.warn('[Backend] ⚠️ Supabase credentials not configured. Skipping notification.');
         }
         res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
         res.setHeader('Vary', 'Origin');
