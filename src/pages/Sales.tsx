@@ -24,6 +24,10 @@ import { format } from 'date-fns';
 import { AuthService } from '@/services/AuthService';
 import { ARABIC_SALES_MESSAGES } from '@/lib/arabicSalesMessages';
 import { ar as arLocale } from 'date-fns/locale/ar';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { MobileSalesForm } from '@/components/ui/mobile-form';
+import { MobileSalesTable } from '@/components/ui/mobile-table';
+import { SalesKPICards } from '@/components/ui/mobile-kpi';
 
 export const Sales: React.FC = () => {
   const { currentDate } = useDateContext();
@@ -31,6 +35,7 @@ export const Sales: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [meetingToDelete, setMeetingToDelete] = useState<string | null>(null);
+  const isMobile = useIsMobile();
   
   const [newCustomersContacted, setNewCustomersContacted] = useState<number>(0);
   const [meetings, setMeetings] = useState<SalesEntry[]>([]);
@@ -240,67 +245,22 @@ export const Sales: React.FC = () => {
         </Badge>
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        {loading ? (
-          <>
-            <KPICardSkeleton />
-            <KPICardSkeleton />
-            <KPICardSkeleton />
-            <KPICardSkeleton />
-          </>
-        ) : (
-          <>
-            <Card className="border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-800">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2">
-                  <Users className="w-5 h-5 text-blue-600" />
-                  <div>
-                    <p className="text-sm text-blue-600">{ARABIC_SALES_MESSAGES.TOTAL_MEETINGS}</p>
-                    <p className="text-2xl font-bold text-blue-700">{meetings.length}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-green-200 bg-green-50 dark:bg-green-950/20 dark:border-green-800">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2">
-                  <ClipboardCheck className="w-5 h-5 text-green-600" />
-                  <div>
-                    <p className="text-sm text-green-600">{ARABIC_SALES_MESSAGES.COMPLETED_MEETINGS}</p>
-                    <p className="text-2xl font-bold text-green-700">{completedMeetings}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-purple-200 bg-purple-50 dark:bg-purple-950/20 dark:border-purple-800">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-5 h-5 text-purple-600" />
-                  <div>
-                    <p className="text-sm text-purple-600">{ARABIC_SALES_MESSAGES.PENDING_MEETINGS}</p>
-                    <p className="text-2xl font-bold text-purple-700">{meetings.length - completedMeetings}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-primary/20 bg-primary/5">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5 text-primary" />
-                  <div>
-                    <p className="text-sm text-muted-foreground">{ARABIC_SALES_MESSAGES.SUCCESS_RATE}</p>
-                    <p className="text-2xl font-bold text-primary">{conversionRate}%</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </>
-        )}
-      </div>
+      {/* Quick Stats - Mobile Optimized */}
+      {loading ? (
+        <div className={`grid gap-4 ${isMobile ? 'grid-cols-2' : 'grid-cols-1 md:grid-cols-4'}`}>
+          <KPICardSkeleton />
+          <KPICardSkeleton />
+          <KPICardSkeleton />
+          <KPICardSkeleton />
+        </div>
+      ) : (
+        <SalesKPICards
+          customersContacted={newCustomersContacted}
+          totalMeetings={meetings.length}
+          positiveMeetings={completedMeetings}
+          pendingMeetings={meetings.filter(m => m.outcome === 'pending').length}
+        />
+      )}
 
       {/* New Customers Contacted */}
       <Card>
