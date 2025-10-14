@@ -15,6 +15,9 @@ import { ValidationMessage, useFormValidation, ValidationRules } from '@/compone
 import { DeleteConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { KPICardSkeleton, TableSkeleton } from '@/components/ui/loading-skeleton';
 import { ARABIC_OPERATIONS_MESSAGES } from '@/lib/arabicOperationsMessages';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { OperationsKPICards } from '@/components/ui/mobile-kpi';
+import { MobileTable } from '@/components/ui/mobile-table';
 
 const OperationUtils = {
   getStatusIcon: (status: OperationEntry['status']) => {
@@ -55,6 +58,7 @@ export const Operations: React.FC = () => {
   const { currentDate } = useDateContext();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const isMobile = useIsMobile();
   
   const [operations, setOperations] = useState<OperationEntry[]>([]);
   const [expectedNextDay, setExpectedNextDay] = useState<number>(0);
@@ -256,71 +260,33 @@ export const Operations: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-primary">{ARABIC_OPERATIONS_MESSAGES.PAGE_TITLE}</h1>
-        <Badge variant="outline" className="text-lg px-4 py-2">
+      {/* Header - Mobile Optimized */}
+      <div className={`flex items-center ${isMobile ? 'flex-col gap-3 text-center' : 'justify-between'}`}>
+        <h1 className={`font-bold text-primary ${isMobile ? 'text-2xl' : 'text-3xl'}`}>
+          {ARABIC_OPERATIONS_MESSAGES.PAGE_TITLE}
+        </h1>
+        <Badge 
+          variant="outline" 
+          className={`px-4 py-2 ${isMobile ? 'text-base' : 'text-lg'}`}
+        >
           {ARABIC_OPERATIONS_MESSAGES.TODAY_DATE} {new Date().toLocaleDateString('ar-EG')}
         </Badge>
       </div>
 
-      {/* Quick Stats */}
+      {/* Quick Stats - Mobile Optimized */}
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className={`grid gap-4 ${isMobile ? 'grid-cols-2' : 'grid-cols-1 md:grid-cols-4'}`}>
           {Array.from({ length: 4 }).map((_, i) => (
             <KPICardSkeleton key={i} />
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-800">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 text-red-600" />
-                <div>
-                  <p className="text-sm text-red-600">{ARABIC_OPERATIONS_MESSAGES.OPERATIONS_PENDING}</p>
-                  <p className="text-2xl font-bold text-red-700">{pendingCount}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-yellow-200 bg-yellow-50 dark:bg-yellow-950/20 dark:border-yellow-800">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <Clock className="w-5 h-5 text-yellow-600" />
-                <div>
-                  <p className="text-sm text-yellow-600">{ARABIC_OPERATIONS_MESSAGES.OPERATIONS_IN_PROGRESS}</p>
-                  <p className="text-2xl font-bold text-yellow-700">{inProgressCount}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-green-200 bg-green-50 dark:bg-green-950/20 dark:border-green-800">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-5 h-5 text-green-600" />
-                <div>
-                  <p className="text-sm text-green-600">{ARABIC_OPERATIONS_MESSAGES.OPERATIONS_COMPLETED}</p>
-                  <p className="text-2xl font-bold text-green-700">{completedCount}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-primary/20 bg-primary/5">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <Gauge className="w-5 h-5 text-primary" />
-                <div>
-                  <p className="text-sm text-muted-foreground">{ARABIC_OPERATIONS_MESSAGES.COMPLETION_RATE}</p>
-                  <p className="text-2xl font-bold text-primary">{completionRate}%</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <OperationsKPICards
+          totalOperations={operations.length}
+          completedOperations={completedCount}
+          inProgressOperations={inProgressCount}
+          pendingOperations={pendingCount}
+        />
       )}
 
       {/* Add New Operation */}
@@ -329,14 +295,14 @@ export const Operations: React.FC = () => {
           <CardTitle className="text-primary">{ARABIC_OPERATIONS_MESSAGES.ADD_OPERATION_TITLE}</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2'}`}>
             <div className="space-y-2">
               <Label>{ARABIC_OPERATIONS_MESSAGES.OPERATION_NAME_LABEL}</Label>
               <Input
                 placeholder={ARABIC_OPERATIONS_MESSAGES.OPERATION_NAME_PLACEHOLDER}
                 value={newTask}
                 onChange={(e) => setNewTask(e.target.value)}
-                className={!newTaskValidation.isValid ? "border-destructive" : ""}
+                className={`${!newTaskValidation.isValid ? "border-destructive" : ""} ${isMobile ? 'min-h-[44px] text-base' : ''}`}
               />
               <ValidationMessage result={newTaskValidation} />
             </div>
@@ -346,14 +312,14 @@ export const Operations: React.FC = () => {
                 placeholder={ARABIC_OPERATIONS_MESSAGES.ASSIGNED_TO_PLACEHOLDER}
                 value={newOwner}
                 onChange={(e) => setNewOwner(e.target.value)}
-                className={!newOwnerValidation.isValid ? "border-destructive" : ""}
+                className={`${!newOwnerValidation.isValid ? "border-destructive" : ""} ${isMobile ? 'min-h-[44px] text-base' : ''}`}
               />
               <ValidationMessage result={newOwnerValidation} />
             </div>
             <div className="space-y-2">
               <Label>{ARABIC_OPERATIONS_MESSAGES.STATUS_LABEL}</Label>
               <Select value={newStatus} onValueChange={(value: OperationEntry['status']) => setNewStatus(value)}>
-                <SelectTrigger>
+                <SelectTrigger className={isMobile ? 'min-h-[44px] text-base' : ''}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -366,7 +332,7 @@ export const Operations: React.FC = () => {
             <div className="space-y-2">
               <Label>{ARABIC_OPERATIONS_MESSAGES.PRIORITY_LABEL}</Label>
               <Select value={newPriority} onValueChange={(value: OperationEntry['priority']) => setNewPriority(value)}>
-                <SelectTrigger>
+                <SelectTrigger className={isMobile ? 'min-h-[44px] text-base' : ''}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -376,17 +342,23 @@ export const Operations: React.FC = () => {
                 </SelectContent>
               </Select>
             </div>
-            <div className="md:col-span-2 space-y-2">
+            <div className={`space-y-2 ${isMobile ? '' : 'md:col-span-2'}`}>
               <Label>{ARABIC_OPERATIONS_MESSAGES.ADDITIONAL_NOTES_LABEL}</Label>
               <Textarea
                 placeholder={ARABIC_OPERATIONS_MESSAGES.ADDITIONAL_NOTES_PLACEHOLDER}
                 value={newNotes}
                 onChange={(e) => setNewNotes(e.target.value)}
                 rows={3}
+                className={isMobile ? 'min-h-[120px] text-base' : ''}
               />
             </div>
-            <div className="md:col-span-2">
-            <Button onClick={addOperation} disabled={loading || !newTaskValidation.isValid || !newOwnerValidation.isValid} variant="default">
+            <div className={isMobile ? '' : 'md:col-span-2'}>
+              <Button 
+                onClick={addOperation} 
+                disabled={loading || !newTaskValidation.isValid || !newOwnerValidation.isValid} 
+                variant="default"
+                className={isMobile ? 'min-h-[44px] w-full' : ''}
+              >
                 {loading ? <Loader2 className="w-4 h-4 ml-2 animate-spin" /> : <Plus className="w-4 h-4 ml-2" />}
                 {ARABIC_OPERATIONS_MESSAGES.ADD_OPERATION_BUTTON}
               </Button>
@@ -409,8 +381,75 @@ export const Operations: React.FC = () => {
               <p>{ARABIC_OPERATIONS_MESSAGES.NO_OPERATIONS_ADDED}</p>
             </div>
           ) : (
-            <div className="space-y-3">
-              {paginatedOperations.map((operation) => (
+            <>
+              {isMobile ? (
+                <MobileTable
+                  data={paginatedOperations}
+                  columns={[
+                    {
+                      key: 'task',
+                      label: 'العملية',
+                      priority: 'high',
+                    },
+                    {
+                      key: 'owner',
+                      label: 'المسؤول',
+                      priority: 'high',
+                    },
+                    {
+                      key: 'status',
+                      label: 'الحالة',
+                      priority: 'high',
+                      render: (value, item) => (
+                        <div className="flex items-center gap-2">
+                          {OperationUtils.getStatusIcon(value)}
+                          <Badge className={OperationUtils.getStatusColor(value)}>
+                            {OperationUtils.getStatusLabel(value)}
+                          </Badge>
+                        </div>
+                      ),
+                    },
+                    {
+                      key: 'priority',
+                      label: 'الأولوية',
+                      priority: 'medium',
+                      render: (value) => {
+                        const colors = {
+                          high: 'bg-red-100 text-red-800',
+                          medium: 'bg-yellow-100 text-yellow-800',
+                          low: 'bg-green-100 text-green-800',
+                        };
+                        const labels = {
+                          high: 'عالية',
+                          medium: 'متوسطة',
+                          low: 'منخفضة',
+                        };
+                        return (
+                          <Badge className={colors[value as keyof typeof colors]}>
+                            {labels[value as keyof typeof labels]}
+                          </Badge>
+                        );
+                      },
+                    },
+                  ]}
+                  actions={[
+                    {
+                      key: 'delete',
+                      label: 'حذف',
+                      variant: 'destructive',
+                      icon: <Trash2 className="w-4 h-4" />,
+                    },
+                  ]}
+                  onRowAction={(item, action) => {
+                    if (action === 'delete') {
+                      setDeleteOperationId(item.id);
+                    }
+                  }}
+                  emptyMessage={ARABIC_OPERATIONS_MESSAGES.NO_OPERATIONS_ADDED}
+                />
+              ) : (
+                <div className="space-y-3">
+                  {paginatedOperations.map((operation) => (
                 <Card key={operation.id} className="border-l-4 border-l-primary">
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between">
@@ -461,33 +500,40 @@ export const Operations: React.FC = () => {
                     </div>
                   </CardContent>
                 </Card>
-              ))}
-              {/* Pagination Controls */}
-              <div className="flex items-center justify-between pt-4">
-                <span className="text-sm text-muted-foreground">
-                  {Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, operations.length)}-
-                  {Math.min(currentPage * ITEMS_PER_PAGE, operations.length)} من {operations.length}
-                </span>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
-                  >
-                    السابق
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(p => (p * ITEMS_PER_PAGE < operations.length ? p + 1 : p))}
-                    disabled={currentPage * ITEMS_PER_PAGE >= operations.length}
-                  >
-                    التالي
-                  </Button>
+                  ))}
                 </div>
-              </div>
-            </div>
+              )}  {/* Close mobile/desktop table conditional */}
+              
+              {/* Mobile-Optimized Pagination */}
+              {operations.length > ITEMS_PER_PAGE && (
+                <div className={`flex justify-between items-center pt-4 ${isMobile ? 'flex-col gap-2' : 'flex-row'}`}>
+                  <span className="text-sm text-muted-foreground">
+                    {Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, operations.length)}-
+                    {Math.min(currentPage * ITEMS_PER_PAGE, operations.length)} من {operations.length}
+                  </span>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className={isMobile ? 'min-h-[44px] px-6' : ''}
+                    >
+                      السابق
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(p => (p * ITEMS_PER_PAGE < operations.length ? p + 1 : p))}
+                      disabled={currentPage * ITEMS_PER_PAGE >= operations.length}
+                      className={isMobile ? 'min-h-[44px] px-6' : ''}
+                    >
+                      التالي
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>
@@ -506,7 +552,7 @@ export const Operations: React.FC = () => {
               min="0"
               value={expectedNextDayInput}
               onChange={(e) => updateExpectedNextDay(e.target.value)}
-              className={!expectedNextDayValidation.isValid ? "border-destructive max-w-xs" : "max-w-xs"}
+              className={`${!expectedNextDayValidation.isValid ? "border-destructive" : ""} ${isMobile ? 'min-h-[44px] text-base w-full' : 'max-w-xs'}`}
               placeholder={ARABIC_OPERATIONS_MESSAGES.EXPECTED_NEXT_DAY_PLACEHOLDER}
             />
             <ValidationMessage result={expectedNextDayValidation} />
