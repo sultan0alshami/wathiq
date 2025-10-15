@@ -112,7 +112,11 @@ app.get('/health', (req, res) => {
 });
 
 // Catch all handler: send back React app for any non-API routes
-app.get('/*', (req, res) => {
+app.use((req, res) => {
+  // Skip API routes
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ error: 'API endpoint not found' });
+  }
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
