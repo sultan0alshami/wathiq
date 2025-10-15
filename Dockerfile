@@ -5,7 +5,14 @@ FROM node:20-bullseye AS frontend-builder
 WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm install
-COPY . .
+COPY src/ ./src/
+COPY public/ ./public/
+COPY index.html ./
+COPY vite.config.ts ./
+COPY postcss.config.js ./
+COPY tailwind.config.js ./
+COPY tsconfig.json ./
+COPY tsconfig.node.json ./
 RUN npm run build
 
 # Production stage
