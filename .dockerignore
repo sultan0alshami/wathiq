@@ -13,7 +13,6 @@ backups
 # Exclude frontend app files from backend image build
 public
 vite.config.ts
-tsconfig*.json
 **/node_modules
 
 # Python caches
