@@ -121,6 +121,7 @@ const corsOptions = {
     const allowedOrigins = [
       'http://localhost:5173',
       'http://localhost:8080',
+      'https://wathiq-7eby.onrender.com',
       process.env.FRONTEND_URL,
       process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
     ].filter(Boolean);
@@ -297,4 +298,9 @@ app.post('/generate-pdf', rateLimitMiddleware, async (req, res) => {
 
 app.listen(port, '0.0.0.0', () => {
   console.log(`Backend server listening on 0.0.0.0:${port}`);
+});
+
+// Also add a health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });

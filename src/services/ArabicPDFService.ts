@@ -7,7 +7,7 @@ export class ArabicPDFService {
 
   static async createEnhancedArabicPDF(data: DailyData, date: Date): Promise<Blob> {
     try {
-      const response = await fetch('/api/generate-pdf', { // via Vite proxy to backend
+      const response = await fetch('/api/generate-pdf', { // via proxy to backend
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
