@@ -37,7 +37,7 @@ export default defineConfig(({ mode }) => ({
   },
   build: {
     rollupOptions: {
-      ...(mode === 'production' ? { external: ["jspdf-font-support"] } : {}),
+      // Remove external configuration that was causing build issues
     },
   },
 }));
