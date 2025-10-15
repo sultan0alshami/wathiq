@@ -12,7 +12,6 @@ backups
 .gitignore
 # Exclude frontend app files from backend image build
 public
-vite.config.ts
 **/node_modules
 
 # Python caches
