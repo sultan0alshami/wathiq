@@ -100,8 +100,5 @@
     "typescript-eslint": "^8.38.0",
     "vite": "^5.4.19",
     "vite-plugin-string": "^1.2.3"
-  },
-  "browser": {
-    "jspdf-font-support": "./src/lib/jspdf-font-support-browser.ts"
   }
 }
