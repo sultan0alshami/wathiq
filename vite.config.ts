@@ -21,7 +21,7 @@ export default defineConfig(({ mode }) => ({
     },
   },
   optimizeDeps: {
-    exclude: ["jspdf-font-support"],
+    // Removed jspdf-font-support exclusion that was causing build issues
   },
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   css: {
@@ -32,7 +32,6 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
-      "jspdf-font-support": path.resolve(__dirname, "./src/lib/jspdf-font-support-browser.ts")
     },
   },
   build: {
