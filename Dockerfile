@@ -4,7 +4,7 @@ FROM node:20-bullseye AS frontend-builder
 # Build the React frontend
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci
+RUN npm install
 COPY . .
 RUN npm run build
 
