@@ -31,6 +31,7 @@ import { useFormValidation, ValidationMessage, ValidationRules } from '@/compone
 import { SafeHTML } from '@/components/SafeHTML';
 import { DeleteConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { CardSkeleton, TableSkeleton } from '@/components/ui/loading-skeleton';
+import { SuppliersKPICards } from '@/components/ui/mobile-kpi';
 import { ARABIC_SUPPLIERS_MESSAGES } from '@/lib/arabicSuppliersMessages';
 
 export const Suppliers: React.FC = () => {
@@ -444,61 +445,12 @@ export const Suppliers: React.FC = () => {
           <CardSkeleton />
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">{ARABIC_SUPPLIERS_MESSAGES.TOTAL_SUPPLIERS_CARD_TITLE}</p>
-                  <p className="text-2xl font-bold text-wathiq-primary">{suppliers.length}</p>
-                </div>
-                <Users className="w-8 h-8 text-wathiq-primary" />
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">{ARABIC_SUPPLIERS_MESSAGES.ACTIVE_SUPPLIERS_CARD_TITLE}</p>
-                  <p className="text-2xl font-bold text-success">
-                    {suppliers.filter((s: Supplier) => s.status === 'active').length}
-                  </p>
-                </div>
-                <Building2 className="w-8 h-8 text-success" />
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">{ARABIC_SUPPLIERS_MESSAGES.DOCUMENTS_CARD_TITLE}</p>
-                  <p className="text-2xl font-bold text-wathiq-accent">
-                    {suppliers.reduce((total: number, supplier: Supplier) => total + supplier.documents.length, 0)}
-                  </p>
-                </div>
-                <FileText className="w-8 h-8 text-wathiq-accent" />
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">{ARABIC_SUPPLIERS_MESSAGES.CATEGORIES_CARD_TITLE}</p>
-                  <p className="text-2xl font-bold text-foreground">
-                    {new Set(suppliers.map((s: Supplier) => s.category).filter(Boolean)).size}
-                  </p>
-                </div>
-                <MapPin className="w-8 h-8 text-foreground" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <SuppliersKPICards
+          totalSuppliers={suppliers.length}
+          activeSuppliers={suppliers.filter((s: Supplier) => s.status === 'active').length}
+          pendingSuppliers={suppliers.filter((s: Supplier) => s.status === 'pending').length}
+          totalValue={suppliers.reduce((total: number, supplier: Supplier) => total + (supplier.estimatedValue || 0), 0)}
+        />
       )}
 
       {/* Suppliers Table */}

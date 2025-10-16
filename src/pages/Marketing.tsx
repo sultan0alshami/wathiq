@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useDateContext } from '@/contexts/DateContext';
 import { getDataForDate, updateSectionData, type MarketingTask, type Customer } from '@/lib/mockData';
 import { KPICardSkeleton, TableSkeleton } from '@/components/ui/loading-skeleton';
+import { MarketingKPICards } from '@/components/ui/mobile-kpi';
 import { ValidationMessage, useFormValidation, ValidationRules } from '@/components/ui/enhanced-form-validation';
 import { DeleteConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -362,55 +363,12 @@ export const Marketing: React.FC = () => {
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-800">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <ClipboardList className="w-5 h-5 text-blue-600" />
-                <div>
-                  <p className="text-sm text-blue-600">المهام الكلية</p>
-                  <p className="text-2xl font-bold text-blue-700">{tasks.length}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-        <Card className="border-green-200 bg-green-50 dark:bg-green-950/20 dark:border-green-800">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-5 h-5 text-green-600" />
-                <div>
-                  <p className="text-sm text-green-600">مهام الأمس المنجزة</p>
-                  <p className="text-2xl font-bold text-green-700">{yesterdayTasks.length}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-        <Card className="border-purple-200 bg-purple-50 dark:bg-purple-950/20 dark:border-purple-800">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <Users className="w-5 h-5 text-purple-600" />
-                <div>
-                  <p className="text-sm text-purple-600">العملاء المتواصلين</p>
-                  <p className="text-2xl font-bold text-purple-700">{contactedCustomers}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-primary/20 bg-primary/5">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <UserCheck className="w-5 h-5 text-primary" />
-                <div>
-                  <p className="text-sm text-muted-foreground">العملاء العائدين</p>
-                  <p className="text-2xl font-bold text-primary">{returnedCustomers}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <MarketingKPICards
+          totalCampaigns={tasks.length}
+          activeCampaigns={tasks.filter(task => task.status === 'in-progress').length}
+          completedTasks={yesterdayTasks.length}
+          pendingTasks={tasks.filter(task => task.status === 'pending').length}
+        />
       )}
 
       {/* Yesterday's Tasks */}

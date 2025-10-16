@@ -14,6 +14,7 @@ import { useFormValidation, ValidationRules, ValidationMessage } from '@/compone
 import { DeleteConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { ARABIC_CUSTOMERS_MESSAGES } from '@/lib/arabicCustomersMessages';
 import { TableSkeleton } from '@/components/ui/loading-skeleton';
+import { CustomersKPICards } from '@/components/ui/mobile-kpi';
 
 interface Customer {
   id: string;
@@ -190,55 +191,12 @@ export const Customers: React.FC = () => {
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-800">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Users className="w-5 h-5 text-blue-600" />
-              <div>
-                <p className="text-sm text-blue-600">{ARABIC_CUSTOMERS_MESSAGES.TOTAL_CUSTOMERS}</p>
-                <p className="text-2xl font-bold text-blue-700">{totalCustomers}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-green-200 bg-green-50 dark:bg-green-950/20 dark:border-green-800">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <UserPlus className="w-5 h-5 text-green-600" />
-              <div>
-                <p className="text-sm text-green-600">{ARABIC_CUSTOMERS_MESSAGES.NEW_CUSTOMERS}</p>
-                <p className="text-2xl font-bold text-green-700">{newCustomers}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-purple-200 bg-purple-50 dark:bg-purple-950/20 dark:border-purple-800">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Award className="w-5 h-5 text-purple-600" />
-              <div>
-                <p className="text-sm text-purple-600">{ARABIC_CUSTOMERS_MESSAGES.CONVERTED_CUSTOMERS}</p>
-                <p className="text-2xl font-bold text-purple-700">{convertedCustomers}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-primary/20 bg-primary/5">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Award className="w-5 h-5 text-primary" />
-              <div>
-                <p className="text-sm text-muted-foreground">{ARABIC_CUSTOMERS_MESSAGES.ESTIMATED_VALUE}</p>
-                <p className="text-2xl font-bold text-primary">{formatCurrency(totalEstimatedValue)}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <CustomersKPICards
+        totalCustomers={totalCustomers}
+        newCustomers={newCustomers}
+        convertedCustomers={convertedCustomers}
+        estimatedValue={totalEstimatedValue}
+      />
 
       {/* Add New Customer */}
       <Card>

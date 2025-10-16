@@ -303,3 +303,221 @@ export function OperationsKPICards({
     </MobileKPIGrid>
   );
 }
+
+// Finance KPI Cards
+export function FinanceKPICards({
+  totalIncome,
+  totalExpenses,
+  netProfit,
+  pendingTransactions,
+}: {
+  totalIncome: number;
+  totalExpenses: number;
+  netProfit: number;
+  pendingTransactions: number;
+}) {
+  return (
+    <MobileKPIGrid>
+      <MobileKPI
+        title="إجمالي الإيرادات"
+        value={totalIncome}
+        subtitle="ريال سعودي"
+        icon={<span>💰</span>}
+        color="green"
+      />
+      
+      <MobileKPI
+        title="إجمالي المصروفات"
+        value={totalExpenses}
+        subtitle="ريال سعودي"
+        icon={<span>💸</span>}
+        color="red"
+      />
+      
+      <MobileKPI
+        title="صافي الربح"
+        value={netProfit}
+        subtitle="ريال سعودي"
+        icon={<span>📈</span>}
+        color={netProfit >= 0 ? 'green' : 'red'}
+        trend={{
+          direction: netProfit >= 0 ? 'up' : 'down',
+          value: `${netProfit >= 0 ? '+' : ''}${netProfit}`
+        }}
+      />
+      
+      <MobileKPI
+        title="المعاملات المعلقة"
+        value={pendingTransactions}
+        subtitle="معاملة"
+        icon={<span>⏳</span>}
+        color={pendingTransactions > 0 ? 'yellow' : 'gray'}
+      />
+    </MobileKPIGrid>
+  );
+}
+
+// Marketing KPI Cards
+export function MarketingKPICards({
+  totalCampaigns,
+  activeCampaigns,
+  completedTasks,
+  pendingTasks,
+}: {
+  totalCampaigns: number;
+  activeCampaigns: number;
+  completedTasks: number;
+  pendingTasks: number;
+}) {
+  const completionRate = totalCampaigns > 0 ? Math.round((completedTasks / (completedTasks + pendingTasks)) * 100) : 0;
+  
+  return (
+    <MobileKPIGrid>
+      <MobileKPI
+        title="إجمالي الحملات"
+        value={totalCampaigns}
+        subtitle="حملة"
+        icon={<span>📢</span>}
+        color="blue"
+      />
+      
+      <MobileKPI
+        title="الحملات النشطة"
+        value={activeCampaigns}
+        subtitle="حملة نشطة"
+        icon={<span>🔥</span>}
+        color="yellow"
+      />
+      
+      <MobileKPI
+        title="المهام المكتملة"
+        value={completedTasks}
+        subtitle={`${completionRate}% معدل الإنجاز`}
+        icon={<span>✅</span>}
+        color="green"
+        trend={{
+          direction: completedTasks > 0 ? 'up' : 'neutral',
+          value: `${completionRate}%`
+        }}
+      />
+      
+      <MobileKPI
+        title="المهام المعلقة"
+        value={pendingTasks}
+        subtitle="مهمة"
+        icon={<span>📋</span>}
+        color={pendingTasks > 0 ? 'red' : 'gray'}
+      />
+    </MobileKPIGrid>
+  );
+}
+
+// Customers KPI Cards
+export function CustomersKPICards({
+  totalCustomers,
+  newCustomers,
+  convertedCustomers,
+  estimatedValue,
+}: {
+  totalCustomers: number;
+  newCustomers: number;
+  convertedCustomers: number;
+  estimatedValue: number;
+}) {
+  const conversionRate = totalCustomers > 0 ? Math.round((convertedCustomers / totalCustomers) * 100) : 0;
+  
+  return (
+    <MobileKPIGrid>
+      <MobileKPI
+        title="إجمالي العملاء"
+        value={totalCustomers}
+        subtitle="عميل"
+        icon={<span>👥</span>}
+        color="blue"
+      />
+      
+      <MobileKPI
+        title="عملاء جدد"
+        value={newCustomers}
+        subtitle="عميل جديد"
+        icon={<span>🆕</span>}
+        color="green"
+      />
+      
+      <MobileKPI
+        title="عملاء محولين"
+        value={convertedCustomers}
+        subtitle={`${conversionRate}% معدل التحويل`}
+        icon={<span>🎯</span>}
+        color="purple"
+        trend={{
+          direction: convertedCustomers > 0 ? 'up' : 'neutral',
+          value: `${conversionRate}%`
+        }}
+      />
+      
+      <MobileKPI
+        title="القيمة المقدرة"
+        value={estimatedValue}
+        subtitle="ريال سعودي"
+        icon={<span>💎</span>}
+        color="yellow"
+      />
+    </MobileKPIGrid>
+  );
+}
+
+// Suppliers KPI Cards
+export function SuppliersKPICards({
+  totalSuppliers,
+  activeSuppliers,
+  pendingSuppliers,
+  totalValue,
+}: {
+  totalSuppliers: number;
+  activeSuppliers: number;
+  pendingSuppliers: number;
+  totalValue: number;
+}) {
+  const activeRate = totalSuppliers > 0 ? Math.round((activeSuppliers / totalSuppliers) * 100) : 0;
+  
+  return (
+    <MobileKPIGrid>
+      <MobileKPI
+        title="إجمالي الموردين"
+        value={totalSuppliers}
+        subtitle="مورد"
+        icon={<span>🏢</span>}
+        color="blue"
+      />
+      
+      <MobileKPI
+        title="الموردين النشطين"
+        value={activeSuppliers}
+        subtitle={`${activeRate}% معدل النشاط`}
+        icon={<span>✅</span>}
+        color="green"
+        trend={{
+          direction: activeSuppliers > 0 ? 'up' : 'neutral',
+          value: `${activeRate}%`
+        }}
+      />
+      
+      <MobileKPI
+        title="الموردين المعلقين"
+        value={pendingSuppliers}
+        subtitle="مورد معلق"
+        icon={<span>⏸️</span>}
+        color={pendingSuppliers > 0 ? 'red' : 'gray'}
+      />
+      
+      <MobileKPI
+        title="القيمة الإجمالية"
+        value={totalValue}
+        subtitle="ريال سعودي"
+        icon={<span>💰</span>}
+        color="yellow"
+      />
+    </MobileKPIGrid>
+  );
+}

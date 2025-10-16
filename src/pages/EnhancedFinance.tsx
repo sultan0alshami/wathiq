@@ -12,6 +12,7 @@ import { SearchInput } from '@/components/ui/search-input';
 import { DeleteConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { ValidationMessage, useFormValidation, ValidationRules } from '@/components/ui/enhanced-form-validation';
 import { KPICardSkeleton, TableSkeleton } from '@/components/ui/loading-skeleton';
+import { FinanceKPICards } from '@/components/ui/mobile-kpi';
 import { useDateContext } from '@/contexts/DateContext';
 import { getDataForDate, updateSectionData, FinanceEntry } from '@/lib/mockData';
 import { formatCurrency, formatInputNumber, parseEnglishNumber, isValidEnglishNumber } from '@/lib/numberUtils';
@@ -334,57 +335,12 @@ export const EnhancedFinance: React.FC = () => {
       </Card>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="border-green-200 bg-green-50 dark:bg-green-950/20 dark:border-green-800">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-green-600" />
-              <div>
-                <p className="text-sm text-green-600">{ARABIC_ENHANCED_FINANCE_MESSAGES.TOTAL_INCOMES}</p>
-                <p className="text-2xl font-bold text-green-700">{formatCurrency(calculations.totalIncomes)}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-800">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <DollarSign className="w-5 h-5 text-blue-600" />
-              <div>
-                <p className="text-sm text-blue-600">{ARABIC_ENHANCED_FINANCE_MESSAGES.TOTAL_DEPOSITS}</p>
-                <p className="text-2xl font-bold text-blue-700">{formatCurrency(calculations.totalDeposits)}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-800">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <TrendingDown className="w-5 h-5 text-red-600" />
-              <div>
-                <p className="text-sm text-red-600">{ARABIC_ENHANCED_FINANCE_MESSAGES.TOTAL_EXPENSES}</p>
-                <p className="text-2xl font-bold text-red-700">{formatCurrency(calculations.totalExpenses)}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className={`${calculations.netChange >= 0 ? 'border-primary/20 bg-primary/5' : 'border-orange-200 bg-orange-50 dark:bg-orange-950/20 dark:border-orange-800'}`}>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Wallet className="w-5 h-5 text-primary" />
-              <div>
-                <p className="text-sm text-muted-foreground">{ARABIC_ENHANCED_FINANCE_MESSAGES.NET_DAILY_CHANGE}</p>
-                <p className={`text-2xl font-bold ${calculations.netChange >= 0 ? 'text-primary' : 'text-orange-700'}`}>
-                  {calculations.netChange >= 0 ? '+' : ''}{formatCurrency(Math.abs(calculations.netChange))}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <FinanceKPICards
+        totalIncome={calculations.totalIncomes}
+        totalExpenses={calculations.totalExpenses}
+        netProfit={calculations.netChange}
+        pendingTransactions={entries.filter(entry => entry.status === 'pending').length}
+      />
 
       {/* Add Entry Form */}
       <Card>
