@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bell, User, LogOut, Users, CheckCircle, Info, AlertTriangle, XCircle } from 'lucide-react';
+import { Bell, User, LogOut, Users, CheckCircle, Info, AlertTriangle, XCircle, Menu } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
@@ -19,7 +19,11 @@ import {
 import { useNotifications, NotificationType } from '@/contexts/NotificationsContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 
-export const Header: React.FC = () => {
+interface HeaderProps {
+  onMenuClick?: () => void;
+}
+
+export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   const [searchTerm, setSearchTerm] = React.useState('');
   const { userName, user, role, signOut } = useAuth();
   const navigate = useNavigate();
@@ -95,6 +99,20 @@ export const Header: React.FC = () => {
 
         {/* Actions */}
         <div className={`flex items-center ${isMobile ? 'w-full justify-between order-1' : 'space-x-4 space-x-reverse'}`}>
+          {/* Mobile Menu Button */}
+          {isMobile && onMenuClick && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onMenuClick}
+              className="mr-2"
+              aria-label="فتح القائمة"
+              title="فتح القائمة"
+            >
+              <Menu className="w-5 h-5" />
+            </Button>
+          )}
+          
           {/* Theme Toggle */}
           <ThemeToggle />
 
