@@ -2,9 +2,11 @@ import React from 'react';
 import { Moon, Sun, Laptop } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export const ThemeToggle: React.FC = () => {
   const { theme, setTheme } = useTheme();
+  const isMobile = useIsMobile();
 
   return (
     <div className="flex items-center rounded-md border border-border overflow-hidden">
@@ -30,17 +32,19 @@ export const ThemeToggle: React.FC = () => {
       >
         <Moon className="w-4 h-4" />
       </Button>
-      <Button
-        variant={theme === 'system' ? 'secondary' : 'ghost'}
-        size="sm"
-        className="px-3"
-        onClick={() => setTheme('system')}
-        aria-pressed={theme === 'system'}
-        aria-label="حسب النظام"
-        title="حسب النظام"
-      >
-        <Laptop className="w-4 h-4" />
-      </Button>
+      {!isMobile && (
+        <Button
+          variant={theme === 'system' ? 'secondary' : 'ghost'}
+          size="sm"
+          className="px-3"
+          onClick={() => setTheme('system')}
+          aria-pressed={theme === 'system'}
+          aria-label="حسب النظام"
+          title="حسب النظام"
+        >
+          <Laptop className="w-4 h-4" />
+        </Button>
+      )}
     </div>
   );
 };

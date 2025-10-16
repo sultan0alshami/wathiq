@@ -31,14 +31,16 @@ export const DashboardLayout: React.FC = () => {
         "transition-transform duration-300 ease-in-out",
         isMobile 
           ? `fixed top-0 right-0 h-full z-50 transform ${sidebarOpen ? 'translate-x-0' : 'translate-x-full'}`
-          : "relative"
+          : "fixed top-0 right-0 h-full z-30"
       )}>
         <Sidebar onClose={() => setSidebarOpen(false)} />
       </div>
       
       {/* Main content */}
-      <div className="flex-1 flex flex-col min-w-0">
-        <Header onMenuClick={() => setSidebarOpen(true)} />
+      <div className="flex-1 flex flex-col min-w-0" style={{ marginRight: isMobile ? '0' : '16rem' }}>
+        <div className="sticky top-0 z-20">
+          <Header onMenuClick={() => setSidebarOpen(true)} />
+        </div>
         <main className="flex-1 p-6">
           <Outlet />
         </main>
