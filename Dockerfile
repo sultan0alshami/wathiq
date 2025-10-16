@@ -16,7 +16,9 @@ COPY tsconfig.app.json ./
 COPY tsconfig.node.json ./
 
 # Set environment variables for Vite build
-# These will be passed from Render's environment variables
+# Use build arguments that Render will pass
+ARG VITE_SUPABASE_URL
+ARG VITE_SUPABASE_ANON_KEY
 ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
 ENV VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY
 
