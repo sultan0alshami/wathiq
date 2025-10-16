@@ -21,23 +21,33 @@ This guide will help you migrate your Wathiq application from localStorage to a 
 
 ## 🚀 Migration Steps
 
-### Step 1: Run Database Migrations
+### Step 1: Check Existing Tables
+
+First, run this script to see which tables already exist:
+
+1. **Check Existing Tables** (`supabase/007_check_existing_tables.sql`)
+   ```sql
+   -- Run this in Supabase SQL Editor first
+   -- Shows which tables and policies already exist
+   ```
+
+### Step 2: Run Safe Database Migrations
 
 Execute the SQL files in your Supabase SQL editor in this order:
 
-1. **Create Tables** (`supabase/003_business_data_tables.sql`)
+1. **Create Tables Safely** (`supabase/005_safe_business_data_tables.sql`)
    ```sql
    -- Run this in Supabase SQL Editor
-   -- Creates all business data tables
+   -- Creates all business data tables (skips existing ones)
    ```
 
-2. **Set up RLS Policies** (`supabase/004_rls_policies.sql`)
+2. **Set up RLS Policies Safely** (`supabase/006_safe_rls_policies.sql`)
    ```sql
    -- Run this in Supabase SQL Editor
-   -- Sets up Row Level Security policies
+   -- Sets up Row Level Security policies (replaces existing ones)
    ```
 
-### Step 2: Update Your Application
+### Step 3: Update Your Application
 
 1. **Install New Dependencies** (if needed)
    ```bash
@@ -52,7 +62,7 @@ Execute the SQL files in your Supabase SQL editor in this order:
    - The new Supabase hooks and migration service are ready to use
    - Deploy to your hosting platform
 
-### Step 3: Run Data Migration
+### Step 4: Run Data Migration
 
 1. **Access the Migration Dialog**
    - The migration status will appear at the top of your dashboard
