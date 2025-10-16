@@ -84,7 +84,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   };
 
   return (
-    <header className={`bg-card border-b border-border-strong space-y-4 ${isMobile ? 'px-4 py-3' : 'px-6 py-4'}`}>
+    <header className={`bg-card border-b border-border-strong space-y-4 relative ${isMobile ? 'px-4 py-3' : 'px-6 py-4'}`}>
       {/* Top Row - Search and User Actions */}
       <div className={`flex items-center ${isMobile ? 'flex-col gap-3' : 'justify-between'}`}>
         {/* Global Search */}
@@ -146,7 +146,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
             </DropdownMenuTrigger>
             <DropdownMenuContent
               align="end"
-              className={`max-h-96 overflow-auto border border-border/70 shadow-lg bg-card/90 backdrop-blur-md supports-[backdrop-filter]:bg-card/70 supports-[backdrop-filter]:backdrop-blur-md z-[9999] ${isMobile ? 'w-80 fixed top-16 right-4' : 'w-80'}`}
+              className={`max-h-96 overflow-auto border border-border/70 shadow-lg bg-card/90 backdrop-blur-md supports-[backdrop-filter]:bg-card/70 supports-[backdrop-filter]:backdrop-blur-md z-[9999] ${isMobile ? 'w-[calc(100vw-2rem)] max-w-sm fixed top-20 left-4 right-4' : 'w-80'}`}
             >
               <div className="flex items-center justify-between px-2 py-1">
                 <span className="text-sm text-muted-foreground">الإشعارات</span>
@@ -168,7 +168,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex items-center gap-2 min-w-0 flex-1">
                             {!n.read && <span className="inline-block w-2 h-2 rounded-full bg-accent flex-shrink-0" />}
-                            <span className={`font-medium break-words ${isMobile ? 'text-sm' : 'text-sm'}`}>
+                            <span className={`font-medium break-words ${isMobile ? 'text-sm' : 'text-sm'} leading-tight`}>
                               {n.title}
                             </span>
                           </div>
@@ -177,7 +177,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
                           </span>
                         </div>
                         {n.message && (
-                          <div className={`text-muted-foreground mt-1 break-words ${isMobile ? 'text-sm' : 'text-xs'}`}>
+                          <div className={`text-muted-foreground mt-1 break-words ${isMobile ? 'text-sm' : 'text-xs'} leading-tight`}>
                             {n.message}
                           </div>
                         )}
@@ -216,7 +216,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
             </DropdownMenuTrigger>
             <DropdownMenuContent
               align="end"
-              className={`border border-border/70 shadow-lg bg-card/90 backdrop-blur-md supports-[backdrop-filter]:bg-card/70 supports-[backdrop-filter]:backdrop-blur-md z-[9999] ${isMobile ? 'w-48 fixed top-16 right-4' : 'w-56'}`}
+              className={`border border-border/70 shadow-lg bg-card/90 backdrop-blur-md supports-[backdrop-filter]:bg-card/70 supports-[backdrop-filter]:backdrop-blur-md z-[9999] ${isMobile ? 'w-48 fixed top-20 left-4 right-4' : 'w-56'}`}
             >
               <DropdownMenuLabel className="text-right">
                 <div className="flex flex-col space-y-1">
