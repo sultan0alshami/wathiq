@@ -55,7 +55,7 @@ interface ValidationMessageProps {
 }
 
 export const ValidationMessage: React.FC<ValidationMessageProps> = ({ result, className }) => {
-  if (result.messages.length === 0) return null;
+  if (!result || !result.messages || result.messages.length === 0) return null;
 
   return (
     <div className={cn("space-y-1", className)}>

@@ -125,7 +125,7 @@ export function MobileForm({
         )}
         
         {field.validation && (
-          <ValidationMessage validation={field.validation} />
+          <ValidationMessage result={field.validation} />
         )}
       </div>
     );
