@@ -45,8 +45,9 @@ WORKDIR /app
 COPY backend/package.json backend/package-lock.json* ./
 RUN npm install --omit=dev
 
-# Copy backend source
-COPY backend/. .
+# Copy backend source (excluding node_modules)
+COPY backend/server.js ./
+COPY backend/assets/ ./assets/
 
 # Python deps for WeasyPrint
 RUN pip3 install --no-cache-dir weasyprint==60.2 pydyf==0.10.0
