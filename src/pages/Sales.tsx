@@ -64,7 +64,7 @@ export const Sales: React.FC = () => {
   // Individual validation states
   const [customerNameValidation, setCustomerNameValidation] = useState(validateField('', [ValidationRules.required(ARABIC_SALES_MESSAGES.MEETING_TITLE_REQUIRED), ValidationRules.minLength(3, ARABIC_SALES_MESSAGES.MEETING_TITLE_MIN_LENGTH)]));
   const [contactNumberValidation, setContactNumberValidation] = useState(validateField('', [ValidationRules.required(ARABIC_SALES_MESSAGES.CLIENT_NAME_REQUIRED)]));
-  const [phoneNumberValidation, setPhoneNumberValidation] = useState(validateField('', [ValidationRules.required(ARABIC_SALES_MESSAGES.CUSTOMER_PHONE_LABEL), ValidationRules.phone(ARABIC_SALES_MESSAGES.VALIDATION_PHONE_INVALID)]));
+  const [phoneNumberValidation, setPhoneNumberValidation] = useState(validateField('', [ValidationRules.required('رقم الهاتف مطلوب'), ValidationRules.phone(ARABIC_SALES_MESSAGES.VALIDATION_PHONE_INVALID)]));
   const [meetingTimeValidation, setMeetingTimeValidation] = useState(validateField('', [ValidationRules.required(ARABIC_SALES_MESSAGES.MEETING_DATE_REQUIRED)]));
   const [meetingOutcomeValidation, setMeetingOutcomeValidation] = useState(validateField('', [ValidationRules.required(ARABIC_SALES_MESSAGES.OUTCOME_REQUIRED)]));
   const [meetingNotesValidation, setMeetingNotesValidation] = useState(validateField('', [ValidationRules.maxLength(500, ARABIC_SALES_MESSAGES.NOTES_MAX_LENGTH)]));
@@ -83,7 +83,7 @@ export const Sales: React.FC = () => {
     // Re-validate all fields on submission attempt
     const isCustomerNameValid = validateField(newMeetingCustomer, [ValidationRules.required(ARABIC_SALES_MESSAGES.MEETING_TITLE_REQUIRED), ValidationRules.minLength(3, ARABIC_SALES_MESSAGES.MEETING_TITLE_MIN_LENGTH)]).isValid;
     const isContactNumberValid = validateField(newMeetingContact, [ValidationRules.required(ARABIC_SALES_MESSAGES.CLIENT_NAME_REQUIRED)]).isValid;
-    const isPhoneNumberValid = validateField(newMeetingPhoneNumber, [ValidationRules.required(ARABIC_SALES_MESSAGES.CUSTOMER_PHONE_LABEL), ValidationRules.phone(ARABIC_SALES_MESSAGES.VALIDATION_PHONE_INVALID)]).isValid;
+    const isPhoneNumberValid = validateField(newMeetingPhoneNumber, [ValidationRules.required('رقم الهاتف مطلوب'), ValidationRules.phone(ARABIC_SALES_MESSAGES.VALIDATION_PHONE_INVALID)]).isValid;
     const isMeetingTimeValid = validateField(newMeetingTime, [ValidationRules.required(ARABIC_SALES_MESSAGES.MEETING_DATE_REQUIRED)]).isValid;
     const isMeetingOutcomeValid = validateField(newMeetingOutcome, [ValidationRules.required(ARABIC_SALES_MESSAGES.OUTCOME_REQUIRED)]).isValid;
     const isMeetingNotesValid = validateField(newMeetingNotes, [ValidationRules.maxLength(500, ARABIC_SALES_MESSAGES.NOTES_MAX_LENGTH)]).isValid;
@@ -91,7 +91,7 @@ export const Sales: React.FC = () => {
     if (!isCustomerNameValid || !isContactNumberValid || !isPhoneNumberValid || !isMeetingTimeValid || !isMeetingOutcomeValid || !isMeetingNotesValid) {
       setCustomerNameValidation(validateField(newMeetingCustomer, [ValidationRules.required(ARABIC_SALES_MESSAGES.MEETING_TITLE_REQUIRED), ValidationRules.minLength(3, ARABIC_SALES_MESSAGES.MEETING_TITLE_MIN_LENGTH)]));
       setContactNumberValidation(validateField(newMeetingContact, [ValidationRules.required(ARABIC_SALES_MESSAGES.CLIENT_NAME_REQUIRED)]));
-      setPhoneNumberValidation(validateField(newMeetingPhoneNumber, [ValidationRules.required(ARABIC_SALES_MESSAGES.CUSTOMER_PHONE_LABEL), ValidationRules.phone(ARABIC_SALES_MESSAGES.VALIDATION_PHONE_INVALID)]));
+      setPhoneNumberValidation(validateField(newMeetingPhoneNumber, [ValidationRules.required('رقم الهاتف مطلوب'), ValidationRules.phone(ARABIC_SALES_MESSAGES.VALIDATION_PHONE_INVALID)]));
       setMeetingTimeValidation(validateField(newMeetingTime, [ValidationRules.required(ARABIC_SALES_MESSAGES.MEETING_DATE_REQUIRED)]));
       setMeetingOutcomeValidation(validateField(newMeetingOutcome, [ValidationRules.required(ARABIC_SALES_MESSAGES.OUTCOME_REQUIRED)]));
       setMeetingNotesValidation(validateField(newMeetingNotes, [ValidationRules.maxLength(500, ARABIC_SALES_MESSAGES.NOTES_MAX_LENGTH)]));
@@ -135,7 +135,7 @@ export const Sales: React.FC = () => {
       setNewMeetingOutcome('pending');
       setCustomerNameValidation(validateField('', [ValidationRules.required(ARABIC_SALES_MESSAGES.MEETING_TITLE_REQUIRED), ValidationRules.minLength(3, ARABIC_SALES_MESSAGES.MEETING_TITLE_MIN_LENGTH)]));
       setContactNumberValidation(validateField('', [ValidationRules.required(ARABIC_SALES_MESSAGES.CLIENT_NAME_REQUIRED)]));
-      setPhoneNumberValidation(validateField('', [ValidationRules.required(ARABIC_SALES_MESSAGES.CUSTOMER_PHONE_LABEL), ValidationRules.phone(ARABIC_SALES_MESSAGES.VALIDATION_PHONE_INVALID)]));
+      setPhoneNumberValidation(validateField('', [ValidationRules.required('رقم الهاتف مطلوب'), ValidationRules.phone(ARABIC_SALES_MESSAGES.VALIDATION_PHONE_INVALID)]));
       setMeetingTimeValidation(validateField('', [ValidationRules.required(ARABIC_SALES_MESSAGES.MEETING_DATE_REQUIRED)]));
       setMeetingOutcomeValidation(validateField('', [ValidationRules.required(ARABIC_SALES_MESSAGES.OUTCOME_REQUIRED)]));
       setMeetingNotesValidation(validateField('', [ValidationRules.maxLength(500, ARABIC_SALES_MESSAGES.NOTES_MAX_LENGTH)]));
@@ -210,7 +210,7 @@ export const Sales: React.FC = () => {
     // Reset validation states
     setCustomerNameValidation(validateField('', [ValidationRules.required(ARABIC_SALES_MESSAGES.MEETING_TITLE_REQUIRED), ValidationRules.minLength(3, ARABIC_SALES_MESSAGES.MEETING_TITLE_MIN_LENGTH)]));
     setContactNumberValidation(validateField('', [ValidationRules.required(ARABIC_SALES_MESSAGES.CLIENT_NAME_REQUIRED)]));
-    setPhoneNumberValidation(validateField('', [ValidationRules.required(ARABIC_SALES_MESSAGES.CUSTOMER_PHONE_LABEL), ValidationRules.phone(ARABIC_SALES_MESSAGES.VALIDATION_PHONE_INVALID)]));
+    setPhoneNumberValidation(validateField('', [ValidationRules.required('رقم الهاتف مطلوب'), ValidationRules.phone(ARABIC_SALES_MESSAGES.VALIDATION_PHONE_INVALID)]));
     setMeetingTimeValidation(validateField('', [ValidationRules.required(ARABIC_SALES_MESSAGES.MEETING_DATE_REQUIRED)]));
     setMeetingOutcomeValidation(validateField('', [ValidationRules.required(ARABIC_SALES_MESSAGES.OUTCOME_REQUIRED)]));
     setMeetingNotesValidation(validateField('', [ValidationRules.maxLength(500, ARABIC_SALES_MESSAGES.NOTES_MAX_LENGTH)]));
@@ -389,7 +389,7 @@ export const Sales: React.FC = () => {
                 onPhoneNumberChange={(value) => {
                   try {
                     setNewMeetingPhoneNumber(value);
-                    setPhoneNumberValidation(validateField(value, [ValidationRules.required(ARABIC_SALES_MESSAGES.CUSTOMER_PHONE_LABEL), ValidationRules.phone(ARABIC_SALES_MESSAGES.VALIDATION_PHONE_INVALID)]));
+                    setPhoneNumberValidation(validateField(value, [ValidationRules.required('رقم الهاتف مطلوب'), ValidationRules.phone(ARABIC_SALES_MESSAGES.VALIDATION_PHONE_INVALID)]));
                   } catch (err) {
                     console.error('Error in phone number change:', err);
                     setError('خطأ في تحديث رقم الهاتف');
@@ -429,7 +429,7 @@ export const Sales: React.FC = () => {
               />
             </React.Suspense>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-background-muted rounded-lg border">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-card/90 backdrop-blur-md supports-[backdrop-filter]:bg-card/70 supports-[backdrop-filter]:backdrop-blur-md rounded-lg border border-border/50">
             <div className="space-y-2">
               <Label>{ARABIC_SALES_MESSAGES.MEETING_TITLE_LABEL}</Label>
               <Input
@@ -463,7 +463,7 @@ export const Sales: React.FC = () => {
                 value={newMeetingPhoneNumber}
                 onChange={(e) => {
                   setNewMeetingPhoneNumber(e.target.value);
-                  setPhoneNumberValidation(validateField(e.target.value, [ValidationRules.required(ARABIC_SALES_MESSAGES.CUSTOMER_PHONE_LABEL), ValidationRules.phone(ARABIC_SALES_MESSAGES.VALIDATION_PHONE_INVALID)]));
+                  setPhoneNumberValidation(validateField(e.target.value, [ValidationRules.required('رقم الهاتف مطلوب'), ValidationRules.phone(ARABIC_SALES_MESSAGES.VALIDATION_PHONE_INVALID)]));
                 }}
                 className={!phoneNumberValidation.isValid ? "border-destructive" : ""}
               />

@@ -132,7 +132,10 @@ export function MobileForm({
   };
 
   return (
-    <Card className={cn("w-full", className)}>
+    <Card className={cn(
+      "w-full bg-card/90 backdrop-blur-md supports-[backdrop-filter]:bg-card/70 supports-[backdrop-filter]:backdrop-blur-md border-border/50", 
+      className
+    )}>
       {title && (
         <CardHeader className={cn(isMobile && "pb-4")}>
           <CardTitle className="text-lg">{title}</CardTitle>

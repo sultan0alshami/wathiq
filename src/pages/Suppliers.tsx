@@ -73,11 +73,11 @@ export const Suppliers: React.FC = () => {
   const { validateField, validateForm } = useFormValidation();
 
   const validationRules = {
-    name: [ValidationRules.required(ARABIC_SUPPLIERS_MESSAGES.VALIDATION_NAME_REQUIRED), ValidationRules.minLength(3, ARABIC_SUPPLIERS_MESSAGES.VALIDATION_NAME_REQUIRED), ValidationRules.arabicText(ARABIC_SUPPLIERS_MESSAGES.VALIDATION_NAME_REQUIRED)],
-    contactPerson: [ValidationRules.required(ARABIC_SUPPLIERS_MESSAGES.VALIDATION_CONTACT_PERSON_REQUIRED), ValidationRules.minLength(3, ARABIC_SUPPLIERS_MESSAGES.VALIDATION_CONTACT_PERSON_REQUIRED), ValidationRules.arabicText(ARABIC_SUPPLIERS_MESSAGES.VALIDATION_CONTACT_PERSON_REQUIRED)],
+    name: [ValidationRules.required(ARABIC_SUPPLIERS_MESSAGES.VALIDATION_NAME_REQUIRED), ValidationRules.minLength(3, 'يجب أن يحتوي على 3 أحرف على الأقل'), ValidationRules.arabicText('يجب أن يحتوي على نص عربي')],
+    contactPerson: [ValidationRules.required(ARABIC_SUPPLIERS_MESSAGES.VALIDATION_CONTACT_PERSON_REQUIRED), ValidationRules.minLength(3, 'يجب أن يحتوي على 3 أحرف على الأقل'), ValidationRules.arabicText('يجب أن يحتوي على نص عربي')],
     phone: [ValidationRules.phone(ARABIC_SUPPLIERS_MESSAGES.VALIDATION_PHONE_INVALID)],
     email: [ValidationRules.email(ARABIC_SUPPLIERS_MESSAGES.VALIDATION_EMAIL_INVALID)],
-    category: [ValidationRules.required(ARABIC_SUPPLIERS_MESSAGES.VALIDATION_CATEGORY_REQUIRED), ValidationRules.arabicText(ARABIC_SUPPLIERS_MESSAGES.VALIDATION_CATEGORY_REQUIRED)],
+    category: [ValidationRules.required(ARABIC_SUPPLIERS_MESSAGES.VALIDATION_CATEGORY_REQUIRED), ValidationRules.arabicText('يجب أن يحتوي على نص عربي')],
   };
 
   const [validationResults, setValidationResults] = useState<Record<string, { isValid: boolean; messages: { message: string; type: "error" | "warning" | "info"; }[] }>>({
@@ -274,7 +274,7 @@ export const Suppliers: React.FC = () => {
               {ARABIC_SUPPLIERS_MESSAGES.ADD_NEW_SUPPLIER_BUTTON}
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-card/90 backdrop-blur-md supports-[backdrop-filter]:bg-card/70 supports-[backdrop-filter]:backdrop-blur-md border-border/50">
             <DialogHeader>
               <DialogTitle>
                 {editingSupplier ? ARABIC_SUPPLIERS_MESSAGES.EDIT_SUPPLIER_DIALOG_TITLE : ARABIC_SUPPLIERS_MESSAGES.ADD_SUPPLIER_DIALOG_TITLE}

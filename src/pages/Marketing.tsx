@@ -428,7 +428,7 @@ export const Marketing: React.FC = () => {
         </CardHeader>
         <CardContent>
           {/* Add Task Form */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 p-4 bg-background-muted rounded-lg">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 p-4 bg-card/90 backdrop-blur-md supports-[backdrop-filter]:bg-card/70 supports-[backdrop-filter]:backdrop-blur-md rounded-lg border border-border/50">
             <div className="space-y-2">
               <Label>عنوان المهمة</Label>
               <Input
@@ -595,7 +595,7 @@ export const Marketing: React.FC = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Add Customer Form */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-background-muted rounded-lg">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-card/90 backdrop-blur-md supports-[backdrop-filter]:bg-card/70 supports-[backdrop-filter]:backdrop-blur-md rounded-lg border border-border/50">
             <div className="space-y-2">
               <Label>اسم العميل</Label>
               <Input

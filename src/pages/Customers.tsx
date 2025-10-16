@@ -429,7 +429,7 @@ export const Customers: React.FC = () => {
 
                         {customer.notes && (
                           <div
-                            className="text-sm text-muted-foreground mb-3 p-2 bg-background-muted rounded"
+                            className="text-sm text-muted-foreground mb-3 p-2 bg-card/90 backdrop-blur-md supports-[backdrop-filter]:bg-card/70 supports-[backdrop-filter]:backdrop-blur-md rounded border border-border/50"
                             dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(customer.notes) }}
                           />
                         )}
