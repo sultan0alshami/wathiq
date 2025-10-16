@@ -3,9 +3,22 @@ const cors = require('cors');
 const path = require('path');
 const { spawn } = require('child_process');
 const fs = require('fs').promises;
+const { createClient } = require('@supabase/supabase-js');
 
 const app = express();
 const port = process.env.PORT || 8080;
+
+// Initialize Supabase client for notifications
+let supabase = null;
+if (process.env.SUPABASE_SERVICE_URL && process.env.SUPABASE_SERVICE_KEY) {
+  supabase = createClient(
+    process.env.SUPABASE_SERVICE_URL,
+    process.env.SUPABASE_SERVICE_KEY
+  );
+  console.log('[Backend] ✅ Supabase client initialized for notifications');
+} else {
+  console.log('[Backend] ⚠️ Supabase service role not configured - notifications disabled');
+}
 
 // CORS configuration
 const corsOptions = {
@@ -64,6 +77,33 @@ app.post('/api/generate-pdf', async (req, res) => {
 
     pythonProcess.on('close', async (code) => {
       if (code === 0) {
+        // Emit a broadcast notification to Supabase if configured
+        if (supabase) {
+          console.log('[Backend] Attempting to emit Supabase notification...');
+          console.log('[Backend] Using URL:', process.env.SUPABASE_SERVICE_URL);
+          
+          try {
+            const { data, error } = await supabase
+              .from('notifications')
+              .insert({
+                user_id: null,
+                is_broadcast: true,
+                type: 'success',
+                title: 'تم إنشاء تقرير PDF',
+                message: `تم إنشاء التقرير بتاريخ ${date || 'اليوم'} بنجاح وهو متاح للتنزيل.`,
+                created_at: new Date().toISOString(),
+              });
+            
+            if (error) {
+              console.error('[Backend] ❌ Supabase client failed:', error.message);
+            } else {
+              console.log('[Backend] ✅ Supabase notification emitted successfully via client!');
+            }
+          } catch (e) {
+            console.error('[Backend] ❌ Failed to emit Supabase notification:', e.message);
+          }
+        }
+
         res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
         res.setHeader('Vary', 'Origin');
         res.setHeader('Content-Type', 'application/pdf');
