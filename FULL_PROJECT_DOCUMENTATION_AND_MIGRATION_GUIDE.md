@@ -11,7 +11,7 @@
 - **Backend**: Node.js + Express + Python (WeasyPrint)
 - **Database**: Supabase (PostgreSQL with RLS)
 - **Authentication**: Supabase Auth
-- **Deployment**: Vercel (Frontend) + Koyeb (Backend)
+- **Deployment**: Render (Full-Stack)
 - **State Management**: React Context + Zustand
 - **Testing**: Jest + React Testing Library
 - **Mobile**: Responsive design with mobile-first approach
@@ -69,10 +69,10 @@ wathiq/
 │   └── index.css                # Global styles + dark theme
 │
 ├── 📁 Backend (Node.js + Python)
-│   ├── server.js                # Express server for PDF generation
+│   ├── server.js                # Express server for PDF generation + notifications
 │   ├── generate_pdf.py          # Python script for Arabic PDFs
 │   ├── package.json             # Node.js dependencies
-│   ├── Dockerfile               # Container configuration
+│   ├── Dockerfile               # Multi-stage container configuration
 │   └── assets/                  # Static assets (logo, fonts)
 │
 ├── 📁 Database (Supabase)
@@ -152,8 +152,7 @@ PDF_BACKEND_URL=your_backend_url
 - Node.js 18+ and npm
 - Python 3.8+ with WeasyPrint
 - Supabase account and project
-- Vercel account (for frontend)
-- Koyeb account (for backend)
+- Render account (for full-stack deployment)
 
 #### Frontend Setup
 ```bash
@@ -235,24 +234,21 @@ npm run preview
 
 ### Deployment Scripts
 
-#### Vercel Deployment (Frontend)
+#### Render Deployment (Full-Stack)
 ```bash
-# Install Vercel CLI
-npm i -g vercel
-
-# Deploy to Vercel
-vercel --prod
-
-# Set environment variables in Vercel dashboard
-```
-
-#### Koyeb Deployment (Backend)
-```bash
-# Build Docker image
-docker build -t wathiq-backend .
-
-# Deploy to Koyeb
-# Use Koyeb dashboard or CLI
+# Deploy to Render
+# 1. Connect GitHub repository to Render
+# 2. Create new Web Service
+# 3. Configure build settings:
+#    - Build Command: npm run build
+#    - Start Command: node server.js
+#    - Environment: Docker
+# 4. Set environment variables in Render dashboard:
+#    - VITE_SUPABASE_URL
+#    - VITE_SUPABASE_ANON_KEY
+#    - SUPABASE_SERVICE_URL
+#    - SUPABASE_SERVICE_KEY
+# 5. Deploy from render branch
 ```
 
 ---
@@ -286,6 +282,14 @@ docker build -t wathiq-backend .
 - **Performance**: Fast touch response, smooth scrolling
 - **Testing**: Comprehensive mobile testing guide
 
+#### ✅ Phase 4: Render Migration (COMPLETE)
+- **Full-Stack Deployment**: Migrated from Vercel+Koyeb to Render
+- **Docker Configuration**: Multi-stage build for React frontend + Node.js backend
+- **Environment Variables**: Proper Supabase configuration for build and runtime
+- **PDF Generation**: Working with notification emission
+- **Real-time Notifications**: Supabase Realtime integration working
+- **Authentication**: Complete auth system with role-based access
+
 ### Current Project State
 
 #### ✅ Fully Functional Features
@@ -314,12 +318,12 @@ docker build -t wathiq-backend .
 
 ### Remaining Phases and Pending Tasks
 
-#### 🎯 Phase 4: Final Polish (NEXT)
+#### 🎯 Phase 5: Final Polish (NEXT)
 - **Dark Mode Contrast**: Improve dark theme readability
 - **Performance Optimization**: Bundle size, lazy loading
 - **Code Cleanup**: Remove test data, optimize imports
 - **Documentation**: Final API documentation
-- **Production Deployment**: Final production configuration
+- **Mobile UI Fixes**: Address remaining mobile responsiveness issues
 
 #### 🔧 Known Issues to Fix
 - **Mobile Dropdowns**: DropdownMenu components not appearing on mobile
@@ -544,8 +548,7 @@ weasyprint>=60.0
 ### Deployment URLs
 
 #### Current Production
-- **Frontend**: https://wathiq-three.vercel.app
-- **Backend**: https://wathiq-backend.koyeb.app (if deployed)
+- **Full-Stack**: https://wathiq-7eby.onrender.com
 
 #### Development
 - **Frontend**: http://localhost:5173
@@ -564,7 +567,7 @@ This documentation provides complete technical context for the Wathiq Dashboard 
 - ✅ **Data Export & Management**
 - ✅ **Comprehensive Testing**
 
-**Current Status**: Phase 3 Complete - Ready for Phase 4 (Final Polish)
+**Current Status**: Phase 4 Complete - Ready for Phase 5 (Final Polish)
 
 **Next Developer**: Focus on fixing mobile issues, updating branding, and preparing for production deployment.
 
