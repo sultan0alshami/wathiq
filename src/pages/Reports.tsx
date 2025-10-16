@@ -254,19 +254,19 @@ export const Reports: React.FC = () => {
   }, [reports]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">{ar.reports.title}</h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground">{ar.reports.title}</h1>
+          <p className="text-muted-foreground mt-1 text-sm md:text-base">
             {ar.reports.description} - {formatDate(currentDate, 'dd/MM/yyyy')}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" className="w-full sm:w-auto">
                 <Filter className="w-4 h-4 ml-2" />
                 {ar.reports.header.filterSection} ({filterSection.length > 0 ? filterSection.length : ar.reports.header.allSections})
               </Button>
@@ -295,7 +295,7 @@ export const Reports: React.FC = () => {
           </DropdownMenu>
 
           <Select value={filterStatus} onValueChange={(value: 'all' | 'مكتمل' | 'معلق') => setFilterStatus(value)}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-full sm:w-[180px]">
               <SelectValue placeholder={ar.reports.header.filterStatus} />
             </SelectTrigger>
             <SelectContent>

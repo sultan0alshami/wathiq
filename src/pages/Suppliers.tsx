@@ -273,7 +273,7 @@ export const Suppliers: React.FC = () => {
               {ARABIC_SUPPLIERS_MESSAGES.ADD_NEW_SUPPLIER_BUTTON}
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {editingSupplier ? ARABIC_SUPPLIERS_MESSAGES.EDIT_SUPPLIER_DIALOG_TITLE : ARABIC_SUPPLIERS_MESSAGES.ADD_SUPPLIER_DIALOG_TITLE}
@@ -283,7 +283,7 @@ export const Suppliers: React.FC = () => {
               </DialogDescription>
             </DialogHeader>
             
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="name">{ARABIC_SUPPLIERS_MESSAGES.FORM_NAME_LABEL}</Label>
                 <Input

@@ -371,16 +371,16 @@ export const Download: React.FC = () => {
   const types = ['pdf', 'csv', 'excel', 'zip'];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">مركز التحميل</h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground">مركز التحميل</h1>
+          <p className="text-muted-foreground mt-1 text-sm md:text-base">
             تحميل التقارير والملفات - {formatDate(currentDate, 'dd/MM/yyyy')}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <BulkExportDialog onExport={handleBulkExport} />
           
           <Button 
@@ -397,7 +397,7 @@ export const Download: React.FC = () => {
       </div>
 
       {/* Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">الملفات المتاحة</CardTitle>

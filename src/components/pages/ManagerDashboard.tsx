@@ -116,28 +116,28 @@ export const ManagerDashboard: React.FC = () => {
   const COLORS = ['hsl(var(--wathiq-primary))', 'hsl(var(--wathiq-accent))', 'hsl(var(--success))', 'hsl(var(--warning))', 'hsl(var(--destructive))'];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">لوحة تحكم المدير</h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground">لوحة تحكم المدير</h1>
+          <p className="text-muted-foreground mt-1 text-sm md:text-base">
             نظرة شاملة على العمليات اليومية - {formatDate(currentDate, 'dd/MM/yyyy')}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <Button 
             variant="outline" 
             onClick={refresh}
             disabled={isLoading}
-            className="hover:bg-wathiq-primary/10"
+            className="hover:bg-wathiq-primary/10 w-full sm:w-auto"
           >
             <RefreshCw className={`w-4 h-4 ml-2 ${isLoading ? 'animate-spin' : ''}`} />
             تحديث البيانات
           </Button>
           <Button 
             onClick={handleExportDaily}
-            className="bg-wathiq-primary hover:bg-wathiq-primary/90"
+            className="bg-wathiq-primary hover:bg-wathiq-primary/90 w-full sm:w-auto"
           >
             <Download className="w-4 h-4 ml-2" />
             تقرير يومي مدمج
@@ -146,7 +146,7 @@ export const ManagerDashboard: React.FC = () => {
       </div>
 
       {/* KPIs Row */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">السيولة الحالية</CardTitle>
