@@ -146,7 +146,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
             </DropdownMenuTrigger>
             <DropdownMenuContent
               align="end"
-              className={`max-h-96 overflow-auto border border-border/70 shadow-lg bg-card/90 backdrop-blur-md supports-[backdrop-filter]:bg-card/70 supports-[backdrop-filter]:backdrop-blur-md z-[9999] ${isMobile ? 'w-[calc(100vw-1rem)] max-w-sm fixed top-20 right-4' : 'w-80'}`}
+              className={`max-h-96 overflow-auto border border-border/70 shadow-lg bg-card/90 backdrop-blur-md supports-[backdrop-filter]:bg-card/70 supports-[backdrop-filter]:backdrop-blur-md z-[9999] ${isMobile ? 'w-[calc(100vw-2rem)] max-w-sm fixed top-20 left-1/2 transform -translate-x-1/2' : 'w-80'}`}
             >
               <div className="flex items-center justify-between px-2 py-1">
                 <span className="text-sm text-muted-foreground">الإشعارات</span>
@@ -216,7 +216,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
             </DropdownMenuTrigger>
             <DropdownMenuContent
               align="end"
-              className={`border border-border/70 shadow-lg bg-card/90 backdrop-blur-md supports-[backdrop-filter]:bg-card/70 supports-[backdrop-filter]:backdrop-blur-md z-[9999] ${isMobile ? 'w-48 fixed top-20 right-4' : 'w-56'}`}
+              className={`border border-border/70 shadow-lg bg-card/90 backdrop-blur-md supports-[backdrop-filter]:bg-card/70 supports-[backdrop-filter]:backdrop-blur-md z-[9999] ${isMobile ? 'w-48 fixed top-20 left-1/2 transform -translate-x-1/2' : 'w-56'}`}
             >
               <DropdownMenuLabel className="text-right">
                 <div className="flex flex-col space-y-1">
