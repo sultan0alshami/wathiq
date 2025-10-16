@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, ErrorInfo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,6 +35,7 @@ export const Sales: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [meetingToDelete, setMeetingToDelete] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const isMobile = useIsMobile();
   
   const [newCustomersContacted, setNewCustomersContacted] = useState<number>(0);
@@ -262,6 +263,42 @@ export const Sales: React.FC = () => {
   const completedMeetings = meetings.filter(m => m.outcome === 'positive').length;
   const conversionRate = meetings.length > 0 ? ((completedMeetings / meetings.length) * 100).toFixed(1) : '0';
 
+  // Error boundary fallback
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Card className="w-full max-w-md mx-4">
+          <CardContent className="p-6 text-center">
+            <div className="text-red-500 mb-4">
+              <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+            <h2 className="text-xl font-bold text-red-600 mb-2">حدث خطأ غير متوقع</h2>
+            <p className="text-gray-600 mb-4">نعتذر، حدث خطأ أثناء تحميل هذا الجزء من التطبيق</p>
+            <div className="flex gap-2 justify-center">
+              <Button 
+                onClick={() => window.location.reload()} 
+                className="bg-wathiq-primary hover:bg-wathiq-primary/90"
+              >
+                <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                إعادة المحاولة
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => window.location.reload()}
+              >
+                إعادة تحميل الصفحة
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header - Mobile Optimized */}
@@ -323,42 +360,74 @@ export const Sales: React.FC = () => {
         <CardContent className="space-y-4">
           {/* Add Meeting Form - Mobile Optimized */}
           {isMobile ? (
-            <MobileSalesForm
-              customerName={newMeetingCustomer}
-              contactNumber={newMeetingContact}
-              phoneNumber={newMeetingPhoneNumber}
-              meetingTime={newMeetingTime}
-              outcome={newMeetingOutcome}
-              notes={newMeetingNotes}
-              onCustomerNameChange={(value) => {
-                setNewMeetingCustomer(value);
-                setCustomerNameValidation(validateField(value, [ValidationRules.required(ARABIC_SALES_MESSAGES.MEETING_TITLE_REQUIRED), ValidationRules.minLength(3, ARABIC_SALES_MESSAGES.MEETING_TITLE_MIN_LENGTH)]));
-              }}
-              onContactNumberChange={(value) => {
-                setNewMeetingContact(value);
-                setContactNumberValidation(validateField(value, [ValidationRules.required(ARABIC_SALES_MESSAGES.CLIENT_NAME_REQUIRED)]));
-              }}
-              onPhoneNumberChange={(value) => {
-                setNewMeetingPhoneNumber(value);
-                setPhoneNumberValidation(validateField(value, [ValidationRules.required(ARABIC_SALES_MESSAGES.CUSTOMER_PHONE_LABEL), ValidationRules.phone(ARABIC_SALES_MESSAGES.VALIDATION_PHONE_INVALID)]));
-              }}
-              onMeetingTimeChange={(value) => {
-                setNewMeetingTime(value);
-                setMeetingTimeValidation(validateField(value, [ValidationRules.required(ARABIC_SALES_MESSAGES.MEETING_DATE_REQUIRED)]));
-              }}
-              onOutcomeChange={(value) => {
-                setNewMeetingOutcome(value as 'positive' | 'negative' | 'pending');
-                setMeetingOutcomeValidation(validateField(value, [ValidationRules.required(ARABIC_SALES_MESSAGES.OUTCOME_REQUIRED)]));
-              }}
-              onNotesChange={(value) => {
-                setNewMeetingNotes(value);
-                setMeetingNotesValidation(validateField(value, [ValidationRules.maxLength(500, ARABIC_SALES_MESSAGES.NOTES_MAX_LENGTH)]));
-              }}
-              onSubmit={addMeeting}
-              onReset={clearForm}
-              validations={formValidations}
-              isSubmitting={loading}
-            />
+            <React.Suspense fallback={<div className="text-center py-4">جاري التحميل...</div>}>
+              <MobileSalesForm
+                customerName={newMeetingCustomer}
+                contactNumber={newMeetingContact}
+                phoneNumber={newMeetingPhoneNumber}
+                meetingTime={newMeetingTime}
+                outcome={newMeetingOutcome}
+                notes={newMeetingNotes}
+                onCustomerNameChange={(value) => {
+                  try {
+                    setNewMeetingCustomer(value);
+                    setCustomerNameValidation(validateField(value, [ValidationRules.required(ARABIC_SALES_MESSAGES.MEETING_TITLE_REQUIRED), ValidationRules.minLength(3, ARABIC_SALES_MESSAGES.MEETING_TITLE_MIN_LENGTH)]));
+                  } catch (err) {
+                    console.error('Error in customer name change:', err);
+                    setError('خطأ في تحديث اسم العميل');
+                  }
+                }}
+                onContactNumberChange={(value) => {
+                  try {
+                    setNewMeetingContact(value);
+                    setContactNumberValidation(validateField(value, [ValidationRules.required(ARABIC_SALES_MESSAGES.CLIENT_NAME_REQUIRED)]));
+                  } catch (err) {
+                    console.error('Error in contact number change:', err);
+                    setError('خطأ في تحديث رقم الاتصال');
+                  }
+                }}
+                onPhoneNumberChange={(value) => {
+                  try {
+                    setNewMeetingPhoneNumber(value);
+                    setPhoneNumberValidation(validateField(value, [ValidationRules.required(ARABIC_SALES_MESSAGES.CUSTOMER_PHONE_LABEL), ValidationRules.phone(ARABIC_SALES_MESSAGES.VALIDATION_PHONE_INVALID)]));
+                  } catch (err) {
+                    console.error('Error in phone number change:', err);
+                    setError('خطأ في تحديث رقم الهاتف');
+                  }
+                }}
+                onMeetingTimeChange={(value) => {
+                  try {
+                    setNewMeetingTime(value);
+                    setMeetingTimeValidation(validateField(value, [ValidationRules.required(ARABIC_SALES_MESSAGES.MEETING_DATE_REQUIRED)]));
+                  } catch (err) {
+                    console.error('Error in meeting time change:', err);
+                    setError('خطأ في تحديث وقت الاجتماع');
+                  }
+                }}
+                onOutcomeChange={(value) => {
+                  try {
+                    setNewMeetingOutcome(value as 'positive' | 'negative' | 'pending');
+                    setMeetingOutcomeValidation(validateField(value, [ValidationRules.required(ARABIC_SALES_MESSAGES.OUTCOME_REQUIRED)]));
+                  } catch (err) {
+                    console.error('Error in outcome change:', err);
+                    setError('خطأ في تحديث نتيجة الاجتماع');
+                  }
+                }}
+                onNotesChange={(value) => {
+                  try {
+                    setNewMeetingNotes(value);
+                    setMeetingNotesValidation(validateField(value, [ValidationRules.maxLength(500, ARABIC_SALES_MESSAGES.NOTES_MAX_LENGTH)]));
+                  } catch (err) {
+                    console.error('Error in notes change:', err);
+                    setError('خطأ في تحديث الملاحظات');
+                  }
+                }}
+                onSubmit={addMeeting}
+                onReset={clearForm}
+                validations={formValidations}
+                isSubmitting={loading}
+              />
+            </React.Suspense>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-background-muted rounded-lg border">
             <div className="space-y-2">
@@ -467,10 +536,12 @@ export const Sales: React.FC = () => {
           ) : (
             <>
               {isMobile ? (
-                <MobileSalesTable 
-                  meetings={paginatedMeetings} 
-                  onDelete={confirmRemoveMeeting}
-                />
+                <React.Suspense fallback={<div className="text-center py-4">جاري تحميل الجدول...</div>}>
+                  <MobileSalesTable 
+                    meetings={paginatedMeetings} 
+                    onDelete={confirmRemoveMeeting}
+                  />
+                </React.Suspense>
               ) : (
             <div className="space-y-3">
               {paginatedMeetings.map((meeting) => (

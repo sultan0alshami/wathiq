@@ -30,8 +30,8 @@ export const DashboardLayout: React.FC = () => {
       <div className={cn(
         "transition-transform duration-300 ease-in-out",
         isMobile 
-          ? `fixed top-0 right-0 h-screen w-full z-50 transform ${sidebarOpen ? 'translate-x-0' : 'translate-x-full'}`
-          : "fixed top-0 right-0 h-screen w-64 z-30"
+          ? `fixed top-0 right-0 min-h-screen w-full z-50 transform ${sidebarOpen ? 'translate-x-0' : 'translate-x-full'}`
+          : "fixed top-0 right-0 min-h-screen w-64 z-30"
       )}>
         <Sidebar onClose={() => setSidebarOpen(false)} />
       </div>
