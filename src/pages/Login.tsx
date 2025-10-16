@@ -60,11 +60,11 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-wathiq-primary/10 via-background to-wathiq-accent/10 p-4">
       <Card className="w-full max-w-md shadow-2xl border-wathiq-primary/20">
         <CardHeader className="space-y-4 text-center">
-          <div className="mx-auto w-20 h-20 bg-wathiq-primary rounded-full flex items-center justify-center shadow-lg overflow-hidden">
+          <div className="mx-auto w-20 h-20 flex items-center justify-center shadow-lg overflow-hidden">
             <img 
               src="/wathiq-logo.png" 
               alt="Wathiq Logo" 
-              className="w-16 h-16 object-contain"
+              className="w-20 h-20 object-contain"
             />
           </div>
           <div>

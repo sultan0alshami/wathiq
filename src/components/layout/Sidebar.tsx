@@ -68,7 +68,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
   });
 
   return (
-    <div className="w-64 bg-nav-background text-nav-foreground flex flex-col shadow-wathiq-medium">
+    <div className={cn(
+      "w-64 text-nav-foreground flex flex-col shadow-wathiq-medium",
+      isMobile 
+        ? "bg-nav-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-nav-background/80 supports-[backdrop-filter]:backdrop-blur-md"
+        : "bg-nav-background"
+    )}>
       {/* Logo and Close Button */}
       <div className="p-6 border-b border-nav-hover">
         <div className="flex items-center justify-between">
