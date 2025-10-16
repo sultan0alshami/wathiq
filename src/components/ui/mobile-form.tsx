@@ -19,8 +19,8 @@ interface MobileFormField {
   required?: boolean;
   validation?: {
     isValid: boolean;
-    message?: string;
-  };
+    messages: Array<{ message: string; type: 'error' | 'warning' | 'info' }>;
+  } | null;
   options?: Array<{ value: string; label: string }>;
   rows?: number; // for textarea
   className?: string;
@@ -226,7 +226,7 @@ export function MobileSalesForm({
   onNotesChange: (value: string) => void;
   onSubmit: () => void;
   onReset?: () => void;
-  validations: Record<string, { isValid: boolean; message?: string }>;
+  validations: Record<string, { isValid: boolean; messages: Array<{ message: string; type: 'error' | 'warning' | 'info' }> }>;
   isSubmitting?: boolean;
 }) {
   const fields: MobileFormField[] = [
