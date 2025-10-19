@@ -85,26 +85,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const email = emailForInference || user?.email || '';
       const emailRole = inferRoleFromEmail(email);
       
-      // Use a simple name mapping based on email since database has RLS issues
-      const getNameFromEmail = (email: string): string => {
-        const emailPrefix = email.split('@')[0].toLowerCase();
-        
-        // Map common email prefixes to Arabic names
-        const nameMap: Record<string, string> = {
-          'admin': 'سليمان الأحمد',
-          'manager': 'أحمد محمد',
-          'finance': 'فاطمة علي',
-          'sales': 'خالد السعد',
-          'operations': 'نورا عبدالله',
-          'marketing': 'عبدالرحمن القحطاني',
-          'customers': 'مريم الشمري',
-          'suppliers': 'محمد العتيبي',
-        };
-        
-        return nameMap[emailPrefix] || emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1);
-      };
+      // Fetch user name from database using the correct column structure
+      let displayName = email; // Default fallback
       
-      const displayName = getNameFromEmail(email);
+      try {
+        console.log('[AuthContext] Fetching name from user_roles table using id column...');
+        
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Database timeout')), 5000); // 5 second timeout
+        });
+        
+        // Query user_roles table using 'id' column (not 'user_id') and 'name' field
+        const dbPromise = supabase
+          .from('user_roles')
+          .select('name')
+          .eq('id', userId)
+          .single();
+          
+        const { data: userData, error: dbError } = await Promise.race([dbPromise, timeoutPromise]) as any;
+        
+        if (!dbError && userData?.name) {
+          displayName = userData.name;
+          console.log('[AuthContext] Successfully fetched name from database:', displayName);
+        } else {
+          console.warn('[AuthContext] Database query failed:', dbError?.message || 'No data found');
+        }
+      } catch (dbError) {
+        console.warn('[AuthContext] Database lookup failed:', dbError);
+      }
       
       setRole(emailRole);
       setUserName(displayName);
