@@ -296,6 +296,20 @@ app.post('/generate-pdf', rateLimitMiddleware, async (req, res) => {
   }
 });
 
+// Serve static files from the public directory (React build)
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Handle React routing - send all non-API requests to React app
+app.get('*', (req, res) => {
+  // Skip API routes
+  if (req.path.startsWith('/api/') || req.path.startsWith('/generate-pdf') || req.path.startsWith('/health')) {
+    return res.status(404).json({ error: 'API endpoint not found' });
+  }
+  
+  // Serve React app for all other routes
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
 app.listen(port, '0.0.0.0', () => {
   console.log(`Backend server listening on 0.0.0.0:${port}`);
 });
