@@ -217,7 +217,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 For support and questions:
 - Create an issue on GitHub
-- Contact: sultan12alshami@gmail.com / +966534820384
+- Contact: sultan12alshami@gmail.com
 
 ## 🔄 Version History
 
