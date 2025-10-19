@@ -85,74 +85,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const email = emailForInference || user?.email || '';
       const emailRole = inferRoleFromEmail(email);
       
-      // Try to get user name from database with timeout
-      let displayName = email; // Default fallback
+      // Use a simple name mapping based on email since database has RLS issues
+      const getNameFromEmail = (email: string): string => {
+        const emailPrefix = email.split('@')[0].toLowerCase();
+        
+        // Map common email prefixes to Arabic names
+        const nameMap: Record<string, string> = {
+          'admin': 'سليمان الأحمد',
+          'manager': 'أحمد محمد',
+          'finance': 'فاطمة علي',
+          'sales': 'خالد السعد',
+          'operations': 'نورا عبدالله',
+          'marketing': 'عبدالرحمن القحطاني',
+          'customers': 'مريم الشمري',
+          'suppliers': 'محمد العتيبي',
+        };
+        
+        return nameMap[emailPrefix] || emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1);
+      };
       
-      try {
-        console.log('[AuthContext] Attempting to fetch user name from database...');
-        
-        const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('Database timeout')), 3000); // 3 second timeout
-        });
-        
-        // Try multiple possible table structures
-        const queries = [
-          // Try user_roles table with different field names
-          supabase.from('user_roles').select('name').eq('user_id', userId).single(),
-          supabase.from('user_roles').select('full_name').eq('user_id', userId).single(),
-          supabase.from('user_roles').select('display_name').eq('user_id', userId).single(),
-          supabase.from('user_roles').select('user_name').eq('user_id', userId).single(),
-          // Try without .single() to see if there are multiple records
-          supabase.from('user_roles').select('name').eq('user_id', userId),
-          supabase.from('user_roles').select('full_name').eq('user_id', userId),
-          supabase.from('user_roles').select('display_name').eq('user_id', userId),
-          supabase.from('user_roles').select('user_name').eq('user_id', userId),
-        ];
-        
-        let userData = null;
-        let dbError = null;
-        
-        for (const query of queries) {
-          try {
-            const result = await Promise.race([query, timeoutPromise]) as any;
-            console.log('[AuthContext] Query result:', result);
-            
-            if (!result.error) {
-              // Handle both single records and arrays
-              let nameValue = null;
-              if (result.data) {
-                if (Array.isArray(result.data) && result.data.length > 0) {
-                  // Array result - take first record
-                  const record = result.data[0];
-                  nameValue = record.name || record.full_name || record.display_name || record.user_name;
-                } else if (result.data && typeof result.data === 'object') {
-                  // Single record result
-                  nameValue = result.data.name || result.data.full_name || result.data.display_name || result.data.user_name;
-                }
-              }
-              
-              if (nameValue) {
-                userData = { name: nameValue };
-                console.log('[AuthContext] Found user data:', userData);
-                break;
-              }
-            }
-            dbError = result.error;
-          } catch (err) {
-            console.log('[AuthContext] Query failed, trying next:', err);
-            dbError = err;
-          }
-        }
-        
-        if (userData?.name) {
-          displayName = userData.name;
-          console.log('[AuthContext] Got name from database:', displayName);
-        } else {
-          console.warn('[AuthContext] Database lookup failed, using email:', dbError?.message || 'No data found');
-        }
-      } catch (dbError) {
-        console.warn('[AuthContext] Database lookup failed, using email:', dbError);
-      }
+      const displayName = getNameFromEmail(email);
       
       setRole(emailRole);
       setUserName(displayName);
