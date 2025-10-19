@@ -22,18 +22,19 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { NotificationsProvider } from "./contexts/NotificationsContext";
 import { ErrorBoundary } from "./components/ui/error-boundary";
 import ProtectedRoute from "./components/ProtectedRoute";
+import './lib/debugRefresh'; // Import debug utility
 
 
 // Removed Placeholder components
 
 const App = () => (
-  <TooltipProvider>
-    <AuthProvider>
-      <NotificationsProvider>
-        <DateProvider>
-          <Toaster />
-          <Sonner />
-          <ErrorBoundary>
+  <ErrorBoundary>
+    <TooltipProvider>
+      <AuthProvider>
+        <NotificationsProvider>
+          <DateProvider>
+            <Toaster />
+            <Sonner />
             <BrowserRouter>
               <Routes>
                        {/* Root goes to Login */}
@@ -94,11 +95,11 @@ const App = () => (
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
-          </ErrorBoundary>
-        </DateProvider>
-      </NotificationsProvider>
-    </AuthProvider>
-  </TooltipProvider>
+          </DateProvider>
+        </NotificationsProvider>
+      </AuthProvider>
+    </TooltipProvider>
+  </ErrorBoundary>
 );
 
 export default App;

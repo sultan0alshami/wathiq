@@ -25,13 +25,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log('[AuthContext] Initializing authentication...');
+    
     // Get initial session
     supabase.auth.getSession().then(async ({ data: { session } }) => {
+      console.log('[AuthContext] Initial session:', session ? 'Found' : 'Not found');
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
+        console.log('[AuthContext] Fetching user role for:', session.user.email);
         await fetchUserRole(session.user.id, session.user.email || undefined);
       }
+      setLoading(false);
+      console.log('[AuthContext] Initial auth loading complete');
+    }).catch((error) => {
+      console.error('[AuthContext] Error getting initial session:', error);
       setLoading(false);
     });
 
@@ -63,6 +71,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // No static fallback names. We always prefer DB value; if missing, show email.
 
   const fetchUserRole = async (userId: string, emailForInference?: string) => {
+    console.log('[AuthContext] fetchUserRole called for:', userId, emailForInference);
+    
     try {
       // Prefer a SECURITY DEFINER function to avoid RLS/accept header issues in production
       // Create once in Supabase:
@@ -73,29 +83,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // $$;
       // grant execute on function public.get_user_profile(uuid) to authenticated;
 
-      const { data, error: _err } = await supabase.rpc('get_user_profile', { uid: userId });
+      console.log('[AuthContext] Calling get_user_profile RPC...');
+      const { data, error: rpcError } = await supabase.rpc('get_user_profile', { uid: userId });
+
+      if (rpcError) {
+        console.warn('[AuthContext] RPC function not available, falling back to email role:', rpcError.message);
+        throw new Error('RPC not available');
+      }
 
       const row = Array.isArray(data) ? data[0] : (data as any);
       const dbRole = (row?.role as UserRole) || null;
+      
+      console.log('[AuthContext] RPC result:', { data, dbRole });
+      
       if (dbRole) {
         const displayName = (row?.name as string) || (emailForInference || user?.email || '');
         setRole(dbRole);
         setUserName(displayName);
         setPermissions(getUserPermissions(dbRole));
+        console.log('[AuthContext] Set role from DB:', dbRole, displayName);
       } else {
         const emailRole = inferRoleFromEmail(emailForInference || user?.email || '');
         setRole(emailRole);
         setUserName(emailForInference || user?.email || '');
         setPermissions(getUserPermissions(emailRole));
+        console.log('[AuthContext] Set role from email:', emailRole);
       }
     } catch (error) {
-      console.error('Error:', error);
+      console.error('[AuthContext] Error fetching user role:', error);
       const emailRole = inferRoleFromEmail(emailForInference || user?.email || '');
       setRole(emailRole);
       setUserName(emailForInference || user?.email || '');
       setPermissions(getUserPermissions(emailRole));
+      console.log('[AuthContext] Fallback to email role:', emailRole);
     } finally {
       setLoading(false);
+      console.log('[AuthContext] fetchUserRole complete, loading set to false');
     }
   };
 
