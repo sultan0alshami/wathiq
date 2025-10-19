@@ -95,19 +95,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setTimeout(() => reject(new Error('Database timeout')), 3000); // 3 second timeout
         });
         
-        const dbPromise = supabase
-          .from('user_roles')
-          .select('name')
-          .eq('user_id', userId)
-          .single();
-          
-        const { data: userData, error: dbError } = await Promise.race([dbPromise, timeoutPromise]) as any;
+        // Try multiple possible table structures
+        const queries = [
+          // Try user_roles table first
+          supabase.from('user_roles').select('name').eq('user_id', userId).single(),
+          // Try users table as fallback
+          supabase.from('users').select('name').eq('id', userId).single(),
+          // Try profiles table as another fallback
+          supabase.from('profiles').select('name').eq('id', userId).single(),
+        ];
         
-        if (!dbError && userData?.name) {
+        let userData = null;
+        let dbError = null;
+        
+        for (const query of queries) {
+          try {
+            const result = await Promise.race([query, timeoutPromise]) as any;
+            if (!result.error && result.data?.name) {
+              userData = result.data;
+              console.log('[AuthContext] Found user data in table:', result);
+              break;
+            }
+            dbError = result.error;
+          } catch (err) {
+            console.log('[AuthContext] Query failed, trying next table:', err);
+            dbError = err;
+          }
+        }
+        
+        if (userData?.name) {
           displayName = userData.name;
           console.log('[AuthContext] Got name from database:', displayName);
         } else {
-          console.warn('[AuthContext] Database lookup failed, using email:', dbError?.message);
+          console.warn('[AuthContext] Database lookup failed, using email:', dbError?.message || 'No data found');
         }
       } catch (dbError) {
         console.warn('[AuthContext] Database lookup failed, using email:', dbError);
