@@ -2,32 +2,37 @@ import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
-import { useIsMobile, useIsTablet } from '@/hooks/use-mobile';
+import { useScreenSize } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 
 export const DashboardLayout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
-  const isMobile = useIsMobile();
-  const isTablet = useIsTablet();
-
-  // Debug logging for responsive breakpoints
-  React.useEffect(() => {
-    console.log('[DashboardLayout] Screen width:', window.innerWidth);
-    console.log('[DashboardLayout] isMobile:', isMobile);
-    console.log('[DashboardLayout] isTablet:', isTablet);
-  }, [isMobile, isTablet]);
+  const screenSize = useScreenSize();
 
   // Close sidebar when switching to mobile
   React.useEffect(() => {
-    if (!isMobile) {
+    if (screenSize.isMobile) {
       setSidebarOpen(false);
     }
-  }, [isMobile]);
+  }, [screenSize.isMobile]);
+
+  // Calculate sidebar width and main content margin based on screen size
+  const getSidebarWidth = () => {
+    if (screenSize.isMobile) return '100vw';
+    if (screenSize.isTablet) return '280px'; // Smaller for tablets
+    return '320px'; // Full width for desktop
+  };
+
+  const getMainContentMargin = () => {
+    if (screenSize.isMobile) return '0px';
+    if (screenSize.isTablet) return '280px';
+    return '320px';
+  };
 
   return (
     <div className="min-h-screen bg-background-secondary flex w-full" dir="rtl">
       {/* Mobile overlay */}
-      {isMobile && sidebarOpen && (
+      {screenSize.isMobile && sidebarOpen && (
         <div 
           className="fixed inset-0 bg-black/50 z-40"
           onClick={() => setSidebarOpen(false)}
@@ -37,23 +42,24 @@ export const DashboardLayout: React.FC = () => {
       {/* Sidebar */}
       <div 
         className={cn(
-          "transition-transform duration-300 ease-in-out",
-          isMobile 
-            ? `fixed top-0 right-0 min-h-screen w-full z-50 transform ${sidebarOpen ? 'translate-x-0' : 'translate-x-full'}`
-            : "fixed top-0 right-0 min-h-screen z-30"
+          "fixed top-0 right-0 min-h-screen z-30 transition-all duration-300 ease-in-out",
+          screenSize.isMobile && `transform ${sidebarOpen ? 'translate-x-0' : 'translate-x-full'}`
         )}
-        style={!isMobile ? { width: isTablet ? '14rem' : '16rem' } : {}}
+        style={{ 
+          width: getSidebarWidth(),
+          zIndex: screenSize.isMobile ? 50 : 30
+        }}
       >
         <Sidebar onClose={() => setSidebarOpen(false)} />
       </div>
       
       {/* Main content */}
       <div 
-        className={cn(
-          "flex-1 flex flex-col min-w-0 transition-all duration-300",
-          isMobile ? "w-full" : ""
-        )}
-        style={!isMobile ? { marginRight: isTablet ? '14rem' : '16rem' } : {}}
+        className="flex-1 flex flex-col min-w-0 transition-all duration-300"
+        style={{ 
+          marginRight: getMainContentMargin(),
+          width: screenSize.isMobile ? '100vw' : `calc(100vw - ${getMainContentMargin()})`
+        }}
       >
         <div className="sticky top-0 z-20">
           <Header onMenuClick={() => setSidebarOpen(true)} />
