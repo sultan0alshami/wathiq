@@ -33,13 +33,22 @@ export default defineConfig({
           ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-select'],
           charts: ['recharts'],
           utils: ['date-fns', 'clsx', 'tailwind-merge'],
+          supabase: ['@supabase/supabase-js'],
         },
       },
     },
-    // Enable source maps for production debugging
+    // Disable source maps for production
     sourcemap: false,
     // Optimize chunk size
     chunkSizeWarningLimit: 1000,
+    // Minify for production
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true,
+      },
+    },
   },
   // Optimize dependencies
   optimizeDeps: {

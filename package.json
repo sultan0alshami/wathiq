@@ -1,15 +1,19 @@
 {
-  "name": "vite_react_shadcn_ts",
+  "name": "wathiq-transport-management",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "Wathiq Transport Management System - Comprehensive business management platform",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "build:dev": "vite build --mode development",
+    "build:prod": "vite build --mode production",
     "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "test": "jest",
-    "preview": "vite preview"
+    "test:coverage": "jest --coverage",
+    "preview": "vite preview",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -97,5 +101,25 @@
     "typescript-eslint": "^8.38.0",
     "vite": "^5.4.19",
     "vite-plugin-string": "^1.2.3"
+  },
+  "keywords": [
+    "transport",
+    "management",
+    "business",
+    "dashboard",
+    "react",
+    "typescript",
+    "supabase",
+    "wathiq"
+  ],
+  "author": "Wathiq Transport",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sultan0alshami/wathiq.git"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
   }
 }
