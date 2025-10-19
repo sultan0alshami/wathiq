@@ -2,12 +2,13 @@ import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { useIsMobile, useIsTablet } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 
 export const DashboardLayout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
   const isMobile = useIsMobile();
+  const isTablet = useIsTablet();
 
   // Close sidebar when switching to mobile
   React.useEffect(() => {
@@ -31,20 +32,22 @@ export const DashboardLayout: React.FC = () => {
         "transition-transform duration-300 ease-in-out",
         isMobile 
           ? `fixed top-0 right-0 min-h-screen w-full z-50 transform ${sidebarOpen ? 'translate-x-0' : 'translate-x-full'}`
-          : "fixed top-0 right-0 min-h-screen w-64 z-30"
+          : isTablet
+          ? "fixed top-0 right-0 min-h-screen w-56 z-30" // Smaller sidebar for tablets
+          : "fixed top-0 right-0 min-h-screen w-64 z-30" // Full sidebar for desktop
       )}>
         <Sidebar onClose={() => setSidebarOpen(false)} />
       </div>
       
       {/* Main content */}
       <div className={cn(
-        "flex-1 flex flex-col min-w-0",
-        isMobile ? "w-full" : ""
-      )} style={{ marginRight: isMobile ? '0' : '16rem' }}>
+        "flex-1 flex flex-col min-w-0 transition-all duration-300",
+        isMobile ? "w-full" : isTablet ? "ml-56" : "ml-64"
+      )}>
         <div className="sticky top-0 z-20">
           <Header onMenuClick={() => setSidebarOpen(true)} />
         </div>
-        <main className="flex-1 p-6">
+        <main className="flex-1 p-4 sm:p-6">
           <Outlet />
         </main>
       </div>

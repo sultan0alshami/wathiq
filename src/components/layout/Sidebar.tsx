@@ -19,7 +19,7 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { useIsMobile, useIsTablet } from '@/hooks/use-mobile';
 
 // Navigation items with permission requirements.
 // `path` is appended to the base (/admin or /manager)
@@ -46,6 +46,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
   const { user, role, userName, permissions, signOut } = useAuth();
   const basePath = role === 'admin' ? '/admin' : '/manager';
   const isMobile = useIsMobile();
+  const isTablet = useIsTablet();
 
   const [confirmOpen, setConfirmOpen] = React.useState(false);
 
@@ -69,21 +70,38 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
 
   return (
     <div className={cn(
-      "w-64 text-nav-foreground flex flex-col shadow-wathiq-medium",
+      "text-nav-foreground flex flex-col shadow-wathiq-medium",
       isMobile 
-        ? "bg-nav-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-nav-background/80 supports-[backdrop-filter]:backdrop-blur-md h-screen overflow-hidden"
-        : "bg-nav-background"
+        ? "w-full bg-nav-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-nav-background/80 supports-[backdrop-filter]:backdrop-blur-md h-screen overflow-hidden"
+        : isTablet
+        ? "w-56 bg-nav-background"
+        : "w-64 bg-nav-background"
     )}>
       {/* Logo and Close Button */}
-      <div className="p-6 border-b border-nav-hover">
+      <div className={cn(
+        "border-b border-nav-hover",
+        isTablet ? "p-4" : "p-6"
+      )}>
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3 space-x-reverse">
-            <div className="w-10 h-10 bg-wathiq-accent rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-lg">وا</span>
+            <div className={cn(
+              "bg-wathiq-accent rounded-lg flex items-center justify-center",
+              isTablet ? "w-8 h-8" : "w-10 h-10"
+            )}>
+              <span className={cn(
+                "text-white font-bold",
+                isTablet ? "text-sm" : "text-lg"
+              )}>وا</span>
             </div>
             <div>
-              <h1 className="text-xl font-bold">واثق</h1>
-              <p className="text-sm text-nav-foreground/70">نظام الإدارة</p>
+              <h1 className={cn(
+                "font-bold",
+                isTablet ? "text-lg" : "text-xl"
+              )}>واثق</h1>
+              <p className={cn(
+                "text-nav-foreground/70",
+                isTablet ? "text-xs" : "text-sm"
+              )}>نظام الإدارة</p>
             </div>
           </div>
           {isMobile && onClose && (
@@ -100,22 +118,37 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
       </div>
 
       {/* User Info */}
-      <div className="p-4 border-b border-nav-hover">
+      <div className={cn(
+        "border-b border-nav-hover",
+        isTablet ? "p-3" : "p-4"
+      )}>
         <div className="flex items-center space-x-2 space-x-reverse">
-          <div className="w-10 h-10 bg-wathiq-primary/20 rounded-full flex items-center justify-center">
-            <User className="w-5 h-5 text-wathiq-primary" />
+          <div className={cn(
+            "bg-wathiq-primary/20 rounded-full flex items-center justify-center",
+            isTablet ? "w-8 h-8" : "w-10 h-10"
+          )}>
+            <User className={cn(
+              "text-wathiq-primary",
+              isTablet ? "w-4 h-4" : "w-5 h-5"
+            )} />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold truncate">{userName || user?.email}</p>
-            <p className="text-xs text-nav-foreground/60">{user?.email}</p>
+            <p className={cn(
+              "font-bold truncate",
+              isTablet ? "text-xs" : "text-sm"
+            )}>{userName || user?.email}</p>
+            <p className={cn(
+              "text-nav-foreground/60",
+              isTablet ? "text-xs" : "text-xs"
+            )}>{user?.email}</p>
           </div>
         </div>
       </div>
 
       {/* Navigation */}
       <nav className={cn(
-        "flex-1 p-4",
-        isMobile ? "overflow-y-auto" : ""
+        "flex-1",
+        isTablet ? "p-3 overflow-y-auto" : "p-4 overflow-y-auto"
       )}>
         <ul className={cn(
           "space-y-2",
@@ -136,13 +169,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
                     }
                   }}
                   className={cn(
-                    "flex items-center space-x-3 space-x-reverse px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 animate-hover",
+                    "flex items-center space-x-3 space-x-reverse px-3 py-2.5 font-medium rounded-lg transition-all duration-200 animate-hover",
+                    isTablet ? "text-xs" : "text-sm",
                     isActive
                       ? "bg-nav-active text-white shadow-wathiq-soft"
                       : "text-nav-foreground/80 hover:bg-nav-hover hover:text-white"
                   )}
                 >
-                  <Icon className="w-5 h-5" />
+                  <Icon className={cn(
+                    isTablet ? "w-4 h-4" : "w-5 h-5"
+                  )} />
                   <span>{item.name}</span>
                 </NavLink>
               </li>
@@ -152,16 +188,27 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
       </nav>
 
       {/* Logout Button */}
-      <div className="p-4 border-t border-nav-hover">
+      <div className={cn(
+        "border-t border-nav-hover",
+        isTablet ? "p-3" : "p-4"
+      )}>
         <Button
           onClick={handleLogout}
           variant="ghost"
-          className="w-full justify-start space-x-2 space-x-reverse text-nav-foreground/80 hover:bg-nav-hover hover:text-white"
+          className={cn(
+            "w-full justify-start space-x-2 space-x-reverse text-nav-foreground/80 hover:bg-nav-hover hover:text-white",
+            isTablet ? "text-xs py-2" : "py-2.5"
+          )}
         >
-          <LogOut className="w-5 h-5" />
+          <LogOut className={cn(
+            isTablet ? "w-4 h-4" : "w-5 h-5"
+          )} />
           <span>تسجيل الخروج</span>
         </Button>
-        <div className="text-xs text-nav-foreground/60 text-center mt-3">
+        <div className={cn(
+          "text-nav-foreground/60 text-center mt-3",
+          isTablet ? "text-xs" : "text-xs"
+        )}>
           © 2024 شركة واثق
         </div>
       </div>
