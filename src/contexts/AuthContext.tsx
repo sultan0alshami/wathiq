@@ -27,6 +27,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     console.log('[AuthContext] Initializing authentication...');
     
+    // Add timeout to prevent hanging
+    const initTimeout = setTimeout(() => {
+      console.warn('[AuthContext] Initialization timeout, setting loading to false');
+      setLoading(false);
+    }, 10000); // 10 second timeout
+    
     // Get initial session
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       console.log('[AuthContext] Initial session:', session ? 'Found' : 'Not found');
@@ -37,10 +43,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await fetchUserRole(session.user.id, session.user.email || undefined);
       }
       setLoading(false);
+      clearTimeout(initTimeout);
       console.log('[AuthContext] Initial auth loading complete');
     }).catch((error) => {
       console.error('[AuthContext] Error getting initial session:', error);
       setLoading(false);
+      clearTimeout(initTimeout);
     });
 
     // Listen for auth changes
@@ -73,49 +81,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const fetchUserRole = async (userId: string, emailForInference?: string) => {
     console.log('[AuthContext] fetchUserRole called for:', userId, emailForInference);
     
+    // Skip RPC entirely for now to prevent hanging
+    // TODO: Implement proper RPC function in Supabase
+    console.log('[AuthContext] Skipping RPC call, using email-based role inference');
+    
     try {
-      // Prefer a SECURITY DEFINER function to avoid RLS/accept header issues in production
-      // Create once in Supabase:
-      // create or replace function public.get_user_profile(uid uuid)
-      // returns table(role text, name text)
-      // language sql security definer set search_path = public as $$
-      //   select role, name from public.user_roles where user_id = uid limit 1;
-      // $$;
-      // grant execute on function public.get_user_profile(uuid) to authenticated;
-
-      console.log('[AuthContext] Calling get_user_profile RPC...');
-      const { data, error: rpcError } = await supabase.rpc('get_user_profile', { uid: userId });
-
-      if (rpcError) {
-        console.warn('[AuthContext] RPC function not available, falling back to email role:', rpcError.message);
-        throw new Error('RPC not available');
-      }
-
-      const row = Array.isArray(data) ? data[0] : (data as any);
-      const dbRole = (row?.role as UserRole) || null;
-      
-      console.log('[AuthContext] RPC result:', { data, dbRole });
-      
-      if (dbRole) {
-        const displayName = (row?.name as string) || (emailForInference || user?.email || '');
-        setRole(dbRole);
-        setUserName(displayName);
-        setPermissions(getUserPermissions(dbRole));
-        console.log('[AuthContext] Set role from DB:', dbRole, displayName);
-      } else {
-        const emailRole = inferRoleFromEmail(emailForInference || user?.email || '');
-        setRole(emailRole);
-        setUserName(emailForInference || user?.email || '');
-        setPermissions(getUserPermissions(emailRole));
-        console.log('[AuthContext] Set role from email:', emailRole);
-      }
-    } catch (error) {
-      console.error('[AuthContext] Error fetching user role:', error);
       const emailRole = inferRoleFromEmail(emailForInference || user?.email || '');
       setRole(emailRole);
       setUserName(emailForInference || user?.email || '');
       setPermissions(getUserPermissions(emailRole));
-      console.log('[AuthContext] Fallback to email role:', emailRole);
+      console.log('[AuthContext] Set role from email:', emailRole);
+    } catch (error) {
+      console.error('[AuthContext] Error setting email role:', error);
+      // Fallback to admin role
+      setRole('admin');
+      setUserName(emailForInference || user?.email || '');
+      setPermissions(getUserPermissions('admin'));
+      console.log('[AuthContext] Fallback to admin role');
     } finally {
       setLoading(false);
       console.log('[AuthContext] fetchUserRole complete, loading set to false');
