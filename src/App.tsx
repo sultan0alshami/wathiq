@@ -6,7 +6,7 @@ import { DashboardLayout } from "./components/layout/DashboardLayout";
 import { lazy, Suspense } from "react";
 import { PageLoading, DashboardLoading, TablePageLoading } from "@/components/ui/page-loading";
 const ManagerDashboard = lazy(() => import("./components/pages/ManagerDashboard").then(m => ({ default: m.ManagerDashboard })));
-const EnhancedFinance = lazy(() => import("./pages/EnhancedFinance").then(m => ({ default: m.EnhancedFinance })));
+const Finance = lazy(() => import("./pages/Finance").then(m => ({ default: m.Finance })));
 const Sales = lazy(() => import("./pages/Sales").then(m => ({ default: m.Sales })));
 const Operations = lazy(() => import("./pages/Operations").then(m => ({ default: m.Operations })));
 const Marketing = lazy(() => import("./pages/Marketing").then(m => ({ default: m.Marketing })));
@@ -54,7 +54,7 @@ const App = () => (
                            </Suspense>
                          } />
                          <Route path="reports" element={<Suspense fallback={<TablePageLoading />}><Reports /></Suspense>} />
-                         <Route path="finance" element={<Suspense fallback={<TablePageLoading />}><EnhancedFinance /></Suspense>} />
+                         <Route path="finance" element={<Suspense fallback={<TablePageLoading />}><Finance /></Suspense>} />
                          <Route path="sales" element={<Suspense fallback={<TablePageLoading />}><Sales /></Suspense>} />
                          <Route path="operations" element={<Suspense fallback={<TablePageLoading />}><Operations /></Suspense>} />
                          <Route path="marketing" element={<Suspense fallback={<TablePageLoading />}><Marketing /></Suspense>} />
@@ -79,7 +79,7 @@ const App = () => (
                            </Suspense>
                          } />
                          <Route path="reports" element={<Suspense fallback={<TablePageLoading />}><Reports /></Suspense>} />
-                         <Route path="finance" element={<Suspense fallback={<TablePageLoading />}><EnhancedFinance /></Suspense>} />
+                         <Route path="finance" element={<Suspense fallback={<TablePageLoading />}><Finance /></Suspense>} />
                          <Route path="sales" element={<Suspense fallback={<TablePageLoading />}><Sales /></Suspense>} />
                          <Route path="operations" element={<Suspense fallback={<TablePageLoading />}><Operations /></Suspense>} />
                          <Route path="marketing" element={<Suspense fallback={<TablePageLoading />}><Marketing /></Suspense>} />

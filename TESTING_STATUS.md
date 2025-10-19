@@ -97,7 +97,7 @@ Vite uses `import.meta.env` for environment variables, but Jest (with ts-jest) d
 
 ### Example 1: Protect Delete Action
 ```typescript
-// File: src/pages/EnhancedFinance.tsx
+// File: src/pages/Finance.tsx
 import { AuthService } from '@/services/AuthService';
 import { toast } from 'sonner';
 

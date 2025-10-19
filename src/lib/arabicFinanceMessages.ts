@@ -1,5 +1,5 @@
-export const ARABIC_ENHANCED_FINANCE_MESSAGES = {
-  PAGE_TITLE: "المالية المحسنة",
+export const ARABIC_FINANCE_MESSAGES = {
+  PAGE_TITLE: "المالية",
   FINANCE_TITLE: "المالية",
   TRANSACTION_TITLE_REQUIRED: "عنوان المعاملة مطلوب",
   TRANSACTION_TITLE_MIN_LENGTH: "يجب أن يحتوي العنوان على 3 أحرف على الأقل",

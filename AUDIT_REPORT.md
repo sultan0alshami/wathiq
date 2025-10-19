@@ -853,12 +853,12 @@ dist/assets/index-[hash].css ~150KB
 1. **Code Splitting by Route:**
 ```typescript
 // src/App.tsx
-const EnhancedFinance = lazy(() => import('./pages/EnhancedFinance'));
+const Finance = lazy(() => import('./pages/Finance'));
 const Charts = lazy(() => import('./pages/Charts'));
 // ... etc
 
 <Suspense fallback={<LoadingSpinner />}>
-  <Route path="finance" element={<EnhancedFinance />} />
+  <Route path="finance" element={<Finance />} />
 </Suspense>
 ```
 
