@@ -97,12 +97,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         // Try multiple possible table structures
         const queries = [
-          // Try user_roles table first
+          // Try user_roles table with different field names
           supabase.from('user_roles').select('name').eq('user_id', userId).single(),
-          // Try users table as fallback
-          supabase.from('users').select('name').eq('id', userId).single(),
-          // Try profiles table as another fallback
-          supabase.from('profiles').select('name').eq('id', userId).single(),
+          supabase.from('user_roles').select('full_name').eq('user_id', userId).single(),
+          supabase.from('user_roles').select('display_name').eq('user_id', userId).single(),
+          supabase.from('user_roles').select('user_name').eq('user_id', userId).single(),
+          // Try without .single() to see if there are multiple records
+          supabase.from('user_roles').select('name').eq('user_id', userId),
+          supabase.from('user_roles').select('full_name').eq('user_id', userId),
+          supabase.from('user_roles').select('display_name').eq('user_id', userId),
+          supabase.from('user_roles').select('user_name').eq('user_id', userId),
         ];
         
         let userData = null;
@@ -111,14 +115,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         for (const query of queries) {
           try {
             const result = await Promise.race([query, timeoutPromise]) as any;
-            if (!result.error && result.data?.name) {
-              userData = result.data;
-              console.log('[AuthContext] Found user data in table:', result);
-              break;
+            console.log('[AuthContext] Query result:', result);
+            
+            if (!result.error) {
+              // Handle both single records and arrays
+              let nameValue = null;
+              if (result.data) {
+                if (Array.isArray(result.data) && result.data.length > 0) {
+                  // Array result - take first record
+                  const record = result.data[0];
+                  nameValue = record.name || record.full_name || record.display_name || record.user_name;
+                } else if (result.data && typeof result.data === 'object') {
+                  // Single record result
+                  nameValue = result.data.name || result.data.full_name || result.data.display_name || result.data.user_name;
+                }
+              }
+              
+              if (nameValue) {
+                userData = { name: nameValue };
+                console.log('[AuthContext] Found user data:', userData);
+                break;
+              }
             }
             dbError = result.error;
           } catch (err) {
-            console.log('[AuthContext] Query failed, trying next table:', err);
+            console.log('[AuthContext] Query failed, trying next:', err);
             dbError = err;
           }
         }
