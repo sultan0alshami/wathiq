@@ -59,6 +59,6 @@ COPY --from=frontend-builder /app/dist ./public
 ENV PORT=8080
 
 # Copy the unified server file
-COPY server.js ./
+COPY backend/server.js ./
 
 CMD ["node", "server.js"]
