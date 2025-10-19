@@ -76,6 +76,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return (candidates.includes(prefix as UserRole) ? (prefix as UserRole) : 'marketing');
   };
 
+  // User name mapping for known users
+  const getUserNameFromEmail = (email: string): string => {
+    const nameMap: Record<string, string> = {
+      'admin@wathiq.com': 'المدير العام',
+      'manager@wathiq.com': 'مدير العمليات',
+      'finance@wathiq.com': 'مدير المالية',
+      'sales@wathiq.com': 'مدير المبيعات',
+      'operations@wathiq.com': 'مدير العمليات',
+      'marketing@wathiq.com': 'مدير التسويق',
+      'customers@wathiq.com': 'مدير العملاء',
+      'suppliers@wathiq.com': 'مدير الموردين',
+    };
+    
+    return nameMap[email.toLowerCase()] || email;
+  };
+
   // No static fallback names. We always prefer DB value; if missing, show email.
 
   const fetchUserRole = async (userId: string, emailForInference?: string) => {
@@ -86,16 +102,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     console.log('[AuthContext] Skipping RPC call, using email-based role inference');
     
     try {
-      const emailRole = inferRoleFromEmail(emailForInference || user?.email || '');
+      const email = emailForInference || user?.email || '';
+      const emailRole = inferRoleFromEmail(email);
+      const displayName = getUserNameFromEmail(email);
+      
       setRole(emailRole);
-      setUserName(emailForInference || user?.email || '');
+      setUserName(displayName);
       setPermissions(getUserPermissions(emailRole));
-      console.log('[AuthContext] Set role from email:', emailRole);
+      console.log('[AuthContext] Set role from email:', emailRole, 'Display name:', displayName);
     } catch (error) {
       console.error('[AuthContext] Error setting email role:', error);
       // Fallback to admin role
+      const email = emailForInference || user?.email || '';
       setRole('admin');
-      setUserName(emailForInference || user?.email || '');
+      setUserName(getUserNameFromEmail(email));
       setPermissions(getUserPermissions('admin'));
       console.log('[AuthContext] Fallback to admin role');
     } finally {
