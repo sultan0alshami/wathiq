@@ -1,6 +1,19 @@
 # Wathiq Transport Management System
 
+[![Status](https://img.shields.io/badge/Status-Production%20Ready-green.svg)](https://wathiq-7eby.onrender.com)
+[![Version](https://img.shields.io/badge/Version-1.0.0-blue.svg)](https://github.com/sultan0alshami/wathiq)
+[![Deployment](https://img.shields.io/badge/Deployment-Live-brightgreen.svg)](https://wathiq-7eby.onrender.com)
+
 A comprehensive business management platform built with React, TypeScript, and Supabase. This system provides complete management capabilities for transport businesses including finance, sales, operations, marketing, customers, and suppliers.
+
+## 🎉 **PRODUCTION READY**
+
+✅ **Fully Operational** - All systems working perfectly  
+✅ **Mobile Optimized** - Responsive design for all devices  
+✅ **Database Integrated** - Full Supabase backend integration  
+✅ **Real-time Features** - Live notifications and updates  
+✅ **PDF Generation** - Automated report generation  
+✅ **Security Implemented** - Enterprise-grade security measures
 
 ## 🚀 Features
 
@@ -43,9 +56,24 @@ A comprehensive business management platform built with React, TypeScript, and S
 - **Row Level Security (RLS)** for data protection
 
 ### Deployment
-- **Render** for hosting
+- **Render** for hosting (Full-stack deployment)
+- **Vercel** for frontend-only deployment
 - **Docker** for containerization
 - **GitHub** for version control
+
+## 🌐 **Live Deployment**
+
+### **Production URLs**
+- **Main Application**: [https://wathiq-7eby.onrender.com](https://wathiq-7eby.onrender.com)
+- **Features**: Full-stack with PDF generation and real-time notifications
+- **Status**: ✅ **LIVE** and fully operational
+
+### **Branch Strategy**
+- **`main`**: Production-ready code (Vercel deployment)
+- **`render`**: Full-stack deployment (Render hosting)
+- **`development`**: Development branch
+- **`production`**: Stable production branch
+- **`backup9`**: Latest working state backup
 
 ## 📋 Prerequisites
 
@@ -59,8 +87,8 @@ A comprehensive business management platform built with React, TypeScript, and S
 ### 1. Clone the Repository
 ```bash
 git clone https://github.com/sultan0alshami/wathiq.git
-cd wathiq
-```
+    cd wathiq
+    ```
 
 ### 2. Install Dependencies
 ```bash
