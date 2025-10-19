@@ -76,35 +76,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return (candidates.includes(prefix as UserRole) ? (prefix as UserRole) : 'marketing');
   };
 
-  // User name mapping for known users - showing personal names
-  const getUserNameFromEmail = (email: string): string => {
-    const nameMap: Record<string, string> = {
-      'admin@wathiq.com': 'سليمان الأحمد',
-      'manager@wathiq.com': 'أحمد محمد',
-      'finance@wathiq.com': 'فاطمة علي',
-      'sales@wathiq.com': 'خالد السعد',
-      'operations@wathiq.com': 'نورا عبدالله',
-      'marketing@wathiq.com': 'عبدالرحمن القحطاني',
-      'customers@wathiq.com': 'مريم الشمري',
-      'suppliers@wathiq.com': 'محمد العتيبي',
-    };
-    
-    return nameMap[email.toLowerCase()] || email;
-  };
-
   // No static fallback names. We always prefer DB value; if missing, show email.
 
   const fetchUserRole = async (userId: string, emailForInference?: string) => {
     console.log('[AuthContext] fetchUserRole called for:', userId, emailForInference);
     
-    // Skip RPC entirely for now to prevent hanging
-    // TODO: Implement proper RPC function in Supabase
-    console.log('[AuthContext] Skipping RPC call, using email-based role inference');
-    
     try {
       const email = emailForInference || user?.email || '';
       const emailRole = inferRoleFromEmail(email);
-      const displayName = getUserNameFromEmail(email);
+      
+      // Try to get user name from database with timeout
+      let displayName = email; // Default fallback
+      
+      try {
+        console.log('[AuthContext] Attempting to fetch user name from database...');
+        
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Database timeout')), 3000); // 3 second timeout
+        });
+        
+        const dbPromise = supabase
+          .from('user_roles')
+          .select('name')
+          .eq('user_id', userId)
+          .single();
+          
+        const { data: userData, error: dbError } = await Promise.race([dbPromise, timeoutPromise]) as any;
+        
+        if (!dbError && userData?.name) {
+          displayName = userData.name;
+          console.log('[AuthContext] Got name from database:', displayName);
+        } else {
+          console.warn('[AuthContext] Database lookup failed, using email:', dbError?.message);
+        }
+      } catch (dbError) {
+        console.warn('[AuthContext] Database lookup failed, using email:', dbError);
+      }
       
       setRole(emailRole);
       setUserName(displayName);
@@ -115,7 +122,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Fallback to admin role
       const email = emailForInference || user?.email || '';
       setRole('admin');
-      setUserName(getUserNameFromEmail(email));
+      setUserName(email);
       setPermissions(getUserPermissions('admin'));
       console.log('[AuthContext] Fallback to admin role');
     } finally {
