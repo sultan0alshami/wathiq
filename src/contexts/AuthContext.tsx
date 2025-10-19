@@ -95,13 +95,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setTimeout(() => reject(new Error('Database timeout')), 5000); // 5 second timeout
         });
         
-        // Query user_roles table using service role to bypass RLS
-        const serviceSupabase = createClient(
-          import.meta.env.VITE_SUPABASE_URL!,
-          import.meta.env.VITE_SUPABASE_SERVICE_KEY!
-        );
-        
-        const dbPromise = serviceSupabase
+        // Query user_roles table using regular client
+        const dbPromise = supabase
           .from('user_roles')
           .select('name')
           .eq('user_id', userId)
