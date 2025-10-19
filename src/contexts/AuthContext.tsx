@@ -76,17 +76,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return (candidates.includes(prefix as UserRole) ? (prefix as UserRole) : 'marketing');
   };
 
-  // User name mapping for known users
+  // User name mapping for known users - showing personal names
   const getUserNameFromEmail = (email: string): string => {
     const nameMap: Record<string, string> = {
-      'admin@wathiq.com': 'المدير العام',
-      'manager@wathiq.com': 'مدير العمليات',
-      'finance@wathiq.com': 'مدير المالية',
-      'sales@wathiq.com': 'مدير المبيعات',
-      'operations@wathiq.com': 'مدير العمليات',
-      'marketing@wathiq.com': 'مدير التسويق',
-      'customers@wathiq.com': 'مدير العملاء',
-      'suppliers@wathiq.com': 'مدير الموردين',
+      'admin@wathiq.com': 'سليمان الأحمد',
+      'manager@wathiq.com': 'أحمد محمد',
+      'finance@wathiq.com': 'فاطمة علي',
+      'sales@wathiq.com': 'خالد السعد',
+      'operations@wathiq.com': 'نورا عبدالله',
+      'marketing@wathiq.com': 'عبدالرحمن القحطاني',
+      'customers@wathiq.com': 'مريم الشمري',
+      'suppliers@wathiq.com': 'محمد العتيبي',
     };
     
     return nameMap[email.toLowerCase()] || email;
