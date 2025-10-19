@@ -89,7 +89,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       let displayName = email; // Default fallback
       
       try {
-        console.log('[AuthContext] Fetching name from user_roles table using id column...');
+          console.log('[AuthContext] Fetching name from user_roles table using user_id column...');
         
         const timeoutPromise = new Promise((_, reject) => {
           setTimeout(() => reject(new Error('Database timeout')), 5000); // 5 second timeout
