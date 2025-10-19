@@ -300,7 +300,7 @@ app.post('/generate-pdf', rateLimitMiddleware, async (req, res) => {
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Handle React routing - send all non-API requests to React app
-app.get('*', (req, res) => {
+app.get('/*', (req, res) => {
   // Skip API routes
   if (req.path.startsWith('/api/') || req.path.startsWith('/generate-pdf') || req.path.startsWith('/health')) {
     return res.status(404).json({ error: 'API endpoint not found' });
