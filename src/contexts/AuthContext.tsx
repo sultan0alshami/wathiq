@@ -92,7 +92,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           console.log('[AuthContext] Fetching name from user_roles table using user_id column...');
         
         const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('Database timeout')), 5000); // 5 second timeout
+          setTimeout(() => reject(new Error('Database timeout')), 10000); // 10 second timeout
         });
         
         // Query user_roles table using regular client
@@ -110,9 +110,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } else {
           console.warn('[AuthContext] Database query failed:', dbError?.message || 'No data found');
         }
-      } catch (dbError) {
-        console.warn('[AuthContext] Database lookup failed:', dbError);
-      }
+        } catch (dbError) {
+          if (dbError.message === 'Database timeout') {
+            console.warn('[AuthContext] Database lookup timed out, using email as fallback');
+          } else {
+            console.warn('[AuthContext] Database lookup failed:', dbError);
+          }
+        }
       
       setRole(emailRole);
       setUserName(displayName);
