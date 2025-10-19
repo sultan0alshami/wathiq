@@ -71,7 +71,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
     <div className={cn(
       "w-64 text-nav-foreground flex flex-col shadow-wathiq-medium",
       isMobile 
-        ? "bg-nav-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-nav-background/80 supports-[backdrop-filter]:backdrop-blur-md"
+        ? "bg-nav-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-nav-background/80 supports-[backdrop-filter]:backdrop-blur-md h-screen overflow-hidden"
         : "bg-nav-background"
     )}>
       {/* Logo and Close Button */}
@@ -113,8 +113,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-4">
-        <ul className="space-y-2">
+      <nav className={cn(
+        "flex-1 p-4",
+        isMobile ? "overflow-y-auto" : ""
+      )}>
+        <ul className={cn(
+          "space-y-2",
+          isMobile ? "pb-4" : ""
+        )}>
           {visibleNavigation.map((item) => {
             const href = item.path ? `${basePath}/${item.path}`.replace(/\/$/, '') : basePath;
             const isActive = location.pathname === href;
