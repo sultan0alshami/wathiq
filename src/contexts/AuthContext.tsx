@@ -104,7 +104,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const dbPromise = serviceSupabase
           .from('user_roles')
           .select('name')
-          .eq('id', userId)
+          .eq('user_id', userId)
           .single();
           
         const { data: userData, error: dbError } = await Promise.race([dbPromise, timeoutPromise]) as any;
