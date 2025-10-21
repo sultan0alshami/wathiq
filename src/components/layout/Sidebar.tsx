@@ -82,19 +82,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3 space-x-reverse">
             <div className={cn(
-              "bg-wathiq-accent rounded-lg flex items-center justify-center",
+              "rounded-lg flex items-center justify-center",
               screenSize.isTablet ? "w-8 h-8" : "w-10 h-10"
-            )}>
+            )} style={{ backgroundColor: 'hsl(var(--abwaab-secondary))' }}>
               <span className={cn(
                 "text-white font-bold",
                 screenSize.isTablet ? "text-sm" : "text-lg"
-              )}>وا</span>
+              )}>أب</span>
             </div>
             <div>
               <h1 className={cn(
                 "font-bold",
                 screenSize.isTablet ? "text-lg" : "text-xl"
-              )}>واثق</h1>
+              )}>أبواب</h1>
               <p className={cn(
                 "text-nav-foreground/70",
                 screenSize.isTablet ? "text-xs" : "text-sm"
@@ -121,13 +121,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
       )}>
         <div className="flex items-center space-x-2 space-x-reverse">
           <div className={cn(
-            "bg-wathiq-primary/20 rounded-full flex items-center justify-center",
+            "rounded-full flex items-center justify-center",
             screenSize.isTablet ? "w-8 h-8" : "w-10 h-10"
-          )}>
+          )} style={{ backgroundColor: 'hsl(var(--abwaab-primary) / 0.2)' }}>
             <User className={cn(
-              "text-wathiq-primary",
               screenSize.isTablet ? "w-4 h-4" : "w-5 h-5"
-            )} />
+            )} style={{ color: 'hsl(var(--abwaab-primary))' }} />
           </div>
           <div className="flex-1 min-w-0">
             <p className={cn(
@@ -206,7 +205,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
           "text-nav-foreground/60 text-center mt-3",
           screenSize.isTablet ? "text-xs" : "text-xs"
         )}>
-          © 2024 شركة واثق
+          © 2024 شركة أبواب
         </div>
       </div>
       <ConfirmationDialog

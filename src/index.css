@@ -22,11 +22,15 @@ All colors MUST be HSL. RTL support enabled.
 
 @layer base {
   :root {
-    /* Wathiq Brand Colors */
-    --wathiq-primary: 184 82% 20%; /* #105962 - Dark Teal */
-    --wathiq-accent: 47 65% 51%; /* #d2a736 - Gold */
-    --wathiq-primary-light: 184 45% 35%; /* Lighter teal */
-    --wathiq-accent-light: 47 55% 65%; /* Lighter gold */
+    /* Abwaab Brand Colors */
+    --abwaab-primary: 188 64% 45%; /* #29abbd */
+    --abwaab-primary-alt: 195 91% 36%; /* #0891b2 */
+    --abwaab-secondary: 35 88% 54%; /* #f29423 */
+    --abwaab-secondary-alt: 35 89% 62%; /* #f4a546 */
+    --abwaab-success: 142 76% 36%; /* #16a34a */
+    --abwaab-warning: 36 94% 50%; /* #f59e0b */
+    --abwaab-danger: 0 86% 60%; /* #ef4444 */
+    --abwaab-info: 197 88% 49%; /* #0ea5e9 */
     
     /* Background System */
     --background: 0 0% 100%;
@@ -40,53 +44,53 @@ All colors MUST be HSL. RTL support enabled.
     --card-header: 184 15% 98%;
 
     /* Navigation System */
-    --nav-background: 184 82% 20%; /* Wathiq Primary */
+    --nav-background: var(--abwaab-primary);
     --nav-foreground: 0 0% 100%;
-    --nav-hover: 184 45% 35%;
-    --nav-active: 47 65% 51%; /* Wathiq Accent */
+    --nav-hover: var(--abwaab-primary-alt);
+    --nav-active: var(--abwaab-secondary);
 
-    /* Primary System - Wathiq Teal */
-    --primary: 184 82% 20%;
+    /* Primary System - Abwaab */
+    --primary: var(--abwaab-primary);
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 184 70% 25%;
+    --primary-hover: var(--abwaab-primary-alt);
 
     /* Secondary System */
-    --secondary: 184 15% 96%;
-    --secondary-foreground: 184 35% 15%;
-    --secondary-hover: 184 25% 90%;
+    --secondary: var(--abwaab-secondary);
+    --secondary-foreground: 0 0% 100%;
+    --secondary-hover: var(--abwaab-secondary-alt);
 
-    /* Accent System - Wathiq Gold */
-    --accent: 47 65% 51%;
+    /* Accent System */
+    --accent: var(--abwaab-secondary);
     --accent-foreground: 0 0% 100%;
-    --accent-hover: 47 55% 45%;
+    --accent-hover: var(--abwaab-secondary-alt);
 
     /* Muted System */
     --muted: 184 15% 96%;
     --muted-foreground: 184 15% 45%;
 
     /* Status Colors */
-    --success: 142 76% 36%;
+    --success: var(--abwaab-success);
     --success-foreground: 0 0% 100%;
-    --warning: 43 96% 56%;
+    --warning: var(--abwaab-warning);
     --warning-foreground: 0 0% 15%;
-    --destructive: 0 84% 60%;
+    --destructive: var(--abwaab-danger);
     --destructive-foreground: 0 0% 100%;
 
     /* Border System */
     --border: 184 20% 90%;
     --border-strong: 184 30% 80%;
     --input: 184 20% 90%;
-    --ring: 184 82% 20%;
+    --ring: var(--abwaab-primary);
 
     /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(var(--wathiq-primary)), hsl(var(--wathiq-primary-light)));
-    --gradient-accent: linear-gradient(135deg, hsl(var(--wathiq-accent)), hsl(var(--wathiq-accent-light)));
-    --gradient-hero: linear-gradient(135deg, hsl(var(--wathiq-primary)), hsl(var(--wathiq-accent)));
+    --gradient-primary: linear-gradient(135deg, hsl(var(--abwaab-primary)), hsl(var(--abwaab-primary-alt)));
+    --gradient-accent: linear-gradient(135deg, hsl(var(--abwaab-secondary)), hsl(var(--abwaab-secondary-alt)));
+    --gradient-hero: linear-gradient(135deg, hsl(var(--abwaab-primary)), hsl(var(--abwaab-secondary)));
 
     /* Shadows */
-    --shadow-soft: 0 2px 8px hsl(var(--wathiq-primary) / 0.08);
-    --shadow-medium: 0 4px 12px hsl(var(--wathiq-primary) / 0.12);
-    --shadow-strong: 0 8px 24px hsl(var(--wathiq-primary) / 0.16);
+    --shadow-soft: 0 2px 8px hsl(var(--abwaab-primary) / 0.08);
+    --shadow-medium: 0 4px 12px hsl(var(--abwaab-primary) / 0.12);
+    --shadow-strong: 0 8px 24px hsl(var(--abwaab-primary) / 0.16);
 
     --radius: 0.75rem;
 
@@ -121,7 +125,7 @@ All colors MUST be HSL. RTL support enabled.
     --popover: 220 26% 12%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 184 82% 50%;          /* brighter teal */
+    --primary: var(--abwaab-primary-alt);          /* brighter brand */
     --primary-foreground: 0 0% 100%;
 
     --secondary: 220 22% 16%;        /* darker panels */
@@ -139,15 +143,15 @@ All colors MUST be HSL. RTL support enabled.
     --border: 220 16% 26%;           /* stronger border */
     --border-strong: 220 18% 34%;
     --input: 220 16% 26%;
-    --ring: 184 82% 50%;
+    --ring: var(--abwaab-primary-alt);
     --sidebar-background: 220 20% 9%;
     --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 184 82% 50%;
+    --sidebar-primary: var(--abwaab-primary-alt);
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 220 16% 14%;
     --sidebar-accent-foreground: 0 0% 98%;
     --sidebar-border: 220 16% 20%;
-    --sidebar-ring: 184 82% 50%;
+    --sidebar-ring: var(--abwaab-primary-alt);
   }
 
   /* RTL Support */

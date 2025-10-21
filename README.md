@@ -1,10 +1,10 @@
-# Wathiq Transport Management System
+# Abwaab Management System
 
-[![Status](https://img.shields.io/badge/Status-Production%20Ready-green.svg)](https://wathiq-7eby.onrender.com)
-[![Version](https://img.shields.io/badge/Version-1.0.0-blue.svg)](https://github.com/sultan0alshami/wathiq)
-[![Deployment](https://img.shields.io/badge/Deployment-Live-brightgreen.svg)](https://wathiq-7eby.onrender.com)
+[![Status](https://img.shields.io/badge/Status-Production%20Ready-green.svg)](/)
+[![Version](https://img.shields.io/badge/Version-1.0.0-blue.svg)](https://github.com/<your-org-or-user>/abwaab-management)
+[![Deployment](https://img.shields.io/badge/Deployment-Live-brightgreen.svg)](/)
 
-A comprehensive business management platform built with React, TypeScript, and Supabase. This system provides complete management capabilities for transport businesses including finance, sales, operations, marketing, customers, and suppliers.
+A comprehensive business management platform built with React, TypeScript, and Supabase. This system provides complete management capabilities including finance, sales, operations, marketing, customers, and suppliers.
 
 ## 🎉 **PRODUCTION READY**
 
@@ -64,16 +64,14 @@ A comprehensive business management platform built with React, TypeScript, and S
 ## 🌐 **Live Deployment**
 
 ### **Production URLs**
-- **Main Application**: [https://wathiq-7eby.onrender.com](https://wathiq-7eby.onrender.com)
-- **Features**: Full-stack with PDF generation and real-time notifications
-- **Status**: ✅ **LIVE** and fully operational
+- To be updated after deployment to Vercel/Render
 
 ### **Branch Strategy**
 - **`main`**: Production-ready code (Vercel deployment)
 - **`render`**: Full-stack deployment (Render hosting)
 - **`development`**: Development branch
 - **`production`**: Stable production branch
-- **`backup9`**: Latest working state backup
+- **`backup`**: Latest working state backup
 
 ## 📋 Prerequisites
 
@@ -86,9 +84,9 @@ A comprehensive business management platform built with React, TypeScript, and S
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/sultan0alshami/wathiq.git
-    cd wathiq
-    ```
+git clone https://github.com/<your-org-or-user>/abwaab-management.git
+cd abwaab-management
+```
 
 ### 2. Install Dependencies
 ```bash
@@ -100,6 +98,8 @@ Create a `.env.local` file in the root directory:
 ```env
 VITE_SUPABASE_URL=your_supabase_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_URL=your_supabase_url
+SUPABASE_SERVICE_KEY=your_service_role_key
 ```
 
 ### 4. Database Setup
@@ -258,4 +258,4 @@ For support and questions:
 
 ---
 
-**Wathiq Transport Management System** - Streamlining your business operations with modern technology.
+**Abwaab Management System** - Streamlining your business operations with modern technology.

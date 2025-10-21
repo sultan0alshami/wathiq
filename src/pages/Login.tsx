@@ -57,22 +57,22 @@ export default function Login() {
   }, []);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-wathiq-primary/10 via-background to-wathiq-accent/10 p-4">
-      <Card className="w-full max-w-md shadow-2xl border-wathiq-primary/20">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[hsl(var(--abwaab-primary)/0.1)] via-background to-[hsl(var(--abwaab-secondary)/0.1)] p-4">
+      <Card className="w-full max-w-md shadow-2xl border-[hsl(var(--abwaab-primary)/0.2)]">
         <CardHeader className="space-y-4 text-center">
           <div className="mx-auto flex items-center justify-center">
             <img 
-              src="/wathiq-logo.png" 
-              alt="Wathiq Logo" 
+              src="/logo.png" 
+              alt="Abwaab Logo" 
               className="w-20 h-20 object-contain"
             />
           </div>
           <div>
-            <CardTitle className="text-3xl font-bold text-wathiq-primary">
-              واثق
+            <CardTitle className="text-3xl font-bold" style={{ color: 'hsl(var(--abwaab-primary))' }}>
+              أبواب
             </CardTitle>
             <CardTitle className="text-2xl font-semibold mt-2">
-              Wathiq
+              Abwaab
             </CardTitle>
           </div>
           <CardDescription className="text-base">
@@ -94,7 +94,7 @@ export default function Login() {
               <Input
                 id="email"
                 type="email"
-                placeholder="example@wathiq.com"
+                placeholder="example@abwaab.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -143,7 +143,8 @@ export default function Login() {
 
             <Button
               type="submit"
-              className="w-full bg-wathiq-primary hover:bg-wathiq-primary/90 text-white font-semibold py-6 text-lg shadow-lg hover:shadow-xl transition-all"
+              className="w-full text-white font-semibold py-6 text-lg shadow-lg hover:shadow-xl transition-all"
+              style={{ backgroundColor: 'hsl(var(--abwaab-primary))' }}
               disabled={loading}
             >
               {loading ? (

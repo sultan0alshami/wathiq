@@ -1,4 +1,8 @@
 {
+  "brand": {
+    "name_ar": "أبواب",
+    "name_en": "Abwaab"
+  },
   "sales": {
     "title": "المبيعات",
     "header": {
