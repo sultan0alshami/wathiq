@@ -112,13 +112,15 @@ export interface SupplierDocument {
 
 export type TripSyncStatus = 'pending' | 'synced' | 'failed';
 
+export type TripChecklistRating = 'bad' | 'normal' | 'good';
+
 export interface TripChecklist {
-  externalClean: boolean;
-  internalClean: boolean;
-  carSmell: boolean;
-  driverAppearance: boolean;
-  acStatus: boolean;
-  engineStatus: boolean;
+  externalClean: TripChecklistRating;
+  internalClean: TripChecklistRating;
+  carSmell: TripChecklistRating;
+  driverAppearance: TripChecklistRating;
+  acStatus: TripChecklistRating;
+  engineStatus: TripChecklistRating;
 }
 
 export interface TripAttachment {
@@ -339,12 +341,12 @@ export const generateMockDataForDate = (date: Date): DailyData => {
           passengerFeedback: '',
           status: 'approved',
           checklist: {
-            externalClean: true,
-            internalClean: true,
-            carSmell: true,
-            driverAppearance: true,
-            acStatus: true,
-            engineStatus: true,
+            externalClean: 'good',
+            internalClean: 'good',
+            carSmell: 'good',
+            driverAppearance: 'good',
+            acStatus: 'good',
+            engineStatus: 'good',
           },
           attachments: [],
           createdAt: new Date().toISOString(),
