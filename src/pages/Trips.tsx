@@ -20,6 +20,7 @@ import {
   getDataForDate,
   updateSectionData,
   TripChecklist,
+  TripChecklistRating,
   TripEntry,
 } from '@/lib/mockData';
 import {
@@ -94,12 +95,12 @@ const formatDateTime = (value: string) =>
   }).format(new Date(value));
 
 const checklistDefaults: TripChecklist = {
-  externalClean: true,
-  internalClean: true,
-  carSmell: true,
-  driverAppearance: true,
-  acStatus: true,
-  engineStatus: true,
+  externalClean: 'good',
+  internalClean: 'good',
+  carSmell: 'good',
+  driverAppearance: 'good',
+  acStatus: 'good',
+  engineStatus: 'good',
 };
 
 const bookingSources = ['تطبيق المطار', 'نسك', 'تطبيق واثق (مباشر)', 'B2B'];
@@ -117,6 +118,16 @@ const IMPORTANT_CHECKLIST_KEYS = new Set<ChecklistKey>([
   'carSmell',
   'driverAppearance',
 ]);
+
+const checklistRatingOptions: Array<{
+  value: TripChecklistRating;
+  label: string;
+  className: string;
+}> = [
+  { value: 'bad', label: 'سيء', className: 'bg-red-50 text-red-700 border-red-200' },
+  { value: 'normal', label: 'عادي', className: 'bg-gray-50 text-gray-700 border-gray-200' },
+  { value: 'good', label: 'جيد', className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+];
 
 const MAX_PHOTOS = 6;
 
@@ -190,7 +201,9 @@ export const Trips: React.FC = () => {
     });
   };
 
-  const isChecklistClean = Object.values(checklist).every(Boolean);
+  const isChecklistClean = Object.values(checklist).every(
+    (value) => value === 'good'
+  );
   const previewStatus =
     isChecklistClean && form.supervisorRating >= 3 ? 'approved' : 'warning';
 
@@ -201,7 +214,10 @@ export const Trips: React.FC = () => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleChecklistToggle = (key: keyof TripChecklist, value: boolean) => {
+  const handleChecklistRatingChange = (
+    key: ChecklistKey,
+    value: TripChecklistRating
+  ) => {
     setChecklist((prev) => ({ ...prev, [key]: value }));
   };
 
@@ -740,44 +756,52 @@ export const Trips: React.FC = () => {
         <CardContent className="grid gap-4 md:grid-cols-2">
           {ARABIC_TRIPS_MESSAGES.CHECKLIST_ITEMS.map((item) => {
             const important = IMPORTANT_CHECKLIST_KEYS.has(item.key);
-            const isChecked = checklist[item.key];
+            const selectedRating = checklist[item.key];
             return (
               <div
                 key={item.key}
                 className={cn(
-                  'flex items-start justify-between rounded-xl border p-4 transition-colors',
+                  'flex flex-col gap-3 rounded-xl border p-4 transition-colors',
                   important
                     ? 'bg-amber-50 border-amber-300'
                     : 'bg-muted/40 border-border'
                 )}
               >
-                <div className="pr-3">
-                  <p className="font-semibold flex items-center gap-2">
-                    {item.title}
-                    {important && (
-                      <span className="text-xs font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
-                        مهم
-                      </span>
-                    )}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {item.description}
-                  </p>
+                <div className="flex items-start justify-between gap-4">
+                  <div className="pr-3">
+                    <p className="font-semibold flex items-center gap-2">
+                      {item.title}
+                      {important && (
+                        <span className="text-xs font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
+                          مهم
+                        </span>
+                      )}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {item.description}
+                    </p>
+                  </div>
                 </div>
-                <Button
-                  type="button"
-                  variant={isChecked ? 'default' : 'outline'}
-                  className={cn(
-                    'min-w-[130px]',
-                    isChecked
-                      ? 'bg-emerald-600 hover:bg-emerald-500'
-                      : 'border-destructive text-destructive hover:bg-destructive/10',
-                    important && !isChecked && 'border-amber-500 text-amber-600'
-                  )}
-                  onClick={() => handleChecklistToggle(item.key, !isChecked)}
-                >
-                  {isChecked ? 'جاهز' : 'يوجد ملاحظة'}
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  {checklistRatingOptions.map((rating) => (
+                    <Button
+                      key={rating.value}
+                      type="button"
+                      variant={selectedRating === rating.value ? 'default' : 'outline'}
+                      className={cn(
+                        'min-w-[110px] border text-sm',
+                        rating.className,
+                        selectedRating === rating.value &&
+                          'ring-2 ring-offset-2 ring-primary text-white'
+                      )}
+                      onClick={() =>
+                        handleChecklistRatingChange(item.key, rating.value)
+                      }
+                    >
+                      {rating.label}
+                    </Button>
+                  ))}
+                </div>
               </div>
             );
           })}
