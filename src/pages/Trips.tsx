@@ -12,7 +12,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { useDateContext } from '@/contexts/DateContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -29,7 +28,7 @@ import {
   OfflineTripRecord,
   TripReportInput,
 } from '@/services/TripService';
-import { ARABIC_TRIPS_MESSAGES } from '@/lib/arabicTripsMessages';
+import { ARABIC_TRIPS_MESSAGES, ChecklistKey } from '@/lib/arabicTripsMessages';
 import { cn } from '@/lib/utils';
 import {
   AlertCircle,
@@ -43,6 +42,7 @@ import {
   Trash2,
   Upload,
 } from 'lucide-react';
+import { format } from 'date-fns';
 
 interface SelectedPhoto {
   id: string;
@@ -60,12 +60,31 @@ const createId = () =>
     ? crypto.randomUUID()
     : Math.random().toString(36).slice(2, 10);
 
-const generateBookingId = () => {
-  const now = new Date();
-  const yy = now.getFullYear().toString().slice(-2);
-  const mm = `${now.getMonth() + 1}`.padStart(2, '0');
-  const seq = `${Math.floor(1000 + Math.random() * 9000)}`;
+const parseSequenceFromBookingId = (bookingId?: string) => {
+  if (!bookingId) return 0;
+  const match = bookingId.match(/WTH-\d{2}-\d{2}-(\d{4})$/);
+  return match ? parseInt(match[1], 10) : 0;
+};
+
+const buildBookingId = (date: Date, sequence: number) => {
+  const yy = format(date, 'yy');
+  const mm = format(date, 'MM');
+  const seq = sequence.toString().padStart(4, '0');
   return `${BOOKING_PREFIX}-${yy}-${mm}-${seq}`;
+};
+
+const computeNextSequence = (
+  entries: TripEntry[],
+  queueRecords: OfflineTripRecord[]
+) => {
+  const sequences = [
+    ...entries.map((entry) => parseSequenceFromBookingId(entry.bookingId)),
+    ...queueRecords.map((record) =>
+      parseSequenceFromBookingId(record.payload.bookingId)
+    ),
+  ];
+  const maxSeq = sequences.length ? Math.max(...sequences) : 0;
+  return maxSeq + 1;
 };
 
 const formatDateTime = (value: string) =>
@@ -86,6 +105,19 @@ const checklistDefaults: TripChecklist = {
 const bookingSources = ['تطبيق المطار', 'نسك', 'تطبيق واثق (مباشر)', 'B2B'];
 const suppliers = ['ديار مكة', 'المنهاج', 'أسطول واثق', 'أخرى'];
 
+const ratingOptions = [
+  { value: 1, label: '⭐ سيء' },
+  { value: 2, label: '⭐⭐ ضعيف' },
+  { value: 3, label: '⭐⭐⭐ مقبول' },
+  { value: 4, label: '⭐⭐⭐⭐ جيد' },
+  { value: 5, label: '⭐⭐⭐⭐⭐ ممتاز' },
+];
+
+const IMPORTANT_CHECKLIST_KEYS = new Set<ChecklistKey>([
+  'carSmell',
+  'driverAppearance',
+]);
+
 const MAX_PHOTOS = 6;
 
 export const Trips: React.FC = () => {
@@ -94,7 +126,7 @@ export const Trips: React.FC = () => {
   const { addNotification } = useNotifications();
   const { toast } = useToast();
 
-  const [bookingId, setBookingId] = useState(generateBookingId());
+  const [bookingSequence, setBookingSequence] = useState(1);
   const [form, setForm] = useState({
     sourceRef: '',
     bookingSource: '',
@@ -117,15 +149,30 @@ export const Trips: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
 
+  const bookingId = useMemo(
+    () => buildBookingId(currentDate, bookingSequence),
+    [currentDate, bookingSequence]
+  );
+
   const currentDateStr = useMemo(
     () => currentDate.toISOString().split('T')[0],
     [currentDate]
   );
 
+  const updateNextBookingSequence = (
+    entriesSnapshot: TripEntry[],
+    queueSnapshot: OfflineTripRecord[]
+  ) => {
+    setBookingSequence(computeNextSequence(entriesSnapshot, queueSnapshot));
+  };
+
   useEffect(() => {
     const data = getDataForDate(currentDate);
-    setTrips(data.trips.entries || []);
-    setQueue(TripService.loadQueue());
+    const entries = data.trips.entries || [];
+    const storedQueue = TripService.loadQueue();
+    setTrips(entries);
+    setQueue(storedQueue);
+    updateNextBookingSequence(entries, storedQueue);
   }, [currentDate]);
 
   useEffect(() => {
@@ -228,7 +275,6 @@ export const Trips: React.FC = () => {
     setChecklist(checklistDefaults);
     selectedPhotos.forEach((photo) => URL.revokeObjectURL(photo.previewUrl));
     setSelectedPhotos([]);
-    setBookingId(generateBookingId());
   };
 
   const formIsValid =
@@ -330,6 +376,7 @@ export const Trips: React.FC = () => {
     let updatedEntries = [...trips, newEntry];
     setTrips(updatedEntries);
     persistTripsSection(updatedEntries, queue.length);
+    updateNextBookingSequence(updatedEntries, queue);
 
     const offlineRecord: OfflineTripRecord = {
       id: newEntry.id,
@@ -342,6 +389,7 @@ export const Trips: React.FC = () => {
     const handleQueueUpdate = (records: OfflineTripRecord[]) => {
       setQueue(records);
       persistTripsSection(updatedEntries, records.length);
+      updateNextBookingSequence(updatedEntries, records);
     };
 
     if (!navigator.onLine) {
@@ -375,6 +423,7 @@ export const Trips: React.FC = () => {
       );
       setTrips(updatedEntries);
       persistTripsSection(updatedEntries, queue.length);
+      updateNextBookingSequence(updatedEntries, queue);
 
       toast({
         title: 'تم الإرسال',
@@ -399,6 +448,7 @@ export const Trips: React.FC = () => {
       );
       setTrips(updatedEntries);
       persistTripsSection(updatedEntries, updatedQueue.length);
+      updateNextBookingSequence(updatedEntries, updatedQueue);
 
       toast({
         title: 'تعذر الإرسال',
@@ -446,6 +496,7 @@ export const Trips: React.FC = () => {
     );
     setTrips(syncedEntries);
     persistTripsSection(syncedEntries, records.length);
+    updateNextBookingSequence(syncedEntries, records);
 
     if (result.failed === 0) {
       toast({
@@ -556,16 +607,11 @@ export const Trips: React.FC = () => {
           <div className="grid gap-4 md:grid-cols-2">
             <div>
               <Label>{ARABIC_TRIPS_MESSAGES.BOOKING_ID_LABEL}</Label>
-              <div className="flex gap-2 mt-2">
-                <Input value={bookingId} readOnly />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setBookingId(generateBookingId())}
-                >
-                  <RefreshCw className="w-4 h-4" />
-                </Button>
-              </div>
+              <Input
+                value={bookingId}
+                readOnly
+                className="mt-2 text-base font-semibold tracking-[0.2em]"
+              />
             </div>
             <div>
               <Label>{ARABIC_TRIPS_MESSAGES.SOURCE_REF_LABEL}</Label>
@@ -692,23 +738,49 @@ export const Trips: React.FC = () => {
           </p>
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-2">
-          {ARABIC_TRIPS_MESSAGES.CHECKLIST_ITEMS.map((item) => (
-            <div
-              key={item.key}
-              className="flex items-start justify-between rounded-xl border p-4 bg-muted/40"
-            >
-              <div>
-                <p className="font-semibold">{item.title}</p>
-                <p className="text-sm text-muted-foreground">{item.description}</p>
+          {ARABIC_TRIPS_MESSAGES.CHECKLIST_ITEMS.map((item) => {
+            const important = IMPORTANT_CHECKLIST_KEYS.has(item.key);
+            const isChecked = checklist[item.key];
+            return (
+              <div
+                key={item.key}
+                className={cn(
+                  'flex items-start justify-between rounded-xl border p-4 transition-colors',
+                  important
+                    ? 'bg-amber-50 border-amber-300'
+                    : 'bg-muted/40 border-border'
+                )}
+              >
+                <div className="pr-3">
+                  <p className="font-semibold flex items-center gap-2">
+                    {item.title}
+                    {important && (
+                      <span className="text-xs font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
+                        مهم
+                      </span>
+                    )}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {item.description}
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant={isChecked ? 'default' : 'outline'}
+                  className={cn(
+                    'min-w-[130px]',
+                    isChecked
+                      ? 'bg-emerald-600 hover:bg-emerald-500'
+                      : 'border-destructive text-destructive hover:bg-destructive/10',
+                    important && !isChecked && 'border-amber-500 text-amber-600'
+                  )}
+                  onClick={() => handleChecklistToggle(item.key, !isChecked)}
+                >
+                  {isChecked ? 'جاهز' : 'يوجد ملاحظة'}
+                </Button>
               </div>
-              <Switch
-                checked={checklist[item.key]}
-                onCheckedChange={(value) =>
-                  handleChecklistToggle(item.key, value)
-                }
-              />
-            </div>
-          ))}
+            );
+          })}
         </CardContent>
       </Card>
 
@@ -794,16 +866,26 @@ export const Trips: React.FC = () => {
             </div>
             <div>
               <Label>{ARABIC_TRIPS_MESSAGES.SUPERVISOR_RATING_LABEL}</Label>
-              <Input
-                type="number"
-                className="mt-2"
-                min={1}
-                max={5}
-                value={form.supervisorRating}
-                onChange={(e) =>
-                  handleInputChange('supervisorRating', Number(e.target.value))
+              <Select
+                value={String(form.supervisorRating)}
+                onValueChange={(value) =>
+                  handleInputChange('supervisorRating', Number(value))
                 }
-              />
+              >
+                <SelectTrigger className="mt-2">
+                  <SelectValue placeholder="اختر التقييم" />
+                </SelectTrigger>
+                <SelectContent>
+                  {ratingOptions.map((option) => (
+                    <SelectItem
+                      key={option.value}
+                      value={String(option.value)}
+                    >
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <div>
