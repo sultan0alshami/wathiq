@@ -7,6 +7,7 @@ export const STORAGE_KEYS = {
   LAST_BACKUP: 'wathiq_last_backup',
   LAST_CLEAR: 'wathiq_last_clear',
   NOTIFICATIONS: 'wathiq_data_notifications',
+  TRIPS_QUEUE: 'wathiq_trips_queue',
 } as const;
 
 

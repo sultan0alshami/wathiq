@@ -9,7 +9,7 @@
 
 ## 📊 **System Overview**
 
-The Wathiq Transport Management System is now **fully operational** with all critical issues resolved. The application provides comprehensive business management capabilities including financial tracking, sales management, operations monitoring, marketing tools, customer relations, supplier management, and advanced reporting.
+The Wathiq Transport Management System is now **fully operational** with all critical issues resolved. The application provides comprehensive business management capabilities including financial tracking, sales management, operations monitoring, marketing tools, customer relations, supplier management, advanced reporting, **and the new Trips command center for daily field operations**.
 
 ---
 
@@ -32,6 +32,7 @@ The Wathiq Transport Management System is now **fully operational** with all cri
 3. **✅ Package Lock Sync** - Updated `package-lock.json` to sync with new dependencies
 4. **✅ Static File Serving** - Added Express static file serving for React app
 5. **✅ Express Routing** - Fixed wildcard route syntax using `app.use()` middleware
+6. **🆕 Trips Module** - Added Wathiq-branded trips section with offline queue + media uploads
 
 ---
 
@@ -67,7 +68,7 @@ The Wathiq Transport Management System is now **fully operational** with all cri
 - **Status**: Fully operational
 - **Features**: Login/logout, role-based access, user management
 - **Security**: Supabase RLS policies implemented
-- **Roles**: Admin, Manager, Employee with proper permissions
+- **Roles**: Admin, Manager, Finance, Sales, Operations, Marketing, Customers, Suppliers, and **Trips Officer (field-only)**
 
 ### ✅ **Financial Management**
 - **Status**: Fully operational
@@ -100,6 +101,12 @@ The Wathiq Transport Management System is now **fully operational** with all cri
 - **Status**: Fully operational
 - **Features**: Supplier database, contract management, performance tracking
 - **Integration**: Connected with procurement and financial modules
+
+### ✅ **Trips & Field Operations**
+- **Status**: Newly launched and fully operational
+- **Features**: Daily trip checklist, multi-image evidence upload, supervisor rating, auto booking IDs
+- **Offline-first**: Works without connectivity with automatic background sync once online
+- **Backend**: Secured `/api/trips/sync` endpoint with Supabase storage + notifications
 
 ### ✅ **Reporting & Analytics**
 - **Status**: Fully operational
@@ -220,6 +227,8 @@ The Wathiq Transport Management System is now **fully operational** with all cri
 - ✅ `marketing_tasks` - Marketing campaign management
 - ✅ `reports` - Report generation and storage
 - ✅ `settings` - Application configuration
+- ✅ `trip_reports` - Field trip metadata + supervisor evaluation
+- ✅ `trip_photos` - Evidence attachments stored in Supabase Storage
 
 ---
 

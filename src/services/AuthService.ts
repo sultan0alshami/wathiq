@@ -53,7 +53,16 @@ export class AuthService {
    * @returns Promise<boolean> - true if user can access
    */
   static async canAccessResource(
-    resourceType: 'finance' | 'sales' | 'operations' | 'marketing' | 'customers' | 'suppliers' | 'dashboard' | 'reports'
+    resourceType:
+      | 'finance'
+      | 'sales'
+      | 'operations'
+      | 'marketing'
+      | 'customers'
+      | 'suppliers'
+      | 'dashboard'
+      | 'reports'
+      | 'trips'
   ): Promise<boolean> {
     const roleMap: Record<string, string[]> = {
       dashboard: ['admin', 'manager', 'finance', 'sales', 'operations', 'marketing'],
@@ -64,6 +73,7 @@ export class AuthService {
       marketing: ['admin', 'manager', 'marketing'],
       customers: ['admin', 'manager', 'sales', 'marketing'],
       suppliers: ['admin', 'manager', 'finance', 'operations'],
+      trips: ['admin', 'manager', 'operations', 'trips'],
     };
 
     return this.verifyUserRole(roleMap[resourceType] || []);
@@ -77,7 +87,16 @@ export class AuthService {
    * @throws Error if unauthorized
    */
   static async requireAccess(
-    resourceType: 'finance' | 'sales' | 'operations' | 'marketing' | 'customers' | 'suppliers' | 'dashboard' | 'reports'
+    resourceType:
+      | 'finance'
+      | 'sales'
+      | 'operations'
+      | 'marketing'
+      | 'customers'
+      | 'suppliers'
+      | 'dashboard'
+      | 'reports'
+      | 'trips'
   ): Promise<void> {
     const canAccess = await this.canAccessResource(resourceType);
     

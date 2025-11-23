@@ -3,7 +3,7 @@
 -- Table: public.user_roles
 create table if not exists public.user_roles (
   user_id uuid primary key references auth.users(id) on delete cascade,
-  role text not null check (role in ('admin','manager','finance','sales','operations','marketing')),
+  role text not null check (role in ('admin','manager','finance','sales','operations','marketing','customers','suppliers','trips')),
   name text
 );
 

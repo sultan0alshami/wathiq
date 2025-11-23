@@ -1,19 +1,20 @@
 import React from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, 
-  FileText, 
-  DollarSign, 
-  TrendingUp, 
-  Settings2, 
-  Megaphone, 
-  Users, 
+  LayoutDashboard,
+  FileText,
+  DollarSign,
+  TrendingUp,
+  Settings2,
+  Megaphone,
+  Users,
   BarChart3,
   Download,
   Building2,
   LogOut,
   User,
-  X
+  X,
+  MapPin,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -32,6 +33,7 @@ const navigationItems = [
   { name: 'التسويق', path: 'marketing', icon: Megaphone, permission: 'marketing' },
   { name: 'العملاء', path: 'customers', icon: Users, permission: 'customers' },
   { name: 'الموردين', path: 'suppliers', icon: Building2, permission: 'suppliers' },
+  { name: 'الرحلات', path: 'trips', icon: MapPin, permission: 'trips' },
   { name: 'الرسوم البيانية', path: 'charts', icon: BarChart3, permission: 'charts' },
   { name: 'تحميل التقارير', path: 'download', icon: Download, permission: 'canExport' },
 ];

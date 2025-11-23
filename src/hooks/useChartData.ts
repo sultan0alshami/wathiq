@@ -23,6 +23,7 @@ export interface SectionSubmissionData {
   العمليات: boolean;
   التسويق: boolean;
   العملاء: boolean;
+  الرحلات: boolean;
 }
 
 export const useChartData = (days: number = 30) => {
@@ -166,7 +167,8 @@ export const useChartData = (days: number = 30) => {
           المبيعات: dailyData.sales.entries.length > 0,
           العمليات: dailyData.operations.entries.length > 0,
           التسويق: dailyData.marketing.tasks.length > 0,
-          العملاء: dailyData.customers.length > 0
+          العملاء: dailyData.customers.length > 0,
+          الرحلات: dailyData.trips.entries.length > 0,
         };
       });
     } catch (err) {

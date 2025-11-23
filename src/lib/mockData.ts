@@ -78,6 +78,11 @@ export interface DailyData {
     yesterdayDone: { id: string; title: string }[];
     plannedTasks: { id: string; title: string }[];
   };
+  trips: {
+    totalTrips: number;
+    entries: TripEntry[];
+    pendingSync: number;
+  };
   customers: Customer[];
   suppliers?: Supplier[];
 }
@@ -103,6 +108,52 @@ export interface SupplierDocument {
   url: string;
   uploadDate: Date;
   description?: string;
+}
+
+export type TripSyncStatus = 'pending' | 'synced' | 'failed';
+
+export interface TripChecklist {
+  externalClean: boolean;
+  internalClean: boolean;
+  carSmell: boolean;
+  driverAppearance: boolean;
+  acStatus: boolean;
+  engineStatus: boolean;
+}
+
+export interface TripAttachment {
+  id: string;
+  name: string;
+  size: number;
+  mimeType: string;
+  storagePath?: string;
+  previewUrl?: string;
+}
+
+export interface TripEntry {
+  id: string;
+  bookingId: string;
+  date: string;
+  sourceRef: string;
+  bookingSource: string;
+  supplier: string;
+  clientName: string;
+  driverName: string;
+  carType: string;
+  parkingLocation: string;
+  pickupPoint: string;
+  dropoffPoint: string;
+  supervisorName: string;
+  supervisorRating: number;
+  supervisorNotes?: string;
+  passengerFeedback?: string;
+  status: 'approved' | 'warning';
+  checklist: TripChecklist;
+  attachments: TripAttachment[];
+  createdAt: string;
+  createdBy?: string;
+  syncStatus: TripSyncStatus;
+  lastSyncAttempt?: string;
 }
 
 // Generate mock data for a specific date
@@ -265,6 +316,43 @@ export const generateMockDataForDate = (date: Date): DailyData => {
         { id: 'mkt-6', title: 'إعداد ورشة عمل للعملاء' }
       ]
     },
+    trips: {
+      totalTrips: 1,
+      pendingSync: 0,
+      entries: [
+        {
+          id: `trip-${dateStr}-1`,
+          bookingId: `WTH-${format(date, 'yy-MM')}-${Math.floor(1000 + Math.random() * 9000)}`,
+          date: dateStr,
+          sourceRef: '2499301',
+          bookingSource: 'تطبيق واثق (مباشر)',
+          supplier: 'أسطول واثق',
+          clientName: 'عبدالله العتيبي',
+          driverName: 'سالم الحربي',
+          carType: 'جمس يوكن 2024',
+          parkingLocation: 'V12 - الدور الأول',
+          pickupPoint: 'صالة 1 - بوابة 4',
+          dropoffPoint: 'فندق ساعة مكة',
+          supervisorName: 'عبدالله العتيبي',
+          supervisorRating: 5,
+          supervisorNotes: 'تم التحقق من جميع التفاصيل والمركبة جاهزة',
+          passengerFeedback: '',
+          status: 'approved',
+          checklist: {
+            externalClean: true,
+            internalClean: true,
+            carSmell: true,
+            driverAppearance: true,
+            acStatus: true,
+            engineStatus: true,
+          },
+          attachments: [],
+          createdAt: new Date().toISOString(),
+          createdBy: undefined,
+          syncStatus: 'synced',
+        }
+      ]
+    },
     customers: [
       {
         id: `cust-${dateStr}-1`,
@@ -352,6 +440,11 @@ export const getEmptyDataForDate = (date: Date): DailyData => {
       tasks: [],
       yesterdayDone: [],
       plannedTasks: []
+    },
+    trips: {
+      totalTrips: 0,
+      entries: [],
+      pendingSync: 0,
     },
     customers: [],
     suppliers: []

@@ -147,6 +147,6 @@
 - **Technical Support**: Create GitHub issues
 - **Documentation**: See README.md and API_DOCUMENTATION.md
 - **Deployment**: See DEPLOYMENT_GUIDE.md
-- **Email**: support@wathiq.com
+- **Email**: sultan12alshami@gmail.com
 
 **🎯 Status**: ✅ **PRODUCTION READY** - All systems go for launch!

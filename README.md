@@ -25,6 +25,7 @@ A comprehensive business management platform built with React, TypeScript, and S
 - **Marketing**: Marketing campaigns and task management
 - **Customers**: Customer relationship management
 - **Suppliers**: Supplier management and tracking
+- **Trips**: Field operations log with checklist + media uploads
 - **Reports**: Comprehensive business reporting
 - **Charts**: Data visualization and analytics
 - **Download Center**: Document and report downloads
@@ -35,6 +36,7 @@ A comprehensive business management platform built with React, TypeScript, and S
 - **PDF Generation**: Automated report generation
 - **Multi-language Support**: Arabic interface with RTL support
 - **Role-based Access**: Admin and Manager user roles
+- **Offline Trips Queue**: Capture trips offline and auto-sync when connected
 - **Secure Authentication**: Supabase Auth integration
 - **Database Integration**: Full Supabase backend integration
 
@@ -54,6 +56,7 @@ A comprehensive business management platform built with React, TypeScript, and S
 - **Node.js** for PDF generation service
 - **PostgreSQL** database
 - **Row Level Security (RLS)** for data protection
+- **/api/trips/sync** API for secure media uploads + notifications
 
 ### Deployment
 - **Render** for hosting (Full-stack deployment)
@@ -100,6 +103,10 @@ Create a `.env.local` file in the root directory:
 ```env
 VITE_SUPABASE_URL=your_supabase_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+VITE_TRIPS_API_URL=/api/trips/sync
+SUPABASE_SERVICE_URL=your_supabase_url
+SUPABASE_SERVICE_KEY=your_service_role_key
+TRIPS_BUCKET=trip-evidence
 ```
 
 ### 4. Database Setup
@@ -108,6 +115,7 @@ Run the SQL scripts in the `supabase/` directory in order:
 2. `002_notifications.sql` - Notifications setup
 3. `005_safe_business_data_tables.sql` - Business data tables
 4. `006_safe_rls_policies.sql` - Security policies
+5. `008_trip_reports.sql` - Trips schema (reports/photos/RLS)
 
 ### 5. Start Development Server
 ```bash
@@ -176,10 +184,16 @@ docker run -p 8080:8080 wathiq-transport
 
 - **Row Level Security (RLS)** enabled on all tables
 - **Authentication** via Supabase Auth
-- **Role-based access control** (Admin/Manager)
+- **Role-based access control** (Admin/Manager/Trips Officer + domain roles)
 - **Input validation** with Zod schemas
 - **XSS protection** with DOMPurify
 - **CSRF protection** via Supabase
+
+## 👤 Trips Officer Onboarding
+
+- Recommended Abwaab field account: `hani.bakhash@abwaab.sa`
+- Default role: `trips` (access to Trips module only)
+- See `Documentation/TRIPS_OFFICER_CREDENTIALS.md` for full setup and SQL snippet
 
 ## 📱 Mobile Support
 
