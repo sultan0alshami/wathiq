@@ -344,12 +344,12 @@ const tripSyncHandler = async (req, res) => {
 
     const tripId = trip.id || crypto.randomUUID();
     const cleanedChecklist = {
-      externalClean: !!trip.checklist?.externalClean,
-      internalClean: !!trip.checklist?.internalClean,
-      carSmell: !!trip.checklist?.carSmell,
-      driverAppearance: !!trip.checklist?.driverAppearance,
-      acStatus: !!trip.checklist?.acStatus,
-      engineStatus: !!trip.checklist?.engineStatus,
+      externalClean: trip.checklist?.externalClean || 'bad',
+      internalClean: trip.checklist?.internalClean || 'bad',
+      carSmell: trip.checklist?.carSmell || 'bad',
+      driverAppearance: trip.checklist?.driverAppearance || 'bad',
+      acStatus: trip.checklist?.acStatus || 'bad',
+      engineStatus: trip.checklist?.engineStatus || 'bad',
     };
 
     const uploadedPhotos = [];
