@@ -123,10 +123,26 @@ const checklistRatingOptions: Array<{
   value: TripChecklistRating;
   label: string;
   className: string;
+  selectedClassName: string;
 }> = [
-  { value: 'bad', label: 'سيء', className: 'bg-red-50 text-red-700 border-red-200' },
-  { value: 'normal', label: 'عادي', className: 'bg-gray-50 text-gray-700 border-gray-200' },
-  { value: 'good', label: 'جيد', className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  {
+    value: 'bad',
+    label: 'سيء',
+    className: 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100',
+    selectedClassName: 'bg-red-600 text-white border-red-600 hover:bg-red-500',
+  },
+  {
+    value: 'normal',
+    label: 'عادي',
+    className: 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100',
+    selectedClassName: 'bg-slate-600 text-white border-slate-600 hover:bg-slate-500',
+  },
+  {
+    value: 'good',
+    label: 'جيد',
+    className: 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100',
+    selectedClassName: 'bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-500',
+  },
 ];
 
 const MAX_PHOTOS = 6;
@@ -787,12 +803,12 @@ export const Trips: React.FC = () => {
                     <Button
                       key={rating.value}
                       type="button"
-                      variant={selectedRating === rating.value ? 'default' : 'outline'}
+                      variant="outline"
                       className={cn(
-                        'min-w-[110px] border text-sm',
-                        rating.className,
-                        selectedRating === rating.value &&
-                          'ring-2 ring-offset-2 ring-primary text-white'
+                        'min-w-[120px] border text-sm transition-all shadow-sm',
+                        selectedRating === rating.value
+                          ? rating.selectedClassName
+                          : rating.className
                       )}
                       onClick={() =>
                         handleChecklistRatingChange(item.key, rating.value)
