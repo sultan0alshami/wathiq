@@ -183,7 +183,7 @@ export class DataBackupService {
     }
 
     // Check top-level sections
-    const requiredSections = ['finance', 'sales', 'operations', 'marketing', 'customers'];
+    const requiredSections = ['finance', 'sales', 'operations', 'marketing', 'trips', 'customers'];
     for (const section of requiredSections) {
       if (!data[section] || typeof data[section] !== 'object') {
         console.warn(`Invalid day data: missing or malformed section: ${section}`, data);
@@ -209,6 +209,17 @@ export class DataBackupService {
 
     if (!Array.isArray(data.marketing.tasks) || !Array.isArray(data.marketing.yesterdayDone) || !Array.isArray(data.marketing.plannedTasks)) {
       console.warn('Invalid day data: marketing section malformed', data);
+      return false;
+    }
+
+    if (
+      !data.trips ||
+      typeof data.trips !== 'object' ||
+      !Array.isArray(data.trips.entries) ||
+      typeof data.trips.totalTrips !== 'number' ||
+      typeof data.trips.pendingSync !== 'number'
+    ) {
+      console.warn('Invalid day data: trips section malformed', data);
       return false;
     }
 

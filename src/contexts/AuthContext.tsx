@@ -72,7 +72,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const inferRoleFromEmail = (email: string): UserRole => {
     const prefix = (email.split('@')[0] || '').toLowerCase();
-    const candidates: UserRole[] = ['admin', 'manager', 'finance', 'sales', 'operations', 'marketing', 'customers', 'suppliers'];
+    const candidates: UserRole[] = [
+      'admin',
+      'manager',
+      'finance',
+      'sales',
+      'operations',
+      'marketing',
+      'customers',
+      'suppliers',
+      'trips',
+    ];
     return (candidates.includes(prefix as UserRole) ? (prefix as UserRole) : 'marketing');
   };
 
@@ -88,6 +98,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Fetch user name from database using the correct column structure
       let displayName = email; // Default fallback
       
+      let resolvedRole = emailRole;
       try {
           console.log('[AuthContext] Fetching name from user_roles table using user_id column...');
         
@@ -98,15 +109,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Query user_roles table using regular client
         const dbPromise = supabase
           .from('user_roles')
-          .select('name')
+          .select('name, role')
           .eq('user_id', userId)
           .single();
           
         const { data: userData, error: dbError } = await Promise.race([dbPromise, timeoutPromise]) as any;
         
-        if (!dbError && userData?.name) {
-          displayName = userData.name;
-          console.log('[AuthContext] Successfully fetched name from database:', displayName);
+        if (!dbError && userData) {
+          if (userData.name) {
+            displayName = userData.name;
+            console.log('[AuthContext] Successfully fetched name from database:', displayName);
+          }
+          if (userData.role) {
+            resolvedRole = userData.role as UserRole;
+            console.log('[AuthContext] Role resolved from database:', resolvedRole);
+          }
         } else {
           console.warn('[AuthContext] Database query failed:', dbError?.message || 'No data found');
         }
@@ -118,10 +135,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         }
       
-      setRole(emailRole);
+      setRole(resolvedRole);
       setUserName(displayName);
-      setPermissions(getUserPermissions(emailRole));
-      console.log('[AuthContext] Set role from email:', emailRole, 'Display name:', displayName);
+      setPermissions(getUserPermissions(resolvedRole));
+      console.log('[AuthContext] Set role:', resolvedRole, 'Display name:', displayName);
     } catch (error) {
       console.error('[AuthContext] Error setting email role:', error);
       // Fallback to admin role

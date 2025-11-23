@@ -5,11 +5,13 @@ const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs').promises; // Import fs.promises for async file operations
 const cron = require('node-cron');
+const crypto = require('crypto');
 const { createClient } = require('@supabase/supabase-js');
 const fetch = require('node-fetch'); // Use node-fetch explicitly
 
 // Initialize Supabase client for notifications with custom fetch
 let supabase = null;
+const TRIP_BUCKET = process.env.TRIPS_BUCKET || 'trip-evidence';
 if (process.env.SUPABASE_SERVICE_URL && process.env.SUPABASE_SERVICE_KEY) {
   supabase = createClient(
     process.env.SUPABASE_SERVICE_URL,
@@ -27,6 +29,29 @@ if (process.env.SUPABASE_SERVICE_URL && process.env.SUPABASE_SERVICE_KEY) {
   console.log('[Backend] ✅ Supabase client initialized with node-fetch');
 } else {
   console.warn('[Backend] ⚠️ Supabase credentials not found in environment');
+}
+
+let tripBucketEnsured = false;
+async function ensureTripBucket() {
+  if (!supabase || tripBucketEnsured) return;
+  try {
+    const { data, error } = await supabase.storage.getBucket(TRIP_BUCKET);
+    if (error && error.message && !error.message.includes('not found')) {
+      throw error;
+    }
+    if (!data) {
+      const { error: createError } = await supabase.storage.createBucket(TRIP_BUCKET, {
+        public: false,
+        fileSizeLimit: 10 * 1024 * 1024, // 10MB ceiling per photo
+      });
+      if (createError && !createError.message?.includes('already exists')) {
+        throw createError;
+      }
+    }
+    tripBucketEnsured = true;
+  } catch (bucketError) {
+    console.error('[Backend] ❌ Failed to ensure trip bucket:', bucketError.message || bucketError);
+  }
 }
 
 // WhatsApp Cloud API config via environment variables
@@ -138,7 +163,10 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 app.options('/generate-pdf', cors(corsOptions));
-app.use(express.json());
+app.options('/api/trips/sync', cors(corsOptions));
+app.options('/trips/sync', cors(corsOptions));
+app.use(express.json({ limit: '25mb' }));
+app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 
 // Simple in-memory rate limiting (per IP)
 const rateWindowMs = 15 * 60 * 1000; // 15 minutes
@@ -295,6 +323,154 @@ app.post('/generate-pdf', rateLimitMiddleware, async (req, res) => {
     }
   }
 });
+
+const tripSyncHandler = async (req, res) => {
+  if (!supabase) {
+    return res.status(500).json({ message: 'Supabase service credentials are missing' });
+  }
+
+  const { trip, attachments } = req.body || {};
+
+  if (!trip) {
+    return res.status(400).json({ message: 'بيانات الرحلة مفقودة' });
+  }
+
+  if (!Array.isArray(attachments) || attachments.length === 0) {
+    return res.status(400).json({ message: 'يلزم صورة واحدة على الأقل لإرسال التقرير' });
+  }
+
+  try {
+    await ensureTripBucket();
+
+    const tripId = trip.id || crypto.randomUUID();
+    const cleanedChecklist = {
+      externalClean: !!trip.checklist?.externalClean,
+      internalClean: !!trip.checklist?.internalClean,
+      carSmell: !!trip.checklist?.carSmell,
+      driverAppearance: !!trip.checklist?.driverAppearance,
+      acStatus: !!trip.checklist?.acStatus,
+      engineStatus: !!trip.checklist?.engineStatus,
+    };
+
+    const uploadedPhotos = [];
+
+    for (const photo of attachments) {
+      if (!photo || typeof photo.base64 !== 'string') continue;
+      const base64Payload = photo.base64.includes(',')
+        ? photo.base64.split(',').pop()
+        : photo.base64;
+      if (!base64Payload) continue;
+
+      const buffer = Buffer.from(base64Payload, 'base64');
+      if (!buffer.length) continue;
+
+      const originalName = photo.name || `evidence-${photo.id || Date.now()}.jpg`;
+      const extension = path.extname(originalName) || '.jpg';
+      const safeFileName = originalName.replace(/[^a-zA-Z0-9_\-\.]/g, '_') || `photo_${Date.now()}${extension}`;
+      const storageFileName = `${Date.now()}-${photo.id || crypto.randomUUID()}${extension}`;
+      const storagePath = `trip-reports/${tripId}/${storageFileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from(TRIP_BUCKET)
+        .upload(storagePath, buffer, {
+          contentType: photo.mimeType || photo.type || 'image/jpeg',
+          upsert: false,
+        });
+
+      if (uploadError) {
+        console.error('[Trips Sync] Upload failed:', uploadError);
+        throw uploadError;
+      }
+
+      uploadedPhotos.push({
+        trip_id: tripId,
+        storage_path: storagePath,
+        file_name: originalName || safeFileName,
+        file_size: buffer.length,
+        mime_type: photo.mimeType || photo.type || 'image/jpeg',
+      });
+    }
+
+    if (!uploadedPhotos.length) {
+      return res.status(400).json({ message: 'لم يتم حفظ أي مرفقات. يرجى إعادة المحاولة.' });
+    }
+
+    const tripPayload = {
+      id: tripId,
+      booking_id: trip.bookingId,
+      day_date: trip.date || new Date().toISOString().slice(0, 10),
+      source_ref: trip.sourceRef,
+      booking_source: trip.bookingSource,
+      supplier: trip.supplier,
+      client_name: trip.clientName,
+      driver_name: trip.driverName,
+      car_type: trip.carType,
+      parking_location: trip.parkingLocation,
+      pickup_point: trip.pickupPoint,
+      dropoff_point: trip.dropoffPoint,
+      supervisor_name: trip.supervisorName,
+      supervisor_rating: trip.supervisorRating,
+      supervisor_notes: trip.supervisorNotes,
+      passenger_feedback: trip.passengerFeedback,
+      checklist: cleanedChecklist,
+      status: trip.status || 'approved',
+      photo_count: uploadedPhotos.length,
+      created_by: trip.createdBy || null,
+      sync_source: trip.syncSource || (trip.offline ? 'offline-cache' : 'web'),
+    };
+
+    const { data: insertedTrip, error: tripError } = await supabase
+      .from('trip_reports')
+      .insert(tripPayload)
+      .select()
+      .single();
+
+    if (tripError) {
+      console.error('[Trips Sync] Trip insert failed:', tripError);
+      throw tripError;
+    }
+
+    const { error: photosError } = await supabase
+      .from('trip_photos')
+      .insert(uploadedPhotos);
+
+    if (photosError) {
+      console.error('[Trips Sync] Photos insert failed:', photosError);
+      throw photosError;
+    }
+
+    try {
+      await supabase
+        .from('notifications')
+        .insert({
+          user_id: null,
+          is_broadcast: true,
+          type: 'info',
+          title: '📋 تم تسجيل رحلة جديدة',
+          message: `تم تسجيل رحلة رقم ${trip.bookingId} بواسطة ${trip.supervisorName || 'فريق العمليات'}.`,
+          created_at: new Date().toISOString(),
+        });
+    } catch (notifyError) {
+      console.warn('[Trips Sync] Notification insert warning:', notifyError.message || notifyError);
+    }
+
+    return res.json({
+      success: true,
+      tripId: insertedTrip.id,
+      photosUploaded: uploadedPhotos.length,
+      photos: uploadedPhotos,
+    });
+  } catch (error) {
+    console.error('[Trips Sync] Unexpected error:', error);
+    return res.status(500).json({
+      message: 'حدث خطأ أثناء مزامنة الرحلة',
+      detail: error?.message || 'unknown_error',
+    });
+  }
+};
+
+app.post('/api/trips/sync', rateLimitMiddleware, tripSyncHandler);
+app.post('/trips/sync', rateLimitMiddleware, tripSyncHandler);
 
 // Serve static files from the public directory (React build)
 app.use(express.static(path.join(__dirname, 'public')));

@@ -12,6 +12,7 @@ const Operations = lazy(() => import("./pages/Operations").then(m => ({ default:
 const Marketing = lazy(() => import("./pages/Marketing").then(m => ({ default: m.Marketing })));
 const Customers = lazy(() => import("./pages/Customers").then(m => ({ default: m.Customers })));
 const Suppliers = lazy(() => import("./pages/Suppliers").then(m => ({ default: m.Suppliers })));
+const Trips = lazy(() => import("./pages/Trips").then(m => ({ default: m.Trips })));
 const Reports = lazy(() => import("./pages/Reports").then(m => ({ default: m.Reports })));
 const Charts = lazy(() => import("./pages/Charts").then(m => ({ default: m.Charts })));
 const Download = lazy(() => import("./pages/Download").then(m => ({ default: m.Download })));
@@ -58,6 +59,7 @@ const App = () => (
                          <Route path="finance" element={<Suspense fallback={<TablePageLoading />}><Finance /></Suspense>} />
                          <Route path="sales" element={<Suspense fallback={<TablePageLoading />}><Sales /></Suspense>} />
                          <Route path="operations" element={<Suspense fallback={<TablePageLoading />}><Operations /></Suspense>} />
+                         <Route path="trips" element={<Suspense fallback={<TablePageLoading />}><Trips /></Suspense>} />
                          <Route path="marketing" element={<Suspense fallback={<TablePageLoading />}><Marketing /></Suspense>} />
                          <Route path="customers" element={<Suspense fallback={<TablePageLoading />}><Customers /></Suspense>} />
                          <Route path="suppliers" element={<Suspense fallback={<TablePageLoading />}><Suppliers /></Suspense>} />
@@ -83,6 +85,7 @@ const App = () => (
                          <Route path="finance" element={<Suspense fallback={<TablePageLoading />}><Finance /></Suspense>} />
                          <Route path="sales" element={<Suspense fallback={<TablePageLoading />}><Sales /></Suspense>} />
                          <Route path="operations" element={<Suspense fallback={<TablePageLoading />}><Operations /></Suspense>} />
+                         <Route path="trips" element={<Suspense fallback={<TablePageLoading />}><Trips /></Suspense>} />
                          <Route path="marketing" element={<Suspense fallback={<TablePageLoading />}><Marketing /></Suspense>} />
                          <Route path="customers" element={<Suspense fallback={<TablePageLoading />}><Customers /></Suspense>} />
                          <Route path="suppliers" element={<Suspense fallback={<TablePageLoading />}><Suppliers /></Suspense>} />

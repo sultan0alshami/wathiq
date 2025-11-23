@@ -20,6 +20,7 @@ const pathPermissionMap = {
   '/suppliers': 'suppliers',
   '/charts': 'charts',
   '/download': 'canExport',
+  '/trips': 'trips',
 } as const;
 
 export default function ProtectedRoute({ children }: ProtectedRouteProps) {

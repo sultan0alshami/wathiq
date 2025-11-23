@@ -46,8 +46,10 @@ Plan: Starter (or higher for production)
 ```env
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your_anon_key
+VITE_TRIPS_API_URL=/api/trips/sync
 SUPABASE_SERVICE_URL=https://your-project.supabase.co
 SUPABASE_SERVICE_KEY=your_service_role_key
+TRIPS_BUCKET=trip-evidence
 NODE_ENV=production
 ```
 
@@ -72,6 +74,7 @@ vercel --prod
 Set in Vercel dashboard:
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_ANON_KEY`
+- `VITE_TRIPS_API_URL`
 
 ### Option 3: Docker
 
@@ -87,6 +90,10 @@ docker run -d \
   -p 8080:8080 \
   -e VITE_SUPABASE_URL=your_url \
   -e VITE_SUPABASE_ANON_KEY=your_key \
+  -e VITE_TRIPS_API_URL=/api/trips/sync \
+  -e SUPABASE_SERVICE_URL=your_url \
+  -e SUPABASE_SERVICE_KEY=your_service_role_key \
+  -e TRIPS_BUCKET=trip-evidence \
   abwaab-management
 ```
 
@@ -101,6 +108,10 @@ services:
     environment:
       - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
       - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
+      - VITE_TRIPS_API_URL=/api/trips/sync
+      - SUPABASE_SERVICE_URL=${SUPABASE_SERVICE_URL}
+      - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY}
+      - TRIPS_BUCKET=${TRIPS_BUCKET}
     restart: unless-stopped
 ```
 
@@ -123,6 +134,9 @@ services:
 
 -- 4. Security policies
 \i supabase/006_safe_rls_policies.sql
+
+-- 5. Trips schema + RLS
+\i supabase/008_trip_reports.sql
 ```
 
 ### 2. User Management
@@ -136,6 +150,8 @@ VALUES (
   'admin@wathiq.com'
 );
 ```
+
+> Tip: For field-only accounts (role `trips`), follow `Documentation/TRIPS_OFFICER_CREDENTIALS.md`.
 
 ### 3. RLS Verification
 ```sql
@@ -151,6 +167,7 @@ SELECT * FROM user_roles; -- Should only show user's own data
 ```env
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your_anon_key
+VITE_TRIPS_API_URL=/api/trips/sync
 VITE_APP_ENV=production
 ```
 
@@ -158,6 +175,7 @@ VITE_APP_ENV=production
 ```env
 SUPABASE_SERVICE_URL=https://your-project.supabase.co
 SUPABASE_SERVICE_KEY=your_service_role_key
+TRIPS_BUCKET=trip-evidence
 NODE_ENV=production
 PORT=8080
 ```

@@ -95,10 +95,11 @@ export const ManagerDashboard: React.FC = () => {
     currentData.sales.entries.length > 0,
     currentData.operations.entries.length > 0,
     currentData.marketing.tasks.length > 0,
-    currentData.customers.length > 0
+    currentData.customers.length > 0,
+    currentData.trips.entries.length > 0
   ].filter(Boolean).length;
 
-  const totalSections = 5;
+  const totalSections = 6;
   const dailyIncome = currentData.finance.entries
     .filter(entry => entry.type === 'income')
     .reduce((sum, entry) => sum + entry.amount, 0);
@@ -395,6 +396,7 @@ export const ManagerDashboard: React.FC = () => {
                 <TableHead className="text-right">العمليات</TableHead>
                 <TableHead className="text-right">التسويق</TableHead>
                 <TableHead className="text-right">العملاء</TableHead>
+                <TableHead className="text-right">الرحلات</TableHead>
                 <TableHead className="text-right">الإجراءات</TableHead>
               </TableRow>
             </TableHeader>
@@ -432,6 +434,13 @@ export const ManagerDashboard: React.FC = () => {
                   </TableCell>
                   <TableCell>
                     {item.العملاء ? (
+                      <CheckCircle className="w-4 h-4 text-success" />
+                    ) : (
+                      <AlertCircle className="w-4 h-4 text-destructive" />
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {item.الرحلات ? (
                       <CheckCircle className="w-4 h-4 text-success" />
                     ) : (
                       <AlertCircle className="w-4 h-4 text-destructive" />

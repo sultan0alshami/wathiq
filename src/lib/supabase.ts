@@ -23,7 +23,16 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 });
 
 // User roles and permissions
-export type UserRole = 'admin' | 'manager' | 'finance' | 'sales' | 'operations' | 'marketing' | 'customers' | 'suppliers';
+export type UserRole =
+  | 'admin'
+  | 'manager'
+  | 'finance'
+  | 'sales'
+  | 'operations'
+  | 'marketing'
+  | 'customers'
+  | 'suppliers'
+  | 'trips';
 
 export interface UserPermissions {
   // top-level app
@@ -37,6 +46,7 @@ export interface UserPermissions {
   marketing: boolean;
   customers: boolean;
   suppliers: boolean;
+  trips: boolean;
   canExport: boolean;
   canManage: boolean;
 }
@@ -52,6 +62,7 @@ export const rolePermissions: Record<UserRole, UserPermissions> = {
     marketing: true,
     customers: true,
     suppliers: true,
+    trips: true,
     canExport: true,
     canManage: true,
   },
@@ -66,6 +77,7 @@ export const rolePermissions: Record<UserRole, UserPermissions> = {
     marketing: true,
     customers: true,
     suppliers: true,
+    trips: true,
     canExport: true,
     canManage: false,
   },
@@ -79,6 +91,7 @@ export const rolePermissions: Record<UserRole, UserPermissions> = {
     marketing: false,
     customers: false,
     suppliers: true,
+    trips: false,
     canExport: false,
     canManage: false,
   },
@@ -92,6 +105,7 @@ export const rolePermissions: Record<UserRole, UserPermissions> = {
     marketing: false,
     customers: true,
     suppliers: false,
+    trips: false,
     canExport: false,
     canManage: false,
   },
@@ -105,6 +119,7 @@ export const rolePermissions: Record<UserRole, UserPermissions> = {
     marketing: false,
     customers: false,
     suppliers: true,
+    trips: true,
     canExport: false,
     canManage: false,
   },
@@ -118,6 +133,7 @@ export const rolePermissions: Record<UserRole, UserPermissions> = {
     marketing: true,
     customers: true,
     suppliers: false,
+    trips: false,
     canExport: false,
     canManage: false,
   },
@@ -131,6 +147,7 @@ export const rolePermissions: Record<UserRole, UserPermissions> = {
     marketing: false,
     customers: true,
     suppliers: false,
+    trips: false,
     canExport: false,
     canManage: false,
   },
@@ -144,6 +161,21 @@ export const rolePermissions: Record<UserRole, UserPermissions> = {
     marketing: false,
     customers: false,
     suppliers: true,
+    trips: false,
+    canExport: false,
+    canManage: false,
+  },
+  trips: {
+    dashboard: false,
+    reports: false,
+    charts: false,
+    finance: false,
+    sales: false,
+    operations: false,
+    marketing: false,
+    customers: false,
+    suppliers: false,
+    trips: true,
     canExport: false,
     canManage: false,
   },
@@ -171,6 +203,8 @@ export const getDefaultPathForRole = (role: UserRole): string => {
       return '/manager/customers';
     case 'suppliers':
       return '/manager/suppliers';
+    case 'trips':
+      return '/manager/trips';
     default:
       return '/login';
   }
