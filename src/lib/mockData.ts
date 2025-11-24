@@ -11,12 +11,6 @@ const hijriFormatter = (() => {
   }
 })();
 
-const gregorianFormatter = new Intl.DateTimeFormat('en-GB', {
-  day: 'numeric',
-  month: 'short',
-  year: 'numeric',
-});
-
 const normalizeDate = (value: Date | string): Date => {
   if (value instanceof Date) return value;
   const parsed = new Date(value);
@@ -32,15 +26,31 @@ export const formatHijriDateLabel = (value: Date | string): string => {
   }
 };
 
+const ARABIC_MONTHS = [
+  'يناير',
+  'فبراير',
+  'مارس',
+  'أبريل',
+  'مايو',
+  'يونيو',
+  'يوليو',
+  'أغسطس',
+  'سبتمبر',
+  'أكتوبر',
+  'نوفمبر',
+  'ديسمبر',
+];
+
 export const formatGregorianDateLabel = (value: Date | string): string => {
   try {
-    return format(normalizeDate(value), 'do MMM yyyy');
+    const date = normalizeDate(value);
+    const day = format(date, 'd');
+    const month = ARABIC_MONTHS[date.getMonth()];
+    const year = format(date, 'yyyy');
+    return `${day} ${month} ${year} م`;
   } catch {
-    return normalizeDate(value).toLocaleDateString('en-GB', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    });
+    const date = normalizeDate(value);
+    return `${date.getDate()} ${ARABIC_MONTHS[date.getMonth()]} ${date.getFullYear()} م`;
   }
 };
 
