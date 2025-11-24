@@ -374,6 +374,30 @@ const tripSyncHandler = async (req, res) => {
     await ensureTripBucket();
 
     const tripId = trip.id || crypto.randomUUID();
+    const { data: existingTrip, error: existingTripError } = await supabase
+      .from('trip_reports')
+      .select('id')
+      .eq('id', tripId)
+      .maybeSingle();
+
+    if (existingTripError && existingTripError.code !== 'PGRST116') {
+      console.error('[Trips Sync] Failed to inspect existing trip:', existingTripError);
+      throw existingTripError;
+    }
+
+    const isUpdate = Boolean(existingTrip);
+    let previousPhotoRecords = [];
+    if (isUpdate) {
+      const { data: prevPhotos, error: prevPhotosError } = await supabase
+        .from('trip_photos')
+        .select('id, storage_path')
+        .eq('trip_id', tripId);
+      if (prevPhotosError && prevPhotosError.code !== 'PGRST116') {
+        console.error('[Trips Sync] Failed to load existing photos:', prevPhotosError);
+        throw prevPhotosError;
+      }
+      previousPhotoRecords = prevPhotos || [];
+    }
     const cleanedChecklist = {
       externalClean: trip.checklist?.externalClean || 'bad',
       internalClean: trip.checklist?.internalClean || 'bad',
@@ -427,7 +451,6 @@ const tripSyncHandler = async (req, res) => {
     }
 
     const tripPayload = {
-      id: tripId,
       booking_id: trip.bookingId,
       day_date: trip.date || new Date().toISOString().slice(0, 10),
       source_ref: trip.sourceRef,
@@ -450,15 +473,32 @@ const tripSyncHandler = async (req, res) => {
       sync_source: trip.syncSource || (trip.offline ? 'offline-cache' : 'web'),
     };
 
-    const { data: insertedTrip, error: tripError } = await supabase
-      .from('trip_reports')
-      .insert(tripPayload)
-      .select()
-      .single();
+    let insertedTrip = null;
+    if (isUpdate) {
+      const { data, error } = await supabase
+        .from('trip_reports')
+        .update(tripPayload)
+        .eq('id', tripId)
+        .select()
+        .single();
 
-    if (tripError) {
-      console.error('[Trips Sync] Trip insert failed:', tripError);
-      throw tripError;
+      if (error) {
+        console.error('[Trips Sync] Trip update failed:', error);
+        throw error;
+      }
+      insertedTrip = data;
+    } else {
+      const { data, error } = await supabase
+        .from('trip_reports')
+        .insert({ id: tripId, ...tripPayload })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('[Trips Sync] Trip insert failed:', error);
+        throw error;
+      }
+      insertedTrip = data;
     }
 
     const { error: photosError } = await supabase
@@ -470,6 +510,31 @@ const tripSyncHandler = async (req, res) => {
       throw photosError;
     }
 
+    if (isUpdate && previousPhotoRecords.length) {
+      const idsToDelete = previousPhotoRecords.map((photo) => photo.id);
+      if (idsToDelete.length) {
+        const { error: deletePhotosError } = await supabase
+          .from('trip_photos')
+          .delete()
+          .in('id', idsToDelete);
+        if (deletePhotosError) {
+          console.warn('[Trips Sync] Failed to delete previous photo metadata:', deletePhotosError);
+        }
+      }
+
+      const pathsToRemove = previousPhotoRecords
+        .map((photo) => photo.storage_path)
+        .filter(Boolean);
+      if (pathsToRemove.length) {
+        const { error: storageCleanupError } = await supabase.storage
+          .from(TRIP_BUCKET)
+          .remove(pathsToRemove);
+        if (storageCleanupError) {
+          console.warn('[Trips Sync] Failed to cleanup previous photo files:', storageCleanupError);
+        }
+      }
+    }
+
     try {
       await supabase
         .from('notifications')
@@ -477,8 +542,8 @@ const tripSyncHandler = async (req, res) => {
           user_id: null,
           is_broadcast: true,
           type: 'info',
-          title: '📋 تم تسجيل رحلة جديدة',
-          message: `تم تسجيل رحلة رقم ${trip.bookingId} بواسطة ${trip.supervisorName || 'فريق العمليات'}.`,
+          title: isUpdate ? '✏️ تم تحديث رحلة' : '📋 تم تسجيل رحلة جديدة',
+          message: `${isUpdate ? 'تم تحديث' : 'تم تسجيل'} رحلة رقم ${trip.bookingId} بواسطة ${trip.supervisorName || 'فريق العمليات'}.`,
           created_at: new Date().toISOString(),
         });
     } catch (notifyError) {

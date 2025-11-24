@@ -24,6 +24,11 @@ import {
   TripEntry,
   TripSyncStatus,
   TripAttachment,
+  TripDraft,
+  TripRecycleRecord,
+  TripFormSnapshot,
+  TRIP_FORM_DEFAULTS,
+  TRIP_CHECKLIST_DEFAULTS,
   formatHijriDateLabel,
   formatGregorianDateLabel,
 } from '@/lib/mockData';
@@ -38,6 +43,7 @@ import { cn } from '@/lib/utils';
 import {
   AlertCircle,
   AlertTriangle,
+  Archive,
   Camera,
   CheckCircle2,
   CloudOff,
@@ -45,11 +51,14 @@ import {
   Loader2,
   PencilLine,
   RefreshCw,
+  RotateCcw,
   Trash2,
+  Undo2,
   Upload,
   X,
 } from 'lucide-react';
-import { format } from 'date-fns';
+import { addDays, differenceInCalendarDays, format } from 'date-fns';
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 
 interface SelectedPhoto {
   id: string;
@@ -82,13 +91,15 @@ const buildBookingId = (date: Date, sequence: number) => {
 
 const computeNextSequence = (
   entries: TripEntry[],
-  queueRecords: OfflineTripRecord[]
+  queueRecords: OfflineTripRecord[],
+  reservedBookingIds: string[] = []
 ) => {
   const sequences = [
     ...entries.map((entry) => parseSequenceFromBookingId(entry.bookingId)),
     ...queueRecords.map((record) =>
       parseSequenceFromBookingId(record.payload.bookingId)
     ),
+    ...reservedBookingIds.map((bookingId) => parseSequenceFromBookingId(bookingId)),
   ];
   const maxSeq = sequences.length ? Math.max(...sequences) : 0;
   return maxSeq + 1;
@@ -100,17 +111,35 @@ const formatDateTime = (value: string) =>
     timeStyle: 'short',
   }).format(new Date(value));
 
-const checklistDefaults: TripChecklist = {
-  externalClean: 'good',
-  internalClean: 'good',
-  carSmell: 'good',
-  driverAppearance: 'good',
-  acStatus: 'good',
-  engineStatus: 'good',
-};
-
 const bookingSources = ['تطبيق المطار', 'نسك', 'تطبيق واثق (مباشر)', 'B2B'];
 const suppliers = ['ديار مكة', 'المنهاج', 'أسطول واثق', 'أخرى'];
+
+const REQUIRED_FORM_FIELDS: Array<keyof TripFormSnapshot> = [
+  'bookingSource',
+  'supplier',
+  'clientName',
+  'driverName',
+  'carType',
+  'parkingLocation',
+  'pickupPoint',
+  'dropoffPoint',
+];
+
+const FORM_FIELD_LABELS: Record<keyof TripFormSnapshot, string> = {
+  sourceRef: ARABIC_TRIPS_MESSAGES.SOURCE_REF_LABEL,
+  bookingSource: ARABIC_TRIPS_MESSAGES.BOOKING_SOURCE_LABEL,
+  supplier: ARABIC_TRIPS_MESSAGES.SUPPLIER_LABEL,
+  clientName: ARABIC_TRIPS_MESSAGES.CLIENT_NAME_LABEL,
+  driverName: ARABIC_TRIPS_MESSAGES.DRIVER_NAME_LABEL,
+  carType: ARABIC_TRIPS_MESSAGES.CAR_TYPE_LABEL,
+  parkingLocation: ARABIC_TRIPS_MESSAGES.PARKING_LOCATION_LABEL,
+  pickupPoint: ARABIC_TRIPS_MESSAGES.PICKUP_POINT_LABEL,
+  dropoffPoint: ARABIC_TRIPS_MESSAGES.DROPOFF_POINT_LABEL,
+  supervisorName: ARABIC_TRIPS_MESSAGES.SUPERVISOR_NAME_LABEL,
+  supervisorRating: ARABIC_TRIPS_MESSAGES.SUPERVISOR_RATING_LABEL,
+  supervisorNotes: ARABIC_TRIPS_MESSAGES.SUPERVISOR_NOTES_LABEL,
+  passengerFeedback: ARABIC_TRIPS_MESSAGES.PASSENGER_FEEDBACK_LABEL,
+};
 
 const ratingOptions = [
   { value: 1, label: '⭐ سيء' },
@@ -152,6 +181,17 @@ const checklistRatingOptions: Array<{
 ];
 
 const MAX_PHOTOS = 6;
+const RECYCLE_RETENTION_DAYS = 30;
+
+const buildFormState = (preferredSupervisorName?: string): TripFormSnapshot => ({
+  ...TRIP_FORM_DEFAULTS,
+  supervisorName: preferredSupervisorName || TRIP_FORM_DEFAULTS.supervisorName || 'هاني بخش',
+});
+
+const purgeExpiredRecycle = (records: TripRecycleRecord[]) => {
+  const now = Date.now();
+  return records.filter((record) => new Date(record.purgeAt).getTime() > now);
+};
 
 export const Trips: React.FC = () => {
   const { currentDate } = useDateContext();
@@ -160,40 +200,42 @@ export const Trips: React.FC = () => {
   const { toast } = useToast();
 
   const [bookingSequence, setBookingSequence] = useState(1);
-  const [form, setForm] = useState({
-    sourceRef: '',
-    bookingSource: '',
-    supplier: '',
-    clientName: '',
-    driverName: '',
-    carType: '',
-    parkingLocation: '',
-    pickupPoint: '',
-    dropoffPoint: '',
-    supervisorName: userName || 'هاني بخش',
-    supervisorRating: 5,
-    supervisorNotes: '',
-    passengerFeedback: '',
-  });
-  const [checklist, setChecklist] = useState<TripChecklist>(checklistDefaults);
+  const [form, setForm] = useState<TripFormSnapshot>(() => buildFormState(userName || undefined));
+  const [checklist, setChecklist] = useState<TripChecklist>(TRIP_CHECKLIST_DEFAULTS);
   const [selectedPhotos, setSelectedPhotos] = useState<SelectedPhoto[]>([]);
   const [trips, setTrips] = useState<TripEntry[]>([]);
   const [queue, setQueue] = useState<OfflineTripRecord[]>(TripService.loadQueue());
+  const [drafts, setDrafts] = useState<TripDraft[]>([]);
+  const [recycleBin, setRecycleBin] = useState<TripRecycleRecord[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [editingTripId, setEditingTripId] = useState<string | null>(null);
+  const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
   const [persistedAttachments, setPersistedAttachments] = useState<TripAttachment[]>([]);
   const [editingQueueAttachments, setEditingQueueAttachments] = useState<TripPhotoAttachment[]>([]);
   const [canReuseExistingEvidence, setCanReuseExistingEvidence] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [pendingDeleteTrip, setPendingDeleteTrip] = useState<TripEntry | null>(null);
+  const [purgeDialogOpen, setPurgeDialogOpen] = useState(false);
+  const [pendingRecycleRecord, setPendingRecycleRecord] = useState<TripRecycleRecord | null>(null);
 
   const editingTrip = useMemo(
     () => (editingTripId ? trips.find((entry) => entry.id === editingTripId) || null : null),
     [editingTripId, trips]
   );
 
+  const editingDraft = useMemo(
+    () => (editingDraftId ? drafts.find((draft) => draft.id === editingDraftId) || null : null),
+    [editingDraftId, drafts]
+  );
+
   const bookingId = useMemo(
-    () => (editingTrip ? editingTrip.bookingId : buildBookingId(currentDate, bookingSequence)),
-    [editingTrip, currentDate, bookingSequence]
+    () => {
+      if (editingTrip) return editingTrip.bookingId;
+      if (editingDraft) return editingDraft.bookingId;
+      return buildBookingId(currentDate, bookingSequence);
+    },
+    [editingTrip, editingDraft, currentDate, bookingSequence]
   );
 
   const currentDateStr = useMemo(
@@ -213,32 +255,54 @@ export const Trips: React.FC = () => {
 
   const updateNextBookingSequence = (
     entriesSnapshot: TripEntry[],
-    queueSnapshot: OfflineTripRecord[]
+    queueSnapshot: OfflineTripRecord[],
+    draftsSnapshot: TripDraft[] = drafts,
+    recycleSnapshot: TripRecycleRecord[] = recycleBin
   ) => {
-    setBookingSequence(computeNextSequence(entriesSnapshot, queueSnapshot));
+    const reservedIds = [
+      ...draftsSnapshot.map((draft) => draft.bookingId),
+      ...recycleSnapshot.map((record) => record.bookingId),
+    ];
+    setBookingSequence(
+      computeNextSequence(entriesSnapshot, queueSnapshot, reservedIds)
+    );
   };
 
   useEffect(() => {
     const data = getDataForDate(currentDate);
     const entries = data.trips.entries || [];
     const storedQueue = TripService.loadQueue();
+    const storedDrafts = data.trips.drafts || [];
+    const cleanedRecycle = purgeExpiredRecycle(data.trips.recycleBin || []);
     setTrips(entries);
     setQueue(storedQueue);
-    updateNextBookingSequence(entries, storedQueue);
+    setDrafts(storedDrafts);
+    setRecycleBin(cleanedRecycle);
+    updateNextBookingSequence(entries, storedQueue, storedDrafts, cleanedRecycle);
+    if ((data.trips.recycleBin || []).length !== cleanedRecycle.length) {
+      persistTripsSection(entries, storedQueue.length, storedDrafts, cleanedRecycle);
+    }
   }, [currentDate]);
 
   useEffect(() => {
     setForm((prev) => ({
       ...prev,
-      supervisorName: userName || prev.supervisorName,
+      supervisorName: userName || prev.supervisorName || TRIP_FORM_DEFAULTS.supervisorName,
     }));
   }, [userName]);
 
-  const persistTripsSection = (entries: TripEntry[], pending = queue.length) => {
+  const persistTripsSection = (
+    entries: TripEntry[],
+    pending = queue.length,
+    draftsSnapshot = drafts,
+    recycleSnapshot = recycleBin
+  ) => {
     updateSectionData(currentDate, 'trips', {
       totalTrips: entries.length,
       entries,
       pendingSync: pending,
+      drafts: draftsSnapshot,
+      recycleBin: recycleSnapshot,
     });
   };
 
@@ -262,7 +326,153 @@ export const Trips: React.FC = () => {
     setChecklist((prev) => ({ ...prev, [key]: value }));
   };
 
+  const computeMissingFields = () => {
+    const missing: string[] = [];
+    REQUIRED_FORM_FIELDS.forEach((field) => {
+      if (!form[field]) {
+        missing.push(FORM_FIELD_LABELS[field]);
+      }
+    });
+    if (!editingTripId && selectedPhotos.length === 0) {
+      missing.push('صور التوثيق');
+    }
+    return missing;
+  };
+
+  const handleSaveDraft = () => {
+    const now = new Date().toISOString();
+    const isEditing = Boolean(editingDraft);
+    const draftId = editingDraft?.id || editingTrip?.id || createId();
+    const targetDate = editingTrip?.date || editingDraft?.date || currentDateStr;
+    const missingFields = computeMissingFields();
+    const draft: TripDraft = {
+      id: draftId,
+      bookingId,
+      date: targetDate,
+      gregorianDateLabel:
+        editingTrip?.gregorianDateLabel || editingDraft?.gregorianDateLabel || gregorianDateLabel,
+      hijriDateLabel:
+        editingTrip?.hijriDateLabel || editingDraft?.hijriDateLabel || hijriDateLabel,
+      savedAt: editingDraft?.savedAt || now,
+      updatedAt: now,
+      form: { ...form },
+      checklist,
+      missingFields,
+      note: missingFields.length ? 'بانتظار استكمال البيانات' : 'البيانات مكتملة وجاهزة للإرسال',
+    };
+    const updatedDrafts = isEditing
+      ? drafts.map((item) => (item.id === draft.id ? draft : item))
+      : [...drafts, draft];
+    setDrafts(updatedDrafts);
+    persistTripsSection(trips, queue.length, updatedDrafts);
+    updateNextBookingSequence(trips, queue, updatedDrafts);
+    toast({
+      title: isEditing ? 'تم تحديث الأرشيف' : 'تم حفظ الرحلة في الأرشيف',
+      description: 'يمكنك العودة لاحقاً لاستكمال الحقول وإرسال الرحلة.',
+    });
+    resetForm();
+  };
+
+  const handleResumeDraft = (draft: TripDraft) => {
+    setEditingDraftId(draft.id);
+    setEditingTripId(null);
+    setForm({ ...draft.form });
+    setChecklist(draft.checklist);
+    setPersistedAttachments([]);
+    setEditingQueueAttachments([]);
+    setCanReuseExistingEvidence(false);
+    setSelectedPhotos([]);
+    toast({
+      title: 'استئناف الرحلة المؤرشفة',
+      description: `يمكنك الآن إكمال الرحلة رقم ${draft.bookingId}.`,
+    });
+  };
+
+  const handleRemoveDraft = (draftId: string) => {
+    const nextDrafts = drafts.filter((draft) => draft.id !== draftId);
+    setDrafts(nextDrafts);
+    persistTripsSection(trips, queue.length, nextDrafts);
+    updateNextBookingSequence(trips, queue, nextDrafts);
+    if (editingDraftId === draftId) {
+      resetForm();
+    }
+    toast({
+      title: 'تم حذف العنصر من الأرشيف',
+      description: 'لم يعد هذا السجل موجوداً في الأرشيف.',
+    });
+  };
+
+  const triggerDeleteTrip = (trip: TripEntry) => {
+    setPendingDeleteTrip(trip);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteTrip = () => {
+    if (!pendingDeleteTrip) return;
+    const target = pendingDeleteTrip;
+    const updatedEntries = trips.filter((entry) => entry.id !== target.id);
+    const updatedQueue = TripService.removeFromQueue(target.id);
+    const recycleRecord: TripRecycleRecord = {
+      id: target.id,
+      bookingId: target.bookingId,
+      entry: target,
+      deletedAt: new Date().toISOString(),
+      purgeAt: addDays(new Date(), RECYCLE_RETENTION_DAYS).toISOString(),
+      deletedBy: user?.id,
+    };
+    const updatedRecycle = [...recycleBin.filter((item) => item.id !== target.id), recycleRecord];
+    setTrips(updatedEntries);
+    setQueue(updatedQueue);
+    setRecycleBin(updatedRecycle);
+    persistTripsSection(updatedEntries, updatedQueue.length, drafts, updatedRecycle);
+    updateNextBookingSequence(updatedEntries, updatedQueue, drafts, updatedRecycle);
+    if (editingTripId === target.id) {
+      resetForm();
+    }
+    toast({
+      title: 'تم نقل الرحلة إلى سلة المحذوفات',
+      description: `يمكنك استعادة الرحلة ${target.bookingId} خلال 30 يوماً.`,
+      variant: 'destructive',
+    });
+    setPendingDeleteTrip(null);
+    setDeleteDialogOpen(false);
+  };
+
+  const handleRestoreTrip = (record: TripRecycleRecord) => {
+    const updatedRecycle = recycleBin.filter((item) => item.id !== record.id);
+    const updatedEntries = [...trips, record.entry];
+    setTrips(updatedEntries);
+    setRecycleBin(updatedRecycle);
+    persistTripsSection(updatedEntries, queue.length, drafts, updatedRecycle);
+    updateNextBookingSequence(updatedEntries, queue, drafts, updatedRecycle);
+    toast({
+      title: 'تمت استعادة الرحلة',
+      description: `الرحلة ${record.bookingId} عادت إلى السجلات.`,
+    });
+  };
+
+  const requestRecyclePurge = (record: TripRecycleRecord) => {
+    setPendingRecycleRecord(record);
+    setPurgeDialogOpen(true);
+  };
+
+  const confirmRecyclePurge = () => {
+    if (!pendingRecycleRecord) return;
+    const updatedRecycle = recycleBin.filter((item) => item.id !== pendingRecycleRecord.id);
+    setRecycleBin(updatedRecycle);
+    persistTripsSection(trips, queue.length, drafts, updatedRecycle);
+    updateNextBookingSequence(trips, queue, drafts, updatedRecycle);
+    toast({
+      title: 'تم حذف الرحلة نهائياً',
+      description: `لن تظهر الرحلة ${pendingRecycleRecord.bookingId} في السجلات بعد الآن.`,
+      variant: 'destructive',
+    });
+    setPendingRecycleRecord(null);
+    setPurgeDialogOpen(false);
+  };
+
   const handleEditTrip = (trip: TripEntry) => {
+    setEditingDraftId(null);
     setEditingTripId(trip.id);
     setForm({
       sourceRef: trip.sourceRef,
@@ -303,26 +513,6 @@ export const Trips: React.FC = () => {
   const handleRemovePersistedAttachment = (id: string) => {
     setPersistedAttachments((prev) => prev.filter((attachment) => attachment.id !== id));
     setEditingQueueAttachments((prev) => prev.filter((attachment) => attachment.id !== id));
-  };
-
-  const handleDeleteTrip = (trip: TripEntry) => {
-    if (!window.confirm(`هل تريد حذف الرحلة ${trip.bookingId}؟`)) {
-      return;
-    }
-    const updatedEntries = trips.filter((entry) => entry.id !== trip.id);
-    const updatedQueue = TripService.removeFromQueue(trip.id);
-    setTrips(updatedEntries);
-    setQueue(updatedQueue);
-    persistTripsSection(updatedEntries, updatedQueue.length);
-    updateNextBookingSequence(updatedEntries, updatedQueue);
-    if (editingTripId === trip.id) {
-      resetForm();
-    }
-    toast({
-      title: 'تم حذف الرحلة',
-      description: `تم حذف الرحلة ${trip.bookingId} نهائياً.`,
-      variant: 'destructive',
-    });
   };
 
   const handlePhotoUpload = async (
@@ -383,24 +573,12 @@ export const Trips: React.FC = () => {
     setPersistedAttachments([]);
     setEditingQueueAttachments([]);
     setCanReuseExistingEvidence(false);
+    setEditingDraftId(null);
   };
 
   const resetForm = () => {
-    setForm((prev) => ({
-      ...prev,
-      sourceRef: '',
-      bookingSource: '',
-      supplier: '',
-      clientName: '',
-      driverName: '',
-      carType: '',
-      parkingLocation: '',
-      pickupPoint: '',
-      dropoffPoint: '',
-      supervisorNotes: '',
-      passengerFeedback: '',
-    }));
-    setChecklist(checklistDefaults);
+    setForm(buildFormState(userName || undefined));
+    setChecklist(TRIP_CHECKLIST_DEFAULTS);
     selectedPhotos.forEach((photo) => URL.revokeObjectURL(photo.previewUrl));
     setSelectedPhotos([]);
     exitEditMode();
@@ -433,12 +611,15 @@ export const Trips: React.FC = () => {
 
     setSubmitting(true);
     const isEditing = Boolean(editingTrip);
-    const entryId = editingTrip?.id ?? createId();
-    const createdAt = editingTrip?.createdAt ?? new Date().toISOString();
+    const isEditingDraft = Boolean(editingDraft);
+    const entryId = editingTrip?.id ?? editingDraft?.id ?? createId();
+    const createdAt = editingTrip?.createdAt ?? editingDraft?.savedAt ?? new Date().toISOString();
     const status = previewStatus;
-    const entryDate = editingTrip?.date ?? currentDateStr;
-    const entryHijriLabel = editingTrip?.hijriDateLabel ?? hijriDateLabel;
-    const entryGregorianLabel = editingTrip?.gregorianDateLabel ?? gregorianDateLabel;
+    const entryDate = editingTrip?.date ?? editingDraft?.date ?? currentDateStr;
+    const entryHijriLabel =
+      editingTrip?.hijriDateLabel ?? editingDraft?.hijriDateLabel ?? hijriDateLabel;
+    const entryGregorianLabel =
+      editingTrip?.gregorianDateLabel ?? editingDraft?.gregorianDateLabel ?? gregorianDateLabel;
 
     const newPhotoMeta = selectedPhotos.map((photo) => ({
       id: photo.id,
@@ -532,9 +713,16 @@ export const Trips: React.FC = () => {
     let updatedEntries = isEditing
       ? trips.map((entry) => (entry.id === entryId ? updatedEntry : entry))
       : [...trips, updatedEntry];
+    const activeDrafts = isEditingDraft
+      ? drafts.filter((draft) => draft.id !== editingDraftId)
+      : drafts;
+    if (isEditingDraft) {
+      setDrafts(activeDrafts);
+      setEditingDraftId(null);
+    }
     setTrips(updatedEntries);
-    persistTripsSection(updatedEntries, queue.length);
-    updateNextBookingSequence(updatedEntries, queue);
+    persistTripsSection(updatedEntries, queue.length, activeDrafts);
+    updateNextBookingSequence(updatedEntries, queue, activeDrafts);
 
     const offlineRecord: OfflineTripRecord = {
       id: updatedEntry.id,
@@ -546,8 +734,8 @@ export const Trips: React.FC = () => {
 
     const commitQueueState = (records: OfflineTripRecord[]) => {
       setQueue(records);
-      persistTripsSection(updatedEntries, records.length);
-      updateNextBookingSequence(updatedEntries, records);
+      persistTripsSection(updatedEntries, records.length, activeDrafts);
+      updateNextBookingSequence(updatedEntries, records, activeDrafts);
     };
 
     if (!navigator.onLine) {
@@ -1138,7 +1326,7 @@ export const Trips: React.FC = () => {
               }
             />
           </div>
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div className="flex flex-col gap-4">
             <div className="flex items-center gap-3 rounded-xl border py-3 px-4 bg-muted/40">
               {previewStatus === 'approved' ? (
                 <CheckCircle2 className="w-6 h-6 text-green-600" />
@@ -1154,23 +1342,31 @@ export const Trips: React.FC = () => {
                 </p>
               </div>
             </div>
-            <Button
-              className="flex-1 md:flex-none"
-              onClick={handleSubmit}
-              disabled={submitting}
-            >
-              {submitting ? (
-                <>
-                  <Loader2 className="w-4 h-4 ml-2 animate-spin" />
-                  جاري الإرسال...
-                </>
-              ) : (
-                <>
-                  <Upload className="w-4 h-4 ml-2" />
-                  {ARABIC_TRIPS_MESSAGES.SUBMIT_BUTTON}
-                </>
-              )}
-            </Button>
+            <div className="flex flex-col md:flex-row gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1"
+                onClick={handleSaveDraft}
+                disabled={submitting}
+              >
+                <Archive className="w-4 h-4 ml-2" />
+                حفظ في الأرشيف
+              </Button>
+              <Button className="flex-1 md:flex-none" onClick={handleSubmit} disabled={submitting}>
+                {submitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                    جاري الإرسال...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-4 h-4 ml-2" />
+                    {ARABIC_TRIPS_MESSAGES.SUBMIT_BUTTON}
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -1274,7 +1470,7 @@ export const Trips: React.FC = () => {
                           variant="ghost"
                           size="icon"
                           title="حذف الرحلة"
-                          onClick={() => handleDeleteTrip(trip)}
+                          onClick={() => triggerDeleteTrip(trip)}
                         >
                           <Trash2 className="w-4 h-4 text-destructive" />
                         </Button>
@@ -1308,6 +1504,175 @@ export const Trips: React.FC = () => {
           </CardContent>
         </Card>
       </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>أرشيف الرحلات (مسودات)</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              احفظ الرحلات التي تحتاج إلى معلومات إضافية ثم عد لاستكمالها لاحقاً.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-3 max-h-[360px] overflow-y-auto pr-2">
+            {drafts.length === 0 ? (
+              <div className="text-center text-muted-foreground py-8">
+                <Archive className="w-8 h-8 mx-auto mb-2 opacity-60" />
+                لا توجد رحلات مؤرشفة حالياً
+              </div>
+            ) : (
+              drafts
+                .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+                .map((draft) => (
+                  <div
+                    key={draft.id}
+                    className="rounded-xl border p-3 bg-muted/40 space-y-2"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="font-semibold">{draft.bookingId}</p>
+                        <p className="text-xs text-muted-foreground">
+                          آخر تحديث: {formatDateTime(draft.updatedAt)}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => handleResumeDraft(draft)}
+                        >
+                          <RotateCcw className="w-4 h-4 ml-2" />
+                          استئناف
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleRemoveDraft(draft.id)}
+                          title="حذف من الأرشيف"
+                        >
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </div>
+                    {draft.missingFields.length ? (
+                      <div className="text-xs text-amber-700">
+                        ينقصه: {draft.missingFields.join('، ')}
+                      </div>
+                    ) : (
+                      <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">
+                        مكتمل وجاهز للإرسال
+                      </Badge>
+                    )}
+                  </div>
+                ))
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>سلة المحذوفات (30 يوماً)</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              يتم الاحتفاظ بالرحلات المحذوفة لمدة 30 يوماً لإمكانية استعادتها.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-3 max-h-[360px] overflow-y-auto pr-2">
+            {recycleBin.length === 0 ? (
+              <div className="text-center text-muted-foreground py-8">
+                <Undo2 className="w-8 h-8 mx-auto mb-2 opacity-60" />
+                لا توجد عناصر في سلة المحذوفات
+              </div>
+            ) : (
+              recycleBin
+                .sort((a, b) => b.deletedAt.localeCompare(a.deletedAt))
+                .map((record) => {
+                  const daysLeft = Math.max(
+                    0,
+                    differenceInCalendarDays(new Date(record.purgeAt), new Date())
+                  );
+                  return (
+                    <div
+                      key={record.id}
+                      className="rounded-xl border p-3 bg-destructive/5 space-y-2"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <p className="font-semibold">{record.bookingId}</p>
+                          <p className="text-xs text-muted-foreground">
+                            حذف في {formatDateTime(record.deletedAt)}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            سيتم الحذف النهائي خلال {daysLeft} يوم
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => handleRestoreTrip(record)}
+                          >
+                            <CheckCircle2 className="w-4 h-4 ml-2 text-green-600" />
+                            استعادة
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => requestRecyclePurge(record)}
+                            title="حذف نهائي"
+                          >
+                            <Trash2 className="w-4 h-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        العميل: {record.entry.clientName} • السائق: {record.entry.driverName}
+                      </p>
+                    </div>
+                  );
+                })
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <ConfirmationDialog
+        open={deleteDialogOpen}
+        onOpenChange={(open) => {
+          setDeleteDialogOpen(open);
+          if (!open) {
+            setPendingDeleteTrip(null);
+          }
+        }}
+        title="تأكيد الحذف"
+        description={
+          pendingDeleteTrip
+            ? `سيتم نقل الرحلة ${pendingDeleteTrip.bookingId} إلى سلة المحذوفات لمدة 30 يوماً مع إمكانية الاستعادة.`
+            : 'سيتم نقل الرحلة إلى سلة المحذوفات لمدة 30 يوماً.'
+        }
+        onConfirm={confirmDeleteTrip}
+        cancelText="إلغاء"
+        confirmText="نقل إلى السلة"
+        variant="warning"
+      />
+
+      <ConfirmationDialog
+        open={purgeDialogOpen}
+        onOpenChange={(open) => {
+          setPurgeDialogOpen(open);
+          if (!open) {
+            setPendingRecycleRecord(null);
+          }
+        }}
+        title="حذف نهائي"
+        description={
+          pendingRecycleRecord
+            ? `لن تتمكن من استعادة الرحلة ${pendingRecycleRecord.bookingId} بعد هذا الإجراء.`
+            : 'لن تتمكن من استعادة هذه الرحلة بعد الحذف النهائي.'
+        }
+        onConfirm={confirmRecyclePurge}
+        cancelText="إلغاء"
+        confirmText="حذف نهائي"
+        variant="destructive"
+      />
     </div>
   );
 };
