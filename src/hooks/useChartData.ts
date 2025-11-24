@@ -15,6 +15,13 @@ export interface LiquidityDataPoint extends ChartDataPoint {
   net: number;
 }
 
+export interface TripsTrendPoint extends ChartDataPoint {
+  approved: number;
+  warnings: number;
+  pending: number;
+  total: number;
+}
+
 export interface SectionSubmissionData {
   date: string;
   label?: string;
@@ -153,6 +160,32 @@ export const useChartData = (days: number = 30) => {
     }
   }, [dateRange]);
 
+  const tripsTrendData = useMemo((): TripsTrendPoint[] => {
+    try {
+      return dateRange.map(date => {
+        const dailyData = getDataForDate(date);
+        const entries = dailyData.trips.entries || [];
+        const approved = entries.filter(entry => entry.status === 'approved').length;
+        const warnings = entries.length - approved;
+        const pending = dailyData.trips.pendingSync || 0;
+
+        return {
+          date: format(date, 'dd/MM'),
+          label: format(date, 'yyyy-MM-dd'),
+          approved,
+          warnings,
+          pending,
+          total: entries.length,
+          value: entries.length,
+        };
+      });
+    } catch (err) {
+      setError('خطأ في تحميل بيانات الرحلات');
+      console.error('Error loading trips trend data:', err);
+      return [];
+    }
+  }, [dateRange]);
+
   // Get section submission data
   const sectionSubmissionData = useMemo((): SectionSubmissionData[] => {
     try {
@@ -272,6 +305,7 @@ export const useChartData = (days: number = 30) => {
     incomeVsExpensesData,
     tasksCompletionData,
     customersTrendData,
+    tripsTrendData,
     sectionSubmissionData,
     expenseCategoriesData,
     salesPerformanceData,

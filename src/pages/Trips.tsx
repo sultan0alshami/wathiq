@@ -12,7 +12,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { useDateContext } from '@/contexts/DateContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,7 +20,12 @@ import {
   getDataForDate,
   updateSectionData,
   TripChecklist,
+  TripChecklistRating,
   TripEntry,
+  TripSyncStatus,
+  TripAttachment,
+  formatHijriDateLabel,
+  formatGregorianDateLabel,
 } from '@/lib/mockData';
 import {
   TripService,
@@ -29,7 +33,7 @@ import {
   OfflineTripRecord,
   TripReportInput,
 } from '@/services/TripService';
-import { ARABIC_TRIPS_MESSAGES } from '@/lib/arabicTripsMessages';
+import { ARABIC_TRIPS_MESSAGES, ChecklistKey } from '@/lib/arabicTripsMessages';
 import { cn } from '@/lib/utils';
 import {
   AlertCircle,
@@ -39,10 +43,13 @@ import {
   CloudOff,
   Image as ImageIcon,
   Loader2,
+  PencilLine,
   RefreshCw,
   Trash2,
   Upload,
+  X,
 } from 'lucide-react';
+import { format } from 'date-fns';
 
 interface SelectedPhoto {
   id: string;
@@ -60,12 +67,31 @@ const createId = () =>
     ? crypto.randomUUID()
     : Math.random().toString(36).slice(2, 10);
 
-const generateBookingId = () => {
-  const now = new Date();
-  const yy = now.getFullYear().toString().slice(-2);
-  const mm = `${now.getMonth() + 1}`.padStart(2, '0');
-  const seq = `${Math.floor(1000 + Math.random() * 9000)}`;
+const parseSequenceFromBookingId = (bookingId?: string) => {
+  if (!bookingId) return 0;
+  const match = bookingId.match(/WTH-\d{2}-\d{2}-(\d{4})$/);
+  return match ? parseInt(match[1], 10) : 0;
+};
+
+const buildBookingId = (date: Date, sequence: number) => {
+  const yy = format(date, 'yy');
+  const mm = format(date, 'MM');
+  const seq = sequence.toString().padStart(4, '0');
   return `${BOOKING_PREFIX}-${yy}-${mm}-${seq}`;
+};
+
+const computeNextSequence = (
+  entries: TripEntry[],
+  queueRecords: OfflineTripRecord[]
+) => {
+  const sequences = [
+    ...entries.map((entry) => parseSequenceFromBookingId(entry.bookingId)),
+    ...queueRecords.map((record) =>
+      parseSequenceFromBookingId(record.payload.bookingId)
+    ),
+  ];
+  const maxSeq = sequences.length ? Math.max(...sequences) : 0;
+  return maxSeq + 1;
 };
 
 const formatDateTime = (value: string) =>
@@ -75,16 +101,55 @@ const formatDateTime = (value: string) =>
   }).format(new Date(value));
 
 const checklistDefaults: TripChecklist = {
-  externalClean: true,
-  internalClean: true,
-  carSmell: true,
-  driverAppearance: true,
-  acStatus: true,
-  engineStatus: true,
+  externalClean: 'good',
+  internalClean: 'good',
+  carSmell: 'good',
+  driverAppearance: 'good',
+  acStatus: 'good',
+  engineStatus: 'good',
 };
 
 const bookingSources = ['تطبيق المطار', 'نسك', 'تطبيق واثق (مباشر)', 'B2B'];
 const suppliers = ['ديار مكة', 'المنهاج', 'أسطول واثق', 'أخرى'];
+
+const ratingOptions = [
+  { value: 1, label: '⭐ سيء' },
+  { value: 2, label: '⭐⭐ ضعيف' },
+  { value: 3, label: '⭐⭐⭐ مقبول' },
+  { value: 4, label: '⭐⭐⭐⭐ جيد' },
+  { value: 5, label: '⭐⭐⭐⭐⭐ ممتاز' },
+];
+
+const IMPORTANT_CHECKLIST_KEYS = new Set<ChecklistKey>([
+  'carSmell',
+  'driverAppearance',
+]);
+
+const checklistRatingOptions: Array<{
+  value: TripChecklistRating;
+  label: string;
+  className: string;
+  selectedClassName: string;
+}> = [
+  {
+    value: 'bad',
+    label: 'سيء',
+    className: 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100',
+    selectedClassName: 'bg-red-600 text-white border-red-600 hover:bg-red-500',
+  },
+  {
+    value: 'normal',
+    label: 'عادي',
+    className: 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100',
+    selectedClassName: 'bg-slate-600 text-white border-slate-600 hover:bg-slate-500',
+  },
+  {
+    value: 'good',
+    label: 'جيد',
+    className: 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100',
+    selectedClassName: 'bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-500',
+  },
+];
 
 const MAX_PHOTOS = 6;
 
@@ -94,7 +159,7 @@ export const Trips: React.FC = () => {
   const { addNotification } = useNotifications();
   const { toast } = useToast();
 
-  const [bookingId, setBookingId] = useState(generateBookingId());
+  const [bookingSequence, setBookingSequence] = useState(1);
   const [form, setForm] = useState({
     sourceRef: '',
     bookingSource: '',
@@ -116,16 +181,50 @@ export const Trips: React.FC = () => {
   const [queue, setQueue] = useState<OfflineTripRecord[]>(TripService.loadQueue());
   const [submitting, setSubmitting] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [editingTripId, setEditingTripId] = useState<string | null>(null);
+  const [persistedAttachments, setPersistedAttachments] = useState<TripAttachment[]>([]);
+  const [editingQueueAttachments, setEditingQueueAttachments] = useState<TripPhotoAttachment[]>([]);
+  const [canReuseExistingEvidence, setCanReuseExistingEvidence] = useState(false);
+
+  const editingTrip = useMemo(
+    () => (editingTripId ? trips.find((entry) => entry.id === editingTripId) || null : null),
+    [editingTripId, trips]
+  );
+
+  const bookingId = useMemo(
+    () => (editingTrip ? editingTrip.bookingId : buildBookingId(currentDate, bookingSequence)),
+    [editingTrip, currentDate, bookingSequence]
+  );
 
   const currentDateStr = useMemo(
     () => currentDate.toISOString().split('T')[0],
     [currentDate]
   );
 
+  const hijriDateLabel = useMemo(
+    () => formatHijriDateLabel(currentDate),
+    [currentDate]
+  );
+
+  const gregorianDateLabel = useMemo(
+    () => formatGregorianDateLabel(currentDate),
+    [currentDate]
+  );
+
+  const updateNextBookingSequence = (
+    entriesSnapshot: TripEntry[],
+    queueSnapshot: OfflineTripRecord[]
+  ) => {
+    setBookingSequence(computeNextSequence(entriesSnapshot, queueSnapshot));
+  };
+
   useEffect(() => {
     const data = getDataForDate(currentDate);
-    setTrips(data.trips.entries || []);
-    setQueue(TripService.loadQueue());
+    const entries = data.trips.entries || [];
+    const storedQueue = TripService.loadQueue();
+    setTrips(entries);
+    setQueue(storedQueue);
+    updateNextBookingSequence(entries, storedQueue);
   }, [currentDate]);
 
   useEffect(() => {
@@ -143,7 +242,9 @@ export const Trips: React.FC = () => {
     });
   };
 
-  const isChecklistClean = Object.values(checklist).every(Boolean);
+  const isChecklistClean = Object.values(checklist).every(
+    (value) => value === 'good'
+  );
   const previewStatus =
     isChecklistClean && form.supervisorRating >= 3 ? 'approved' : 'warning';
 
@@ -154,8 +255,74 @@ export const Trips: React.FC = () => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleChecklistToggle = (key: keyof TripChecklist, value: boolean) => {
+  const handleChecklistRatingChange = (
+    key: ChecklistKey,
+    value: TripChecklistRating
+  ) => {
     setChecklist((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleEditTrip = (trip: TripEntry) => {
+    setEditingTripId(trip.id);
+    setForm({
+      sourceRef: trip.sourceRef,
+      bookingSource: trip.bookingSource,
+      supplier: trip.supplier,
+      clientName: trip.clientName,
+      driverName: trip.driverName,
+      carType: trip.carType,
+      parkingLocation: trip.parkingLocation,
+      pickupPoint: trip.pickupPoint,
+      dropoffPoint: trip.dropoffPoint,
+      supervisorName: trip.supervisorName,
+      supervisorRating: trip.supervisorRating,
+      supervisorNotes: trip.supervisorNotes || '',
+      passengerFeedback: trip.passengerFeedback || '',
+    });
+    setChecklist(trip.checklist);
+    setPersistedAttachments(trip.attachments || []);
+    const queueRecord =
+      queue.find((record) => record.id === trip.id) || TripService.loadQueue().find((record) => record.id === trip.id);
+    setEditingQueueAttachments(queueRecord?.attachments || []);
+    setCanReuseExistingEvidence(Boolean(queueRecord));
+    setSelectedPhotos([]);
+    toast({
+      title: 'وضع تعديل الرحلة',
+      description: `يمكنك الآن تحديث بيانات الرحلة ${trip.bookingId}.`,
+    });
+  };
+
+  const handleCancelEdit = () => {
+    resetForm();
+    toast({
+      title: 'تم إلغاء التعديل',
+      description: 'تمت إعادة النموذج لوضع الإدخال الجديد.',
+    });
+  };
+
+  const handleRemovePersistedAttachment = (id: string) => {
+    setPersistedAttachments((prev) => prev.filter((attachment) => attachment.id !== id));
+    setEditingQueueAttachments((prev) => prev.filter((attachment) => attachment.id !== id));
+  };
+
+  const handleDeleteTrip = (trip: TripEntry) => {
+    if (!window.confirm(`هل تريد حذف الرحلة ${trip.bookingId}؟`)) {
+      return;
+    }
+    const updatedEntries = trips.filter((entry) => entry.id !== trip.id);
+    const updatedQueue = TripService.removeFromQueue(trip.id);
+    setTrips(updatedEntries);
+    setQueue(updatedQueue);
+    persistTripsSection(updatedEntries, updatedQueue.length);
+    updateNextBookingSequence(updatedEntries, updatedQueue);
+    if (editingTripId === trip.id) {
+      resetForm();
+    }
+    toast({
+      title: 'تم حذف الرحلة',
+      description: `تم حذف الرحلة ${trip.bookingId} نهائياً.`,
+      variant: 'destructive',
+    });
   };
 
   const handlePhotoUpload = async (
@@ -164,7 +331,8 @@ export const Trips: React.FC = () => {
     const files = event.target.files;
     if (!files) return;
 
-    const remainingSlots = MAX_PHOTOS - selectedPhotos.length;
+    const existingCount = editingTripId ? persistedAttachments.length : 0;
+    const remainingSlots = MAX_PHOTOS - existingCount - selectedPhotos.length;
     if (remainingSlots <= 0) {
       toast({
         title: 'تنبيه',
@@ -210,6 +378,13 @@ export const Trips: React.FC = () => {
     });
   };
 
+  const exitEditMode = () => {
+    setEditingTripId(null);
+    setPersistedAttachments([]);
+    setEditingQueueAttachments([]);
+    setCanReuseExistingEvidence(false);
+  };
+
   const resetForm = () => {
     setForm((prev) => ({
       ...prev,
@@ -228,8 +403,12 @@ export const Trips: React.FC = () => {
     setChecklist(checklistDefaults);
     selectedPhotos.forEach((photo) => URL.revokeObjectURL(photo.previewUrl));
     setSelectedPhotos([]);
-    setBookingId(generateBookingId());
+    exitEditMode();
   };
+
+  const attachmentsAvailable =
+    selectedPhotos.length > 0 ||
+    (!!editingTripId && canReuseExistingEvidence && persistedAttachments.length > 0);
 
   const formIsValid =
     form.bookingSource &&
@@ -240,7 +419,7 @@ export const Trips: React.FC = () => {
     form.parkingLocation &&
     form.pickupPoint &&
     form.dropoffPoint &&
-    selectedPhotos.length > 0;
+    (editingTripId ? attachmentsAvailable : selectedPhotos.length > 0);
 
   const handleSubmit = async () => {
     if (!formIsValid) {
@@ -253,21 +432,58 @@ export const Trips: React.FC = () => {
     }
 
     setSubmitting(true);
-    const entryId = createId();
-    const createdAt = new Date().toISOString();
+    const isEditing = Boolean(editingTrip);
+    const entryId = editingTrip?.id ?? createId();
+    const createdAt = editingTrip?.createdAt ?? new Date().toISOString();
     const status = previewStatus;
+    const entryDate = editingTrip?.date ?? currentDateStr;
+    const entryHijriLabel = editingTrip?.hijriDateLabel ?? hijriDateLabel;
+    const entryGregorianLabel = editingTrip?.gregorianDateLabel ?? gregorianDateLabel;
 
-    const attachmentsMeta = selectedPhotos.map((photo) => ({
+    const newPhotoMeta = selectedPhotos.map((photo) => ({
       id: photo.id,
       name: photo.name,
       mimeType: photo.mimeType,
       size: photo.size,
+      previewUrl: photo.previewUrl,
     }));
 
-    const newEntry: TripEntry = {
+    const entryAttachments: TripAttachment[] = [
+      ...(isEditing ? persistedAttachments : []),
+      ...newPhotoMeta,
+    ];
+
+    const preservedAttachmentIds = new Set(
+      (isEditing ? persistedAttachments : []).map((attachment) => attachment.id)
+    );
+
+    const preservedQueuePayloads: TripPhotoAttachment[] =
+      isEditing && canReuseExistingEvidence
+        ? editingQueueAttachments.filter((attachment) =>
+            preservedAttachmentIds.has(attachment.id)
+          )
+        : [];
+
+    const newPhotoPayloads: TripPhotoAttachment[] = selectedPhotos.map((photo) => ({
+      id: photo.id,
+      name: photo.name,
+      mimeType: photo.mimeType,
+      size: photo.size,
+      base64: photo.base64,
+    }));
+
+    const attachmentsPayload: TripPhotoAttachment[] = [
+      ...preservedQueuePayloads,
+      ...newPhotoPayloads,
+    ];
+
+    const updatedEntry: TripEntry = {
+      ...(editingTrip || ({} as TripEntry)),
       id: entryId,
       bookingId,
-      date: currentDateStr,
+      date: entryDate,
+      hijriDateLabel: entryHijriLabel,
+      gregorianDateLabel: entryGregorianLabel,
       sourceRef: form.sourceRef,
       bookingSource: form.bookingSource,
       supplier: form.supplier,
@@ -283,33 +499,29 @@ export const Trips: React.FC = () => {
       passengerFeedback: form.passengerFeedback,
       status,
       checklist,
-      attachments: attachmentsMeta.map((meta) => ({
-        ...meta,
-        previewUrl:
-          selectedPhotos.find((photo) => photo.id === meta.id)?.previewUrl,
-      })),
+      attachments: entryAttachments,
       createdAt,
-      createdBy: user?.id,
-      syncStatus: navigator.onLine ? 'pending' : 'pending',
+      createdBy: editingTrip?.createdBy || user?.id,
+      syncStatus: 'pending',
     };
 
     const tripPayload: TripReportInput = {
-      id: newEntry.id,
-      bookingId: newEntry.bookingId,
-      date: newEntry.date,
-      sourceRef: newEntry.sourceRef,
-      bookingSource: newEntry.bookingSource,
-      supplier: newEntry.supplier,
-      clientName: newEntry.clientName,
-      driverName: newEntry.driverName,
-      carType: newEntry.carType,
-      parkingLocation: newEntry.parkingLocation,
-      pickupPoint: newEntry.pickupPoint,
-      dropoffPoint: newEntry.dropoffPoint,
-      supervisorName: newEntry.supervisorName,
-      supervisorRating: newEntry.supervisorRating,
-      supervisorNotes: newEntry.supervisorNotes,
-      passengerFeedback: newEntry.passengerFeedback,
+      id: updatedEntry.id,
+      bookingId: updatedEntry.bookingId,
+      date: updatedEntry.date,
+      sourceRef: updatedEntry.sourceRef,
+      bookingSource: updatedEntry.bookingSource,
+      supplier: updatedEntry.supplier,
+      clientName: updatedEntry.clientName,
+      driverName: updatedEntry.driverName,
+      carType: updatedEntry.carType,
+      parkingLocation: updatedEntry.parkingLocation,
+      pickupPoint: updatedEntry.pickupPoint,
+      dropoffPoint: updatedEntry.dropoffPoint,
+      supervisorName: updatedEntry.supervisorName,
+      supervisorRating: updatedEntry.supervisorRating,
+      supervisorNotes: updatedEntry.supervisorNotes,
+      passengerFeedback: updatedEntry.passengerFeedback,
       checklist,
       status,
       createdBy: user?.id,
@@ -317,36 +529,30 @@ export const Trips: React.FC = () => {
       offline: !navigator.onLine,
     };
 
-    const attachmentsPayload: TripPhotoAttachment[] = selectedPhotos.map(
-      (photo) => ({
-        id: photo.id,
-        name: photo.name,
-        mimeType: photo.mimeType,
-        size: photo.size,
-        base64: photo.base64,
-      })
-    );
-
-    let updatedEntries = [...trips, newEntry];
+    let updatedEntries = isEditing
+      ? trips.map((entry) => (entry.id === entryId ? updatedEntry : entry))
+      : [...trips, updatedEntry];
     setTrips(updatedEntries);
     persistTripsSection(updatedEntries, queue.length);
+    updateNextBookingSequence(updatedEntries, queue);
 
     const offlineRecord: OfflineTripRecord = {
-      id: newEntry.id,
+      id: updatedEntry.id,
       payload: tripPayload,
       attachments: attachmentsPayload,
       createdAt,
       status: 'pending',
     };
 
-    const handleQueueUpdate = (records: OfflineTripRecord[]) => {
+    const commitQueueState = (records: OfflineTripRecord[]) => {
       setQueue(records);
       persistTripsSection(updatedEntries, records.length);
+      updateNextBookingSequence(updatedEntries, records);
     };
 
     if (!navigator.onLine) {
-      const records = TripService.enqueue(offlineRecord);
-      handleQueueUpdate(records);
+      const records = TripService.upsertRecord(offlineRecord);
+      commitQueueState(records);
       toast({
         title: 'تم الحفظ بدون اتصال',
         description: ARABIC_TRIPS_MESSAGES.FORM_SUCCESS_OFFLINE,
@@ -358,11 +564,14 @@ export const Trips: React.FC = () => {
 
     try {
       const response = await TripService.syncRecord(offlineRecord);
-      newEntry.syncStatus = 'synced';
+      updatedEntry.syncStatus = 'synced';
       if (response.photos?.length) {
-        newEntry.attachments = newEntry.attachments.map((attachment) => {
+        updatedEntry.attachments = updatedEntry.attachments.map((attachment) => {
           const remote = response.photos?.find(
-            (photo) => photo.file_name === attachment.name || photo.trip_id === response.tripId
+            (photo) =>
+              photo.file_name === attachment.name ||
+              photo.trip_id === response.tripId ||
+              photo.trip_id === updatedEntry.id
           );
           return remote
             ? { ...attachment, storagePath: remote.storage_path }
@@ -371,10 +580,11 @@ export const Trips: React.FC = () => {
       }
 
       updatedEntries = updatedEntries.map((entry) =>
-        entry.id === newEntry.id ? newEntry : entry
+        entry.id === updatedEntry.id ? updatedEntry : entry
       );
       setTrips(updatedEntries);
-      persistTripsSection(updatedEntries, queue.length);
+      const cleanedQueue = TripService.removeFromQueue(updatedEntry.id);
+      commitQueueState(cleanedQueue);
 
       toast({
         title: 'تم الإرسال',
@@ -383,22 +593,21 @@ export const Trips: React.FC = () => {
 
       addNotification({
         type: 'success',
-        title: 'رحلة جديدة مسجلة',
-        message: `تم اعتماد رحلة رقم ${newEntry.bookingId} بنجاح.`,
+        title: isEditing ? 'تم تحديث رحلة' : 'رحلة جديدة مسجلة',
+        message: `تم اعتماد رحلة رقم ${updatedEntry.bookingId} بنجاح.`,
       });
     } catch (error) {
-      const updatedQueue = TripService.enqueue({
+      const failedQueue = TripService.upsertRecord({
         ...offlineRecord,
         status: 'failed',
         error: error instanceof Error ? error.message : 'unknown_error',
       });
-      handleQueueUpdate(updatedQueue);
+      commitQueueState(failedQueue);
 
       updatedEntries = updatedEntries.map((entry) =>
-        entry.id === newEntry.id ? { ...entry, syncStatus: 'failed' } : entry
+        entry.id === updatedEntry.id ? { ...entry, syncStatus: 'failed' } : entry
       );
       setTrips(updatedEntries);
-      persistTripsSection(updatedEntries, updatedQueue.length);
 
       toast({
         title: 'تعذر الإرسال',
@@ -439,13 +648,14 @@ export const Trips: React.FC = () => {
     });
     const records = TripService.loadQueue();
     setQueue(records);
-    const syncedEntries = trips.map((entry) =>
+    const syncedEntries: TripEntry[] = trips.map((entry) =>
       records.some((record) => record.id === entry.id)
         ? entry
-        : { ...entry, syncStatus: 'synced' }
+        : { ...entry, syncStatus: 'synced' as TripSyncStatus }
     );
     setTrips(syncedEntries);
     persistTripsSection(syncedEntries, records.length);
+    updateNextBookingSequence(syncedEntries, records);
 
     if (result.failed === 0) {
       toast({
@@ -510,7 +720,35 @@ export const Trips: React.FC = () => {
         <p className="text-muted-foreground">
           {ARABIC_TRIPS_MESSAGES.PAGE_DESCRIPTION}
         </p>
+        <div className="flex flex-col gap-1 text-sm text-muted-foreground">
+          <span>التاريخ الميلادي: {gregorianDateLabel}</span>
+          <span>التاريخ الهجري: {hijriDateLabel}</span>
+        </div>
       </div>
+
+      {editingTrip && (
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50/70 p-4">
+          <div>
+            <p className="font-semibold text-amber-900">
+              يتم الآن تعديل الرحلة رقم {editingTrip.bookingId}
+            </p>
+            <p className="text-sm text-amber-800 mt-1">
+              يمكن تحديث البيانات وإعادة إرسالها. {canReuseExistingEvidence
+                ? 'سيتم إعادة استخدام الصور المرفوعة مسبقاً.'
+                : 'هذه الرحلة متزامنة مسبقاً، يجب إضافة صورة جديدة لتوثيق التعديل.'}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="border-amber-300 text-amber-900 bg-white">
+              وضع تعديل الرحلات
+            </Badge>
+            <Button variant="secondary" onClick={handleCancelEdit} size="sm">
+              <X className="w-4 h-4 ml-2" />
+              إلغاء التعديل
+            </Button>
+          </div>
+        </div>
+      )}
 
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
@@ -556,16 +794,11 @@ export const Trips: React.FC = () => {
           <div className="grid gap-4 md:grid-cols-2">
             <div>
               <Label>{ARABIC_TRIPS_MESSAGES.BOOKING_ID_LABEL}</Label>
-              <div className="flex gap-2 mt-2">
-                <Input value={bookingId} readOnly />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setBookingId(generateBookingId())}
-                >
-                  <RefreshCw className="w-4 h-4" />
-                </Button>
-              </div>
+              <Input
+                value={bookingId}
+                readOnly
+                className="mt-2 text-base font-semibold tracking-[0.2em]"
+              />
             </div>
             <div>
               <Label>{ARABIC_TRIPS_MESSAGES.SOURCE_REF_LABEL}</Label>
@@ -692,23 +925,57 @@ export const Trips: React.FC = () => {
           </p>
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-2">
-          {ARABIC_TRIPS_MESSAGES.CHECKLIST_ITEMS.map((item) => (
-            <div
-              key={item.key}
-              className="flex items-start justify-between rounded-xl border p-4 bg-muted/40"
-            >
-              <div>
-                <p className="font-semibold">{item.title}</p>
-                <p className="text-sm text-muted-foreground">{item.description}</p>
+          {ARABIC_TRIPS_MESSAGES.CHECKLIST_ITEMS.map((item) => {
+            const important = IMPORTANT_CHECKLIST_KEYS.has(item.key);
+            const selectedRating = checklist[item.key];
+            return (
+              <div
+                key={item.key}
+                className={cn(
+                  'flex flex-col gap-3 rounded-xl border p-4 transition-colors',
+                  important
+                    ? 'bg-amber-50 border-amber-300'
+                    : 'bg-muted/40 border-border'
+                )}
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div className="pr-3">
+                    <p className="font-semibold flex items-center gap-2">
+                      {item.title}
+                      {important && (
+                        <span className="text-xs font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
+                          مهم
+                        </span>
+                      )}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {item.description}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {checklistRatingOptions.map((rating) => (
+                    <Button
+                      key={rating.value}
+                      type="button"
+                      variant="outline"
+                      className={cn(
+                        'min-w-[120px] border text-sm transition-all shadow-sm',
+                        selectedRating === rating.value
+                          ? rating.selectedClassName
+                          : rating.className
+                      )}
+                      onClick={() =>
+                        handleChecklistRatingChange(item.key, rating.value)
+                      }
+                    >
+                      {rating.label}
+                    </Button>
+                  ))}
+                </div>
               </div>
-              <Switch
-                checked={checklist[item.key]}
-                onCheckedChange={(value) =>
-                  handleChecklistToggle(item.key, value)
-                }
-              />
-            </div>
-          ))}
+            );
+          })}
         </CardContent>
       </Card>
 
@@ -740,6 +1007,41 @@ export const Trips: React.FC = () => {
               يدعم JPG و PNG - يفضل دقة عالية
             </span>
           </label>
+
+          {editingTrip && persistedAttachments.length > 0 && (
+            <div className="rounded-xl border border-dashed border-amber-200 bg-amber-50/40 p-4 space-y-3">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                <p className="font-semibold text-sm text-amber-900">
+                  الصور الحالية المرتبطة بالرحلة
+                </p>
+                {!canReuseExistingEvidence && (
+                  <Badge variant="outline" className="border-amber-300 text-amber-900 bg-white">
+                    يلزم إضافة صورة جديدة لإعادة التوثيق
+                  </Badge>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {persistedAttachments.map((attachment) => (
+                  <div
+                    key={attachment.id}
+                    className="flex items-center gap-2 rounded-full border border-amber-200 bg-white/80 px-3 py-1 text-xs text-amber-900"
+                  >
+                    <span className="font-medium">{attachment.name}</span>
+                    {canReuseExistingEvidence && (
+                      <button
+                        type="button"
+                        className="text-amber-700 hover:text-amber-900"
+                        onClick={() => handleRemovePersistedAttachment(attachment.id)}
+                        title="إزالة الصورة من التعديل"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {selectedPhotos.length > 0 && (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -794,16 +1096,26 @@ export const Trips: React.FC = () => {
             </div>
             <div>
               <Label>{ARABIC_TRIPS_MESSAGES.SUPERVISOR_RATING_LABEL}</Label>
-              <Input
-                type="number"
-                className="mt-2"
-                min={1}
-                max={5}
-                value={form.supervisorRating}
-                onChange={(e) =>
-                  handleInputChange('supervisorRating', Number(e.target.value))
+              <Select
+                value={String(form.supervisorRating)}
+                onValueChange={(value) =>
+                  handleInputChange('supervisorRating', Number(value))
                 }
-              />
+              >
+                <SelectTrigger className="mt-2">
+                  <SelectValue placeholder="اختر التقييم" />
+                </SelectTrigger>
+                <SelectContent>
+                  {ratingOptions.map((option) => (
+                    <SelectItem
+                      key={option.value}
+                      value={String(option.value)}
+                    >
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <div>
@@ -941,14 +1253,32 @@ export const Trips: React.FC = () => {
                     key={trip.id}
                     className="border rounded-xl p-4 space-y-2 bg-muted/30"
                   >
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
                       <div>
                         <p className="font-semibold">{trip.bookingId}</p>
                         <p className="text-sm text-muted-foreground">
                           {trip.clientName} • {trip.driverName}
                         </p>
                       </div>
-                      {statusBadge(trip.syncStatus)}
+                      <div className="flex items-center gap-2">
+                        {statusBadge(trip.syncStatus)}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="تعديل الرحلة"
+                          onClick={() => handleEditTrip(trip)}
+                        >
+                          <PencilLine className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="حذف الرحلة"
+                          onClick={() => handleDeleteTrip(trip)}
+                        >
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                        </Button>
+                      </div>
                     </div>
                     <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                       <Badge variant="outline">{trip.bookingSource}</Badge>
@@ -963,6 +1293,11 @@ export const Trips: React.FC = () => {
                     </div>
                     <p className="text-xs text-muted-foreground">
                       {trip.pickupPoint} → {trip.dropoffPoint}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      الميلادي:{' '}
+                      {trip.gregorianDateLabel || formatGregorianDateLabel(trip.date)} • الهجري:{' '}
+                      {trip.hijriDateLabel || formatHijriDateLabel(trip.date)}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {formatDateTime(trip.createdAt)}

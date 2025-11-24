@@ -2,6 +2,40 @@
 import { format } from 'date-fns';
 import { STORAGE_KEYS } from '@/lib/storageKeys';
 
+const hijriFormatter = (() => {
+  try {
+    return new Intl.DateTimeFormat('ar-SA-u-ca-islamic', { dateStyle: 'full' });
+  } catch {
+    // Fallback in case the hijri calendar isn't supported on the current runtime.
+    return new Intl.DateTimeFormat('ar-SA', { dateStyle: 'full' });
+  }
+})();
+
+const gregorianFormatter = new Intl.DateTimeFormat('ar-SA', { dateStyle: 'full' });
+
+const normalizeDate = (value: Date | string): Date => {
+  if (value instanceof Date) return value;
+  const parsed = new Date(value);
+  // Guard against invalid dates.
+  return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
+};
+
+export const formatHijriDateLabel = (value: Date | string): string => {
+  try {
+    return hijriFormatter.format(normalizeDate(value));
+  } catch {
+    return normalizeDate(value).toLocaleDateString('ar-SA');
+  }
+};
+
+export const formatGregorianDateLabel = (value: Date | string): string => {
+  try {
+    return gregorianFormatter.format(normalizeDate(value));
+  } catch {
+    return normalizeDate(value).toLocaleDateString('ar-SA');
+  }
+};
+
 export interface FinanceEntry {
   id: string;
   type: 'income' | 'expense' | 'deposit';
@@ -112,13 +146,15 @@ export interface SupplierDocument {
 
 export type TripSyncStatus = 'pending' | 'synced' | 'failed';
 
+export type TripChecklistRating = 'bad' | 'normal' | 'good';
+
 export interface TripChecklist {
-  externalClean: boolean;
-  internalClean: boolean;
-  carSmell: boolean;
-  driverAppearance: boolean;
-  acStatus: boolean;
-  engineStatus: boolean;
+  externalClean: TripChecklistRating;
+  internalClean: TripChecklistRating;
+  carSmell: TripChecklistRating;
+  driverAppearance: TripChecklistRating;
+  acStatus: TripChecklistRating;
+  engineStatus: TripChecklistRating;
 }
 
 export interface TripAttachment {
@@ -134,6 +170,8 @@ export interface TripEntry {
   id: string;
   bookingId: string;
   date: string;
+  hijriDateLabel?: string;
+  gregorianDateLabel?: string;
   sourceRef: string;
   bookingSource: string;
   supplier: string;
@@ -168,6 +206,42 @@ export const generateMockDataForDate = (date: Date): DailyData => {
     newDate.setSeconds(Math.floor(Math.random() * 60));
     return newDate;
   };
+
+  const mockTrips = [
+    {
+      id: `trip-${dateStr}-1`,
+      bookingId: `WTH-${format(date, 'yy-MM')}-${Math.floor(1000 + Math.random() * 9000)}`,
+      date: dateStr,
+      hijriDateLabel: formatHijriDateLabel(date),
+      gregorianDateLabel: formatGregorianDateLabel(date),
+      sourceRef: '2499301',
+      bookingSource: 'تطبيق واثق (مباشر)',
+      supplier: 'أسطول واثق',
+      clientName: 'عبدالله العتيبي',
+      driverName: 'سالم الحربي',
+      carType: 'جمس يوكن 2024',
+      parkingLocation: 'V12 - الدور الأول',
+      pickupPoint: 'صالة 1 - بوابة 4',
+      dropoffPoint: 'فندق ساعة مكة',
+      supervisorName: 'عبدالله العتيبي',
+      supervisorRating: 5,
+      supervisorNotes: 'تم التحقق من جميع التفاصيل والمركبة جاهزة',
+      passengerFeedback: '',
+      status: 'approved',
+      checklist: {
+        externalClean: 'good',
+        internalClean: 'good',
+        carSmell: 'good',
+        driverAppearance: 'good',
+        acStatus: 'good',
+        engineStatus: 'good',
+      },
+      attachments: [],
+      createdAt: new Date().toISOString(),
+      createdBy: undefined,
+      syncStatus: 'synced',
+    },
+  ];
 
   return {
     date: dateStr,
@@ -317,41 +391,9 @@ export const generateMockDataForDate = (date: Date): DailyData => {
       ]
     },
     trips: {
-      totalTrips: 1,
+      totalTrips: mockTrips.length,
       pendingSync: 0,
-      entries: [
-        {
-          id: `trip-${dateStr}-1`,
-          bookingId: `WTH-${format(date, 'yy-MM')}-${Math.floor(1000 + Math.random() * 9000)}`,
-          date: dateStr,
-          sourceRef: '2499301',
-          bookingSource: 'تطبيق واثق (مباشر)',
-          supplier: 'أسطول واثق',
-          clientName: 'عبدالله العتيبي',
-          driverName: 'سالم الحربي',
-          carType: 'جمس يوكن 2024',
-          parkingLocation: 'V12 - الدور الأول',
-          pickupPoint: 'صالة 1 - بوابة 4',
-          dropoffPoint: 'فندق ساعة مكة',
-          supervisorName: 'عبدالله العتيبي',
-          supervisorRating: 5,
-          supervisorNotes: 'تم التحقق من جميع التفاصيل والمركبة جاهزة',
-          passengerFeedback: '',
-          status: 'approved',
-          checklist: {
-            externalClean: true,
-            internalClean: true,
-            carSmell: true,
-            driverAppearance: true,
-            acStatus: true,
-            engineStatus: true,
-          },
-          attachments: [],
-          createdAt: new Date().toISOString(),
-          createdBy: undefined,
-          syncStatus: 'synced',
-        }
-      ]
+      entries: mockTrips,
     },
     customers: [
       {
@@ -476,6 +518,11 @@ export const getDataForDate = (date: Date): DailyData => {
       data.customers = data.customers.map((customer: Customer) => ({
         ...customer,
         arrivalDate: new Date(customer.arrivalDate)
+      }));
+      data.trips.entries = (data.trips.entries || []).map((entry: TripEntry) => ({
+        ...entry,
+        hijriDateLabel: entry.hijriDateLabel || formatHijriDateLabel(entry.date || dateStr),
+        gregorianDateLabel: entry.gregorianDateLabel || formatGregorianDateLabel(entry.date || dateStr),
       }));
       if (data.suppliers) {
         data.suppliers = data.suppliers.map((supplier: Supplier) => ({

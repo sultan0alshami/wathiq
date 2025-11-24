@@ -1,12 +1,12 @@
 import os
 import sys
 import json
-import os
 from weasyprint import HTML, CSS
 import weasyprint
 import pydyf
 from os import path
 from string import Template
+import base64
 
 def generate_pdf(data):
     # Generate HTML for financial entries
@@ -75,6 +75,38 @@ def generate_pdf(data):
         </div>
         """
 
+    html_trips_entries = ""
+    trips_data = data.get('trips', {}).get('entries', [])
+    for i, trip in enumerate(trips_data):
+        status_text = 'جاهز' if trip.get('status') == 'approved' else 'تنبيه'
+        status_color = '#16a34a' if trip.get('status') == 'approved' else '#f59e0b'
+        html_trips_entries += f"""
+        <div class="item">
+            <div class="item-header">
+                <span class="item-title">{i + 1}. {trip.get('bookingId', '')} - {trip.get('clientName', '')}</span>
+                <div class="item-meta">
+                    <span class="chip" style="background-color: {status_color};">{status_text}</span>
+                </div>
+            </div>
+            <p style="margin: 4px 0 0;">المورد: {trip.get('supplier', '')} • السائق: {trip.get('driverName', '')}</p>
+            <p style="margin: 4px 0 0;">المسار: {trip.get('pickupPoint', '')} → {trip.get('dropoffPoint', '')}</p>
+        </div>
+        """
+
+    trips_section_html = ""
+    if data.get('trips'):
+        trips_meta = data['trips']
+        trips_section_html = f"""
+        <div class="section">
+            <div class="section-title">قسم الرحلات</div>
+            <div class="summary">
+                إجمالي الرحلات: {trips_meta.get('totalTrips', len(trips_data))} • المزامنة المعلقة: {trips_meta.get('pendingSync', 0)}
+            </div>
+            <h3>تفاصيل الرحلات:</h3>
+            {html_trips_entries if html_trips_entries else '<p>لا توجد رحلات مسجلة لهذا اليوم.</p>'}
+        </div>
+        """
+
     html_template = Template(
         '''
     <!DOCTYPE html>
@@ -85,13 +117,13 @@ def generate_pdf(data):
         <style>
             @font-face {
                 font-family: 'Dubai';
-                src: url("$font_regular") format('opentype');
+                src: url("$font_regular") format('$font_regular_format');
                 font-weight: normal;
                 font-style: normal;
             }
             @font-face {
                 font-family: 'Dubai';
-                src: url("$font_bold") format('opentype');
+                src: url("$font_bold") format('$font_bold_format');
                 font-weight: bold;
                 font-style: normal;
             }
@@ -195,7 +227,8 @@ def generate_pdf(data):
             <img class="logo" src="$logo_path_bytes" alt="Wathiq Logo" />
             <div class="company-name">Wathiq - واثق</div>
             <h1>تقرير واثق اليومي الشامل</h1>
-            <p>التاريخ: $date</p>
+            <p>التاريخ الميلادي: $gregorian_date</p>
+            <p>التاريخ الهجري: $hijri_date</p>
         </div>
         
         <div class="section">
@@ -228,6 +261,8 @@ def generate_pdf(data):
             $html_marketing_tasks
         </div>
 
+        $trips_section
+
     </body>
     </html>
         '''
@@ -237,6 +272,8 @@ def generate_pdf(data):
         date=data['date'],
         font_regular=data['font_path_regular'],
         font_bold=data['font_path_bold'],
+        font_regular_format=data['font_regular_format'],
+        font_bold_format=data['font_bold_format'],
         logo_path_bytes=data['logo_path_bytes'],
         current_liquidity=data['finance']['currentLiquidity'],
         customers_contacted=data['sales']['customersContacted'],
@@ -244,6 +281,9 @@ def generate_pdf(data):
         html_sales_entries=html_sales_entries,
         html_operations_entries=html_operations_entries,
         html_marketing_tasks=html_marketing_tasks,
+        gregorian_date=data.get('gregorianDateLabel', data['date']),
+        hijri_date=data.get('hijriDateLabel', data['date']),
+        trips_section=trips_section_html,
     )
 
     # Create PDF from HTML
@@ -275,8 +315,8 @@ if __name__ == '__main__':
     dubai_regular = path.join(font_dir, 'Dubai-Regular.otf')
     dubai_bold = path.join(font_dir, 'Dubai-Bold.ttf')
     if path.exists(dubai_regular) and path.exists(dubai_bold):
-        input_data['font_path_regular'] = dubai_regular
-        input_data['font_path_bold'] = dubai_bold
+        font_path_regular = dubai_regular
+        font_path_bold = dubai_bold
     else:
         # Common Debian paths
         amiri_regular = '/usr/share/fonts/truetype/amiri/Amiri-Regular.ttf'
@@ -286,25 +326,36 @@ if __name__ == '__main__':
         dejavu_regular = '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
         dejavu_bold = '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'
         if path.exists(amiri_regular) and path.exists(amiri_bold):
-            input_data['font_path_regular'] = amiri_regular
-            input_data['font_path_bold'] = amiri_bold
+            font_path_regular = amiri_regular
+            font_path_bold = amiri_bold
         elif path.exists(noto_regular) and path.exists(noto_bold):
-            input_data['font_path_regular'] = noto_regular
-            input_data['font_path_bold'] = noto_bold
+            font_path_regular = noto_regular
+            font_path_bold = noto_bold
         else:
-            input_data['font_path_regular'] = dejavu_regular
-            input_data['font_path_bold'] = dejavu_bold
+            font_path_regular = dejavu_regular
+            font_path_bold = dejavu_bold
     logo_path = path.join(assets_dir, 'logo.png')
 
-    # Convert font paths to file URIs for WeasyPrint
     def to_file_uri(p):
         abs_path = path.abspath(p)
         if os.name == 'nt':
             return 'file:///' + abs_path.replace('\\', '/')
         return 'file://' + abs_path
 
-    input_data['font_path_regular'] = to_file_uri(input_data['font_path_regular'])
-    input_data['font_path_bold'] = to_file_uri(input_data['font_path_bold'])
+    def font_to_data_uri(font_path: str):
+        mime = 'font/otf' if font_path.lower().endswith('.otf') else 'font/ttf'
+        with open(font_path, 'rb') as font_file:
+            encoded = base64.b64encode(font_file.read()).decode('utf-8')
+        font_format = 'opentype' if mime == 'font/otf' else 'truetype'
+        return f'data:{mime};base64,{encoded}', font_format
+
+    regular_data_uri, regular_format = font_to_data_uri(font_path_regular)
+    bold_data_uri, bold_format = font_to_data_uri(font_path_bold)
+
+    input_data['font_path_regular'] = regular_data_uri
+    input_data['font_path_bold'] = bold_data_uri
+    input_data['font_regular_format'] = regular_format
+    input_data['font_bold_format'] = bold_format
     input_data['logo_path_bytes'] = to_file_uri(logo_path)
 
     pdf_output = generate_pdf(input_data)

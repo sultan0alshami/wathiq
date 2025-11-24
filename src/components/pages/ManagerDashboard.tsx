@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, Legend } from 'recharts';
 import { 
   TrendingUp, 
   Users, 
@@ -50,6 +50,7 @@ export const ManagerDashboard: React.FC = () => {
     expenseCategoriesData,
     salesPerformanceData,
     statistics,
+    tripsTrendData,
     isLoading,
     error,
     refresh
@@ -113,6 +114,9 @@ export const ManagerDashboard: React.FC = () => {
     currentData.sales.customersContacted + // Sales contacts
     // TODO: Refactor marketingCustomers calculation to use a more robust method (e.g., a dedicated isCustomerRelated flag in task data) instead of string matching on task titles.
     currentData.marketing.tasks.filter(task => task.title.includes('عميل')).length; // Marketing customer tasks
+
+  const tripsApprovedToday = currentData.trips.entries.filter(entry => entry.status === 'approved').length;
+  const tripsWarningToday = currentData.trips.entries.filter(entry => entry.status === 'warning').length;
 
   const COLORS = ['hsl(var(--wathiq-primary))', 'hsl(var(--wathiq-accent))', 'hsl(var(--success))', 'hsl(var(--warning))', 'hsl(var(--destructive))'];
 
@@ -374,6 +378,40 @@ export const ManagerDashboard: React.FC = () => {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="w-5 h-5" />
+            مؤشرات الرحلات اليومية
+          </CardTitle>
+          <CardDescription>
+            مراقبة عدد الرحلات المكتملة والملاحظات خلال آخر 30 يوماً
+          </CardDescription>
+          <div className="text-sm text-muted-foreground">
+            اليوم: {tripsApprovedToday} رحلة جاهزة • {tripsWarningToday} رحلة تحتاج متابعة • قيد المزامنة: {currentData.trips.pendingSync}
+          </div>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={240}>
+            <BarChart data={tripsTrendData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+              <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: 'hsl(var(--card))',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '8px'
+                }}
+              />
+              <Legend />
+              <Bar dataKey="approved" stackId="trips" fill="hsl(var(--success))" name="جاهزة" />
+              <Bar dataKey="warnings" stackId="trips" fill="hsl(var(--warning))" name="تنبيه" />
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
 
       {/* 30-day Submission Table */}
       <Card>

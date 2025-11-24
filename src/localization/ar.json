@@ -129,6 +129,7 @@
       "operations": "تقرير العمليات اليومي",
       "marketing": "تقرير التسويق اليومي",
       "customers": "تقرير العملاء اليومي",
+      "trips": "تقرير الرحلات اليومي",
       "merged": "التقرير المجمع اليومي"
     },
     "reportSections": {
@@ -136,7 +137,8 @@
       "sales": "المبيعات",
       "operations": "العمليات",
       "marketing": "التسويق",
-      "customers": "العملاء"
+      "customers": "العملاء",
+      "trips": "الرحلات"
     },
     "status": {
       "completed": "مكتمل",
@@ -148,6 +150,7 @@
       "operations": "نظام العمليات",
       "marketing": "نظام التسويق",
       "customers": "نظام العملاء",
+      "trips": "نظام الرحلات",
       "system": "النظام"
     },
     "statsCards": {
