@@ -14,7 +14,7 @@ import { ValidationMessage, useFormValidation, ValidationRules } from '@/compone
 import { KPICardSkeleton, TableSkeleton } from '@/components/ui/loading-skeleton';
 import { FinanceKPICards } from '@/components/ui/mobile-kpi';
 import { useDateContext } from '@/contexts/DateContext';
-import { getDataForDate, updateSectionData, FinanceEntry } from '@/lib/mockData';
+import { FinanceEntry } from '@/lib/mockData';
 import { formatCurrency, formatInputNumber, parseEnglishNumber, isValidEnglishNumber } from '@/lib/numberUtils';
 import { useAdvancedSearch } from '@/hooks/useSearch';
 import { useDebounce, useMemoizedCalculations } from '@/hooks/usePerformance';
@@ -22,9 +22,12 @@ import { useMobileDataDisplay } from '@/hooks/useMobileOptimization';
 import { useToast } from '@/hooks/use-toast';
 import { ARABIC_FINANCE_MESSAGES } from '@/lib/arabicFinanceMessages';
 import { AuthService } from '@/services/AuthService';
+import { useAuth } from '@/contexts/AuthContext';
+import { FinanceService } from '@/services/FinanceService';
 
 export const Finance: React.FC = () => {
   const { currentDate, formatDate } = useDateContext();
+  const { user } = useAuth();
   // Note: currentLiquidity is treated as an initial balance or a manually updated value.
   // If it's expected to dynamically update based on the sum of all entries, its calculation
   // should be derived from the `entries` state. For now, it's updated explicitly.
@@ -88,23 +91,28 @@ export const Finance: React.FC = () => {
       ValidationRules.arabicText()
     ]), [newEntryCategory]);
 
-  // Load data for current date
-  useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      try {
-        // Simulate loading delay for skeleton
-        await new Promise(resolve => setTimeout(resolve, 500));
-        const data = getDataForDate(currentDate);
-        setCurrentLiquidity(data.finance.currentLiquidity);
-        setEntries(data.finance.entries);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const loadFinanceData = useCallback(async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      const { entries: serverEntries, liquidity } = await FinanceService.getOverview(currentDate);
+      setEntries(serverEntries);
+      setCurrentLiquidity(liquidity);
+    } catch (error) {
+      console.error('Failed to load finance data', error);
+      toast({
+        title: 'تعذر تحميل البيانات',
+        description: 'حدث خطأ أثناء تحميل بيانات المالية. حاول لاحقاً.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [currentDate, user, toast]);
 
-    loadData();
-  }, [currentDate]);
+  useEffect(() => {
+    loadFinanceData();
+  }, [loadFinanceData]);
 
   // Memoized calculations
   const calculations = useMemoizedCalculations(
@@ -137,7 +145,15 @@ export const Finance: React.FC = () => {
     return filteredEntries.slice(start, start + ITEMS_PER_PAGE);
   }, [filteredEntries, currentPage]);
 
-  const addEntry = useCallback(() => {
+  const pendingTransactions = useMemo(
+    () =>
+      (entries as Array<FinanceEntry & { status?: string }>).filter(
+        (entry) => entry.status === 'pending'
+      ).length,
+    [entries]
+  );
+
+  const addEntry = useCallback(async () => {
     const isFormValid = titleValidation.isValid && amountValidation.isValid;
     
     if (!isFormValid) {
@@ -149,52 +165,61 @@ export const Finance: React.FC = () => {
       return;
     }
 
-    const newEntry: FinanceEntry = {
-      id: Date.now().toString(),
-      title: newEntryTitle,
-      amount: parseEnglishNumber(newEntryAmount),
-      type: newEntryType,
-      category: newEntryCategory,
-      date: currentDate,
-      description: newEntryDescription,
-    };
-    
-    const updatedEntries = [...entries, newEntry];
-    setEntries(updatedEntries);
-    
-    // Update localStorage
-    updateSectionData(currentDate, 'finance', {
-      currentLiquidity,
-      entries: updatedEntries,
-    });
-    
-    // Reset form
-    setNewEntryTitle('');
-    setNewEntryAmount('');
-    setNewEntryCategory('');
-    setNewEntryDescription('');
-    
-    toast({
-      title: ARABIC_FINANCE_MESSAGES.TRANSACTION_ADDED_TITLE,
-      description: ARABIC_FINANCE_MESSAGES.TRANSACTION_ADDED_DESCRIPTION(formatCurrency(newEntry.amount)),
-    });
-  }, [newEntryTitle, newEntryAmount, newEntryType, newEntryCategory, newEntryDescription, 
-      currentDate, currentLiquidity, entries, titleValidation.isValid, amountValidation.isValid, toast]);
+    try {
+      await AuthService.requireAccess('finance');
+      if (!user?.id) {
+        throw new Error('يجب تسجيل الدخول لإضافة المعاملات.');
+      }
+
+      const amountValue = parseEnglishNumber(newEntryAmount);
+      const createdEntry = await FinanceService.createEntry(user.id, {
+        title: newEntryTitle,
+        amount: amountValue,
+        type: newEntryType,
+        category: newEntryCategory,
+        date: currentDate,
+        description: newEntryDescription || undefined,
+      });
+
+      setEntries((prev) => [...prev, createdEntry]);
+
+      setNewEntryTitle('');
+      setNewEntryAmount('');
+      setNewEntryCategory('');
+      setNewEntryDescription('');
+      
+      toast({
+        title: ARABIC_FINANCE_MESSAGES.TRANSACTION_ADDED_TITLE,
+        description: ARABIC_FINANCE_MESSAGES.TRANSACTION_ADDED_DESCRIPTION(formatCurrency(amountValue)),
+      });
+    } catch (error) {
+      console.error('Failed to add finance entry', error);
+      toast({
+        title: 'تعذر إضافة المعاملة',
+        description: error instanceof Error ? error.message : 'حدث خطأ غير متوقع',
+        variant: 'destructive',
+      });
+    }
+  }, [
+    titleValidation.isValid,
+    amountValidation.isValid,
+    newEntryTitle,
+    newEntryAmount,
+    newEntryType,
+    newEntryCategory,
+    newEntryDescription,
+    currentDate,
+    toast,
+    user,
+  ]);
 
   const removeEntry = useCallback(async (id: string) => {
     try {
-      // Server-side authorization check before deletion
       await AuthService.requireAccess('finance');
-      
+      await FinanceService.deleteEntry(id);
+
       const entryToDelete = entries.find(e => e.id === id);
-      const updatedEntries = entries.filter(entry => entry.id !== id);
-      setEntries(updatedEntries);
-      
-      // Update localStorage
-      updateSectionData(currentDate, 'finance', {
-        currentLiquidity,
-        entries: updatedEntries,
-      });
+      setEntries((prev) => prev.filter(entry => entry.id !== id));
 
       if (entryToDelete) {
         toast({
@@ -203,19 +228,35 @@ export const Finance: React.FC = () => {
         });
       }
     } catch (err) {
-      // requireAccess() already showed error toast
-      console.error('Unauthorized delete attempt:', err);
+      console.error('Failed to delete finance entry', err);
+      // requireAccess already handles unauthorized case
     }
-  }, [entries, currentDate, currentLiquidity, toast]);
+  }, [entries, toast]);
 
-  const updateLiquidity = useCallback((value: number) => {
-    setCurrentLiquidity(value);
-    // Update localStorage
-    updateSectionData(currentDate, 'finance', {
-      currentLiquidity: value,
-      entries,
-    });
-  }, [currentDate, entries]);
+  const persistLiquidity = useCallback(
+    async (value: number) => {
+      if (!user?.id) return;
+      try {
+        await FinanceService.updateLiquidity(user.id, value);
+      } catch (error) {
+        console.error('Failed to update liquidity', error);
+        toast({
+          title: 'تعذر حفظ الرصيد',
+          description: 'حدث خطأ أثناء تحديث السيولة الحالية.',
+          variant: 'destructive',
+        });
+      }
+    },
+    [user, toast]
+  );
+
+  const updateLiquidity = useCallback(
+    (value: number) => {
+      setCurrentLiquidity(value);
+      void persistLiquidity(value);
+    },
+    [persistLiquidity]
+  );
 
   const getEntryColor = useCallback((type: string) => {
     switch (type) {
@@ -339,7 +380,7 @@ export const Finance: React.FC = () => {
         totalIncome={calculations.totalIncomes}
         totalExpenses={calculations.totalExpenses}
         netProfit={calculations.netChange}
-        pendingTransactions={entries.filter(entry => entry.status === 'pending').length}
+        pendingTransactions={pendingTransactions}
       />
 
       {/* Add Entry Form */}

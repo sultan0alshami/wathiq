@@ -10,6 +10,7 @@
 -- Enable RLS on finance tables
 ALTER TABLE finance_entries ENABLE ROW LEVEL SECURITY;
 ALTER TABLE finance_categories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE finance_liquidity ENABLE ROW LEVEL SECURITY;
 
 -- Finance entries policies
 CREATE POLICY "Users can view their own finance entries" ON finance_entries
@@ -36,6 +37,16 @@ CREATE POLICY "Users can update their own finance categories" ON finance_categor
 
 CREATE POLICY "Users can delete their own finance categories" ON finance_categories
     FOR DELETE USING (auth.uid() = user_id);
+
+-- Finance liquidity policies
+CREATE POLICY "Users can view their own finance liquidity" ON finance_liquidity
+    FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can upsert their finance liquidity" ON finance_liquidity
+    FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their finance liquidity" ON finance_liquidity
+    FOR UPDATE USING (auth.uid() = user_id);
 
 -- =====================================================
 -- SALES TABLES RLS

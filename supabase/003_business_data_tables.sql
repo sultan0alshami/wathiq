@@ -14,11 +14,13 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE TABLE finance_entries (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
     date DATE NOT NULL,
-    type VARCHAR(20) NOT NULL CHECK (type IN ('income', 'expense')),
+    type VARCHAR(20) NOT NULL CHECK (type IN ('income', 'expense', 'deposit')),
     category VARCHAR(100) NOT NULL,
     amount DECIMAL(15,2) NOT NULL,
     description TEXT,
+    attachment_url TEXT,
     payment_method VARCHAR(50),
     reference_number VARCHAR(100),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -33,6 +35,13 @@ CREATE TABLE finance_categories (
     type VARCHAR(20) NOT NULL CHECK (type IN ('income', 'expense')),
     color VARCHAR(7) DEFAULT '#3B82F6',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Finance liquidity table (stores current balance per user)
+CREATE TABLE finance_liquidity (
+    user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    value DECIMAL(15,2) NOT NULL DEFAULT 0,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- =====================================================
@@ -184,6 +193,7 @@ CREATE TABLE supplier_documents (
 CREATE INDEX idx_finance_entries_user_date ON finance_entries(user_id, date);
 CREATE INDEX idx_finance_entries_type ON finance_entries(type);
 CREATE INDEX idx_finance_categories_user ON finance_categories(user_id);
+CREATE INDEX idx_finance_entries_title ON finance_entries(user_id, title);
 
 -- Sales indexes
 CREATE INDEX idx_sales_meetings_user_date ON sales_meetings(user_id, date);
@@ -229,3 +239,4 @@ CREATE TRIGGER update_marketing_campaigns_updated_at BEFORE UPDATE ON marketing_
 CREATE TRIGGER update_marketing_tasks_updated_at BEFORE UPDATE ON marketing_tasks FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_customers_updated_at BEFORE UPDATE ON customers FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_suppliers_updated_at BEFORE UPDATE ON suppliers FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_finance_liquidity_updated_at BEFORE UPDATE ON finance_liquidity FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

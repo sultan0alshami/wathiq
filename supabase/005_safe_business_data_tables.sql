@@ -14,11 +14,13 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE TABLE IF NOT EXISTS finance_entries (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
     date DATE NOT NULL,
-    type VARCHAR(20) NOT NULL CHECK (type IN ('income', 'expense')),
+    type VARCHAR(20) NOT NULL CHECK (type IN ('income', 'expense', 'deposit')),
     category VARCHAR(100) NOT NULL,
     amount DECIMAL(15,2) NOT NULL,
     description TEXT,
+    attachment_url TEXT,
     payment_method VARCHAR(50),
     reference_number VARCHAR(100),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -33,6 +35,12 @@ CREATE TABLE IF NOT EXISTS finance_categories (
     type VARCHAR(20) NOT NULL CHECK (type IN ('income', 'expense')),
     color VARCHAR(7) DEFAULT '#3B82F6',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS finance_liquidity (
+    user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    value DECIMAL(15,2) NOT NULL DEFAULT 0,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- =====================================================
@@ -183,6 +191,7 @@ CREATE TABLE IF NOT EXISTS supplier_documents (
 -- Finance indexes
 CREATE INDEX IF NOT EXISTS idx_finance_entries_user_date ON finance_entries(user_id, date);
 CREATE INDEX IF NOT EXISTS idx_finance_entries_type ON finance_entries(type);
+CREATE INDEX IF NOT EXISTS idx_finance_entries_title ON finance_entries(user_id, title);
 CREATE INDEX IF NOT EXISTS idx_finance_categories_user ON finance_categories(user_id);
 
 -- Sales indexes
@@ -223,6 +232,7 @@ $$ language 'plpgsql';
 
 -- Apply triggers to all tables with updated_at (DROP IF EXISTS first)
 DROP TRIGGER IF EXISTS update_finance_entries_updated_at ON finance_entries;
+DROP TRIGGER IF EXISTS update_finance_liquidity_updated_at ON finance_liquidity;
 DROP TRIGGER IF EXISTS update_sales_meetings_updated_at ON sales_meetings;
 DROP TRIGGER IF EXISTS update_operations_entries_updated_at ON operations_entries;
 DROP TRIGGER IF EXISTS update_marketing_campaigns_updated_at ON marketing_campaigns;
@@ -232,6 +242,7 @@ DROP TRIGGER IF EXISTS update_suppliers_updated_at ON suppliers;
 
 -- Create triggers
 CREATE TRIGGER update_finance_entries_updated_at BEFORE UPDATE ON finance_entries FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_finance_liquidity_updated_at BEFORE UPDATE ON finance_liquidity FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_sales_meetings_updated_at BEFORE UPDATE ON sales_meetings FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_operations_entries_updated_at BEFORE UPDATE ON operations_entries FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_marketing_campaigns_updated_at BEFORE UPDATE ON marketing_campaigns FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

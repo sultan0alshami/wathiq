@@ -10,6 +10,7 @@
 -- Enable RLS on finance tables (safe to run multiple times)
 ALTER TABLE finance_entries ENABLE ROW LEVEL SECURITY;
 ALTER TABLE finance_categories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE finance_liquidity ENABLE ROW LEVEL SECURITY;
 
 -- Drop existing policies if they exist, then create new ones
 DROP POLICY IF EXISTS "Users can view their own finance entries" ON finance_entries;
@@ -30,7 +31,6 @@ CREATE POLICY "Users can update their own finance entries" ON finance_entries
 CREATE POLICY "Users can delete their own finance entries" ON finance_entries
     FOR DELETE USING (auth.uid() = user_id);
 
--- Finance categories policies
 DROP POLICY IF EXISTS "Users can view their own finance categories" ON finance_categories;
 DROP POLICY IF EXISTS "Users can insert their own finance categories" ON finance_categories;
 DROP POLICY IF EXISTS "Users can update their own finance categories" ON finance_categories;
@@ -47,6 +47,20 @@ CREATE POLICY "Users can update their own finance categories" ON finance_categor
 
 CREATE POLICY "Users can delete their own finance categories" ON finance_categories
     FOR DELETE USING (auth.uid() = user_id);
+
+-- Finance liquidity policies
+DROP POLICY IF EXISTS "Users can view their own finance liquidity" ON finance_liquidity;
+DROP POLICY IF EXISTS "Users can upsert their finance liquidity" ON finance_liquidity;
+DROP POLICY IF EXISTS "Users can update their finance liquidity" ON finance_liquidity;
+
+CREATE POLICY "Users can view their own finance liquidity" ON finance_liquidity
+    FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can upsert their finance liquidity" ON finance_liquidity
+    FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their finance liquidity" ON finance_liquidity
+    FOR UPDATE USING (auth.uid() = user_id);
 
 -- =====================================================
 -- SALES TABLES RLS

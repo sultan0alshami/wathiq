@@ -23,7 +23,9 @@ AND tablename IN (
     'marketing_customer_interactions',
     'customers',
     'suppliers',
-    'supplier_documents'
+    'supplier_documents',
+    'trip_reports',
+    'trip_photos'
 )
 ORDER BY tablename;
 
@@ -44,7 +46,9 @@ AND tablename IN (
     'marketing_customer_interactions',
     'customers',
     'suppliers',
-    'supplier_documents'
+    'supplier_documents',
+    'trip_reports',
+    'trip_photos'
 )
 ORDER BY tablename;
 
@@ -70,6 +74,8 @@ AND tablename IN (
     'marketing_customer_interactions',
     'customers',
     'suppliers',
-    'supplier_documents'
+    'supplier_documents',
+    'trip_reports',
+    'trip_photos'
 )
 ORDER BY tablename, policyname;
