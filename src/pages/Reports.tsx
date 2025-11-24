@@ -7,7 +7,7 @@ import { FileText, Download, Eye, Calendar, Filter } from 'lucide-react';
 import { useDateContext } from '@/contexts/DateContext';
 import { ReportViewerDialog } from '@/components/ui/report-viewer-dialog';
 import { ExportService } from '@/services/ExportService';
-import { getDataForDate, DailyData } from '@/lib/mockData';
+import { getDataForDate, DailyData, formatHijriDateLabel, formatGregorianDateLabel } from '@/lib/mockData';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns'; // Import format from date-fns
 import { useMemo } from 'react';
@@ -26,6 +26,8 @@ export const Reports: React.FC = () => {
 
   // Get real data for reports
   const dailyData = getDataForDate(currentDate);
+  const hijriDateLabel = formatHijriDateLabel(currentDate);
+  const gregorianDateLabel = formatGregorianDateLabel(currentDate);
 
   // Helper function to estimate report size
   const calculateReportSize = (data: any[]): string => {
@@ -144,6 +146,17 @@ export const Reports: React.FC = () => {
       submittedBy: getSubmittedBy('customers' as any),
       submittedAt: getSubmittedAt()
     },
+    {
+      id: 6,
+      title: ar.reports.reportTitles.trips,
+      section: 'trips',
+      date: currentDate,
+      status: dailyData.trips.entries.length > 0 ? ar.reports.status.completed : ar.reports.status.pending,
+      type: 'daily',
+      size: calculateReportSize(dailyData.trips.entries),
+      submittedBy: getSubmittedBy('trips' as any),
+      submittedAt: getSubmittedAt()
+    },
   ];
 
   const filteredReports = useMemo(() => {
@@ -180,6 +193,9 @@ export const Reports: React.FC = () => {
           break;
         case 'customers':
           triggerDownloadWithProgress(ExportService.exportCustomersCSV, `customers-${formatDate(currentDate, 'yyyy-MM-dd')}.csv`, report.title);
+          break;
+        case 'trips':
+          triggerDownloadWithProgress(ExportService.exportTripsCSV, `trips-${formatDate(currentDate, 'yyyy-MM-dd')}.csv`, report.title);
           break;
       }
     }
@@ -261,6 +277,9 @@ export const Reports: React.FC = () => {
           <h1 className="text-2xl md:text-3xl font-bold text-foreground">{ar.reports.title}</h1>
           <p className="text-muted-foreground mt-1 text-sm md:text-base">
             {ar.reports.description} - {formatDate(currentDate, 'dd/MM/yyyy')}
+          </p>
+          <p className="text-sm text-muted-foreground mt-1">
+            التاريخ الميلادي: {gregorianDateLabel} • التاريخ الهجري: {hijriDateLabel}
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2">

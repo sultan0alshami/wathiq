@@ -22,6 +22,10 @@ import {
   TripChecklist,
   TripChecklistRating,
   TripEntry,
+  TripSyncStatus,
+  TripAttachment,
+  formatHijriDateLabel,
+  formatGregorianDateLabel,
 } from '@/lib/mockData';
 import {
   TripService,
@@ -39,9 +43,11 @@ import {
   CloudOff,
   Image as ImageIcon,
   Loader2,
+  PencilLine,
   RefreshCw,
   Trash2,
   Upload,
+  X,
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -175,14 +181,33 @@ export const Trips: React.FC = () => {
   const [queue, setQueue] = useState<OfflineTripRecord[]>(TripService.loadQueue());
   const [submitting, setSubmitting] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [editingTripId, setEditingTripId] = useState<string | null>(null);
+  const [persistedAttachments, setPersistedAttachments] = useState<TripAttachment[]>([]);
+  const [editingQueueAttachments, setEditingQueueAttachments] = useState<TripPhotoAttachment[]>([]);
+  const [canReuseExistingEvidence, setCanReuseExistingEvidence] = useState(false);
+
+  const editingTrip = useMemo(
+    () => (editingTripId ? trips.find((entry) => entry.id === editingTripId) || null : null),
+    [editingTripId, trips]
+  );
 
   const bookingId = useMemo(
-    () => buildBookingId(currentDate, bookingSequence),
-    [currentDate, bookingSequence]
+    () => (editingTrip ? editingTrip.bookingId : buildBookingId(currentDate, bookingSequence)),
+    [editingTrip, currentDate, bookingSequence]
   );
 
   const currentDateStr = useMemo(
     () => currentDate.toISOString().split('T')[0],
+    [currentDate]
+  );
+
+  const hijriDateLabel = useMemo(
+    () => formatHijriDateLabel(currentDate),
+    [currentDate]
+  );
+
+  const gregorianDateLabel = useMemo(
+    () => formatGregorianDateLabel(currentDate),
     [currentDate]
   );
 
@@ -237,13 +262,77 @@ export const Trips: React.FC = () => {
     setChecklist((prev) => ({ ...prev, [key]: value }));
   };
 
+  const handleEditTrip = (trip: TripEntry) => {
+    setEditingTripId(trip.id);
+    setForm({
+      sourceRef: trip.sourceRef,
+      bookingSource: trip.bookingSource,
+      supplier: trip.supplier,
+      clientName: trip.clientName,
+      driverName: trip.driverName,
+      carType: trip.carType,
+      parkingLocation: trip.parkingLocation,
+      pickupPoint: trip.pickupPoint,
+      dropoffPoint: trip.dropoffPoint,
+      supervisorName: trip.supervisorName,
+      supervisorRating: trip.supervisorRating,
+      supervisorNotes: trip.supervisorNotes || '',
+      passengerFeedback: trip.passengerFeedback || '',
+    });
+    setChecklist(trip.checklist);
+    setPersistedAttachments(trip.attachments || []);
+    const queueRecord =
+      queue.find((record) => record.id === trip.id) || TripService.loadQueue().find((record) => record.id === trip.id);
+    setEditingQueueAttachments(queueRecord?.attachments || []);
+    setCanReuseExistingEvidence(Boolean(queueRecord));
+    setSelectedPhotos([]);
+    toast({
+      title: 'وضع تعديل الرحلة',
+      description: `يمكنك الآن تحديث بيانات الرحلة ${trip.bookingId}.`,
+    });
+  };
+
+  const handleCancelEdit = () => {
+    resetForm();
+    toast({
+      title: 'تم إلغاء التعديل',
+      description: 'تمت إعادة النموذج لوضع الإدخال الجديد.',
+    });
+  };
+
+  const handleRemovePersistedAttachment = (id: string) => {
+    setPersistedAttachments((prev) => prev.filter((attachment) => attachment.id !== id));
+    setEditingQueueAttachments((prev) => prev.filter((attachment) => attachment.id !== id));
+  };
+
+  const handleDeleteTrip = (trip: TripEntry) => {
+    if (!window.confirm(`هل تريد حذف الرحلة ${trip.bookingId}؟`)) {
+      return;
+    }
+    const updatedEntries = trips.filter((entry) => entry.id !== trip.id);
+    const updatedQueue = TripService.removeFromQueue(trip.id);
+    setTrips(updatedEntries);
+    setQueue(updatedQueue);
+    persistTripsSection(updatedEntries, updatedQueue.length);
+    updateNextBookingSequence(updatedEntries, updatedQueue);
+    if (editingTripId === trip.id) {
+      resetForm();
+    }
+    toast({
+      title: 'تم حذف الرحلة',
+      description: `تم حذف الرحلة ${trip.bookingId} نهائياً.`,
+      variant: 'destructive',
+    });
+  };
+
   const handlePhotoUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
     const files = event.target.files;
     if (!files) return;
 
-    const remainingSlots = MAX_PHOTOS - selectedPhotos.length;
+    const existingCount = editingTripId ? persistedAttachments.length : 0;
+    const remainingSlots = MAX_PHOTOS - existingCount - selectedPhotos.length;
     if (remainingSlots <= 0) {
       toast({
         title: 'تنبيه',
@@ -289,6 +378,13 @@ export const Trips: React.FC = () => {
     });
   };
 
+  const exitEditMode = () => {
+    setEditingTripId(null);
+    setPersistedAttachments([]);
+    setEditingQueueAttachments([]);
+    setCanReuseExistingEvidence(false);
+  };
+
   const resetForm = () => {
     setForm((prev) => ({
       ...prev,
@@ -307,7 +403,12 @@ export const Trips: React.FC = () => {
     setChecklist(checklistDefaults);
     selectedPhotos.forEach((photo) => URL.revokeObjectURL(photo.previewUrl));
     setSelectedPhotos([]);
+    exitEditMode();
   };
+
+  const attachmentsAvailable =
+    selectedPhotos.length > 0 ||
+    (!!editingTripId && canReuseExistingEvidence && persistedAttachments.length > 0);
 
   const formIsValid =
     form.bookingSource &&
@@ -318,7 +419,7 @@ export const Trips: React.FC = () => {
     form.parkingLocation &&
     form.pickupPoint &&
     form.dropoffPoint &&
-    selectedPhotos.length > 0;
+    (editingTripId ? attachmentsAvailable : selectedPhotos.length > 0);
 
   const handleSubmit = async () => {
     if (!formIsValid) {
@@ -331,21 +432,58 @@ export const Trips: React.FC = () => {
     }
 
     setSubmitting(true);
-    const entryId = createId();
-    const createdAt = new Date().toISOString();
+    const isEditing = Boolean(editingTrip);
+    const entryId = editingTrip?.id ?? createId();
+    const createdAt = editingTrip?.createdAt ?? new Date().toISOString();
     const status = previewStatus;
+    const entryDate = editingTrip?.date ?? currentDateStr;
+    const entryHijriLabel = editingTrip?.hijriDateLabel ?? hijriDateLabel;
+    const entryGregorianLabel = editingTrip?.gregorianDateLabel ?? gregorianDateLabel;
 
-    const attachmentsMeta = selectedPhotos.map((photo) => ({
+    const newPhotoMeta = selectedPhotos.map((photo) => ({
       id: photo.id,
       name: photo.name,
       mimeType: photo.mimeType,
       size: photo.size,
+      previewUrl: photo.previewUrl,
     }));
 
-    const newEntry: TripEntry = {
+    const entryAttachments: TripAttachment[] = [
+      ...(isEditing ? persistedAttachments : []),
+      ...newPhotoMeta,
+    ];
+
+    const preservedAttachmentIds = new Set(
+      (isEditing ? persistedAttachments : []).map((attachment) => attachment.id)
+    );
+
+    const preservedQueuePayloads: TripPhotoAttachment[] =
+      isEditing && canReuseExistingEvidence
+        ? editingQueueAttachments.filter((attachment) =>
+            preservedAttachmentIds.has(attachment.id)
+          )
+        : [];
+
+    const newPhotoPayloads: TripPhotoAttachment[] = selectedPhotos.map((photo) => ({
+      id: photo.id,
+      name: photo.name,
+      mimeType: photo.mimeType,
+      size: photo.size,
+      base64: photo.base64,
+    }));
+
+    const attachmentsPayload: TripPhotoAttachment[] = [
+      ...preservedQueuePayloads,
+      ...newPhotoPayloads,
+    ];
+
+    const updatedEntry: TripEntry = {
+      ...(editingTrip || ({} as TripEntry)),
       id: entryId,
       bookingId,
-      date: currentDateStr,
+      date: entryDate,
+      hijriDateLabel: entryHijriLabel,
+      gregorianDateLabel: entryGregorianLabel,
       sourceRef: form.sourceRef,
       bookingSource: form.bookingSource,
       supplier: form.supplier,
@@ -361,33 +499,29 @@ export const Trips: React.FC = () => {
       passengerFeedback: form.passengerFeedback,
       status,
       checklist,
-      attachments: attachmentsMeta.map((meta) => ({
-        ...meta,
-        previewUrl:
-          selectedPhotos.find((photo) => photo.id === meta.id)?.previewUrl,
-      })),
+      attachments: entryAttachments,
       createdAt,
-      createdBy: user?.id,
-      syncStatus: navigator.onLine ? 'pending' : 'pending',
+      createdBy: editingTrip?.createdBy || user?.id,
+      syncStatus: 'pending',
     };
 
     const tripPayload: TripReportInput = {
-      id: newEntry.id,
-      bookingId: newEntry.bookingId,
-      date: newEntry.date,
-      sourceRef: newEntry.sourceRef,
-      bookingSource: newEntry.bookingSource,
-      supplier: newEntry.supplier,
-      clientName: newEntry.clientName,
-      driverName: newEntry.driverName,
-      carType: newEntry.carType,
-      parkingLocation: newEntry.parkingLocation,
-      pickupPoint: newEntry.pickupPoint,
-      dropoffPoint: newEntry.dropoffPoint,
-      supervisorName: newEntry.supervisorName,
-      supervisorRating: newEntry.supervisorRating,
-      supervisorNotes: newEntry.supervisorNotes,
-      passengerFeedback: newEntry.passengerFeedback,
+      id: updatedEntry.id,
+      bookingId: updatedEntry.bookingId,
+      date: updatedEntry.date,
+      sourceRef: updatedEntry.sourceRef,
+      bookingSource: updatedEntry.bookingSource,
+      supplier: updatedEntry.supplier,
+      clientName: updatedEntry.clientName,
+      driverName: updatedEntry.driverName,
+      carType: updatedEntry.carType,
+      parkingLocation: updatedEntry.parkingLocation,
+      pickupPoint: updatedEntry.pickupPoint,
+      dropoffPoint: updatedEntry.dropoffPoint,
+      supervisorName: updatedEntry.supervisorName,
+      supervisorRating: updatedEntry.supervisorRating,
+      supervisorNotes: updatedEntry.supervisorNotes,
+      passengerFeedback: updatedEntry.passengerFeedback,
       checklist,
       status,
       createdBy: user?.id,
@@ -395,38 +529,30 @@ export const Trips: React.FC = () => {
       offline: !navigator.onLine,
     };
 
-    const attachmentsPayload: TripPhotoAttachment[] = selectedPhotos.map(
-      (photo) => ({
-        id: photo.id,
-        name: photo.name,
-        mimeType: photo.mimeType,
-        size: photo.size,
-        base64: photo.base64,
-      })
-    );
-
-    let updatedEntries = [...trips, newEntry];
+    let updatedEntries = isEditing
+      ? trips.map((entry) => (entry.id === entryId ? updatedEntry : entry))
+      : [...trips, updatedEntry];
     setTrips(updatedEntries);
     persistTripsSection(updatedEntries, queue.length);
     updateNextBookingSequence(updatedEntries, queue);
 
     const offlineRecord: OfflineTripRecord = {
-      id: newEntry.id,
+      id: updatedEntry.id,
       payload: tripPayload,
       attachments: attachmentsPayload,
       createdAt,
       status: 'pending',
     };
 
-    const handleQueueUpdate = (records: OfflineTripRecord[]) => {
+    const commitQueueState = (records: OfflineTripRecord[]) => {
       setQueue(records);
       persistTripsSection(updatedEntries, records.length);
       updateNextBookingSequence(updatedEntries, records);
     };
 
     if (!navigator.onLine) {
-      const records = TripService.enqueue(offlineRecord);
-      handleQueueUpdate(records);
+      const records = TripService.upsertRecord(offlineRecord);
+      commitQueueState(records);
       toast({
         title: 'تم الحفظ بدون اتصال',
         description: ARABIC_TRIPS_MESSAGES.FORM_SUCCESS_OFFLINE,
@@ -438,11 +564,14 @@ export const Trips: React.FC = () => {
 
     try {
       const response = await TripService.syncRecord(offlineRecord);
-      newEntry.syncStatus = 'synced';
+      updatedEntry.syncStatus = 'synced';
       if (response.photos?.length) {
-        newEntry.attachments = newEntry.attachments.map((attachment) => {
+        updatedEntry.attachments = updatedEntry.attachments.map((attachment) => {
           const remote = response.photos?.find(
-            (photo) => photo.file_name === attachment.name || photo.trip_id === response.tripId
+            (photo) =>
+              photo.file_name === attachment.name ||
+              photo.trip_id === response.tripId ||
+              photo.trip_id === updatedEntry.id
           );
           return remote
             ? { ...attachment, storagePath: remote.storage_path }
@@ -451,11 +580,11 @@ export const Trips: React.FC = () => {
       }
 
       updatedEntries = updatedEntries.map((entry) =>
-        entry.id === newEntry.id ? newEntry : entry
+        entry.id === updatedEntry.id ? updatedEntry : entry
       );
       setTrips(updatedEntries);
-      persistTripsSection(updatedEntries, queue.length);
-      updateNextBookingSequence(updatedEntries, queue);
+      const cleanedQueue = TripService.removeFromQueue(updatedEntry.id);
+      commitQueueState(cleanedQueue);
 
       toast({
         title: 'تم الإرسال',
@@ -464,23 +593,21 @@ export const Trips: React.FC = () => {
 
       addNotification({
         type: 'success',
-        title: 'رحلة جديدة مسجلة',
-        message: `تم اعتماد رحلة رقم ${newEntry.bookingId} بنجاح.`,
+        title: isEditing ? 'تم تحديث رحلة' : 'رحلة جديدة مسجلة',
+        message: `تم اعتماد رحلة رقم ${updatedEntry.bookingId} بنجاح.`,
       });
     } catch (error) {
-      const updatedQueue = TripService.enqueue({
+      const failedQueue = TripService.upsertRecord({
         ...offlineRecord,
         status: 'failed',
         error: error instanceof Error ? error.message : 'unknown_error',
       });
-      handleQueueUpdate(updatedQueue);
+      commitQueueState(failedQueue);
 
       updatedEntries = updatedEntries.map((entry) =>
-        entry.id === newEntry.id ? { ...entry, syncStatus: 'failed' } : entry
+        entry.id === updatedEntry.id ? { ...entry, syncStatus: 'failed' } : entry
       );
       setTrips(updatedEntries);
-      persistTripsSection(updatedEntries, updatedQueue.length);
-      updateNextBookingSequence(updatedEntries, updatedQueue);
 
       toast({
         title: 'تعذر الإرسال',
@@ -521,10 +648,10 @@ export const Trips: React.FC = () => {
     });
     const records = TripService.loadQueue();
     setQueue(records);
-    const syncedEntries = trips.map((entry) =>
+    const syncedEntries: TripEntry[] = trips.map((entry) =>
       records.some((record) => record.id === entry.id)
         ? entry
-        : { ...entry, syncStatus: 'synced' }
+        : { ...entry, syncStatus: 'synced' as TripSyncStatus }
     );
     setTrips(syncedEntries);
     persistTripsSection(syncedEntries, records.length);
@@ -593,7 +720,35 @@ export const Trips: React.FC = () => {
         <p className="text-muted-foreground">
           {ARABIC_TRIPS_MESSAGES.PAGE_DESCRIPTION}
         </p>
+        <div className="flex flex-col gap-1 text-sm text-muted-foreground">
+          <span>التاريخ الميلادي: {gregorianDateLabel}</span>
+          <span>التاريخ الهجري: {hijriDateLabel}</span>
+        </div>
       </div>
+
+      {editingTrip && (
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50/70 p-4">
+          <div>
+            <p className="font-semibold text-amber-900">
+              يتم الآن تعديل الرحلة رقم {editingTrip.bookingId}
+            </p>
+            <p className="text-sm text-amber-800 mt-1">
+              يمكن تحديث البيانات وإعادة إرسالها. {canReuseExistingEvidence
+                ? 'سيتم إعادة استخدام الصور المرفوعة مسبقاً.'
+                : 'هذه الرحلة متزامنة مسبقاً، يجب إضافة صورة جديدة لتوثيق التعديل.'}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="border-amber-300 text-amber-900 bg-white">
+              وضع تعديل الرحلات
+            </Badge>
+            <Button variant="secondary" onClick={handleCancelEdit} size="sm">
+              <X className="w-4 h-4 ml-2" />
+              إلغاء التعديل
+            </Button>
+          </div>
+        </div>
+      )}
 
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
@@ -853,6 +1008,41 @@ export const Trips: React.FC = () => {
             </span>
           </label>
 
+          {editingTrip && persistedAttachments.length > 0 && (
+            <div className="rounded-xl border border-dashed border-amber-200 bg-amber-50/40 p-4 space-y-3">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                <p className="font-semibold text-sm text-amber-900">
+                  الصور الحالية المرتبطة بالرحلة
+                </p>
+                {!canReuseExistingEvidence && (
+                  <Badge variant="outline" className="border-amber-300 text-amber-900 bg-white">
+                    يلزم إضافة صورة جديدة لإعادة التوثيق
+                  </Badge>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {persistedAttachments.map((attachment) => (
+                  <div
+                    key={attachment.id}
+                    className="flex items-center gap-2 rounded-full border border-amber-200 bg-white/80 px-3 py-1 text-xs text-amber-900"
+                  >
+                    <span className="font-medium">{attachment.name}</span>
+                    {canReuseExistingEvidence && (
+                      <button
+                        type="button"
+                        className="text-amber-700 hover:text-amber-900"
+                        onClick={() => handleRemovePersistedAttachment(attachment.id)}
+                        title="إزالة الصورة من التعديل"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {selectedPhotos.length > 0 && (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {selectedPhotos.map((photo) => (
@@ -1063,14 +1253,32 @@ export const Trips: React.FC = () => {
                     key={trip.id}
                     className="border rounded-xl p-4 space-y-2 bg-muted/30"
                   >
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
                       <div>
                         <p className="font-semibold">{trip.bookingId}</p>
                         <p className="text-sm text-muted-foreground">
                           {trip.clientName} • {trip.driverName}
                         </p>
                       </div>
-                      {statusBadge(trip.syncStatus)}
+                      <div className="flex items-center gap-2">
+                        {statusBadge(trip.syncStatus)}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="تعديل الرحلة"
+                          onClick={() => handleEditTrip(trip)}
+                        >
+                          <PencilLine className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="حذف الرحلة"
+                          onClick={() => handleDeleteTrip(trip)}
+                        >
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                        </Button>
+                      </div>
                     </div>
                     <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                       <Badge variant="outline">{trip.bookingSource}</Badge>
@@ -1085,6 +1293,11 @@ export const Trips: React.FC = () => {
                     </div>
                     <p className="text-xs text-muted-foreground">
                       {trip.pickupPoint} → {trip.dropoffPoint}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      الميلادي:{' '}
+                      {trip.gregorianDateLabel || formatGregorianDateLabel(trip.date)} • الهجري:{' '}
+                      {trip.hijriDateLabel || formatHijriDateLabel(trip.date)}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {formatDateTime(trip.createdAt)}

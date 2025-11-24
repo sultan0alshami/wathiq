@@ -128,6 +128,42 @@ export class ExportService {
     this.downloadCSV(filename, csv);
   }
 
+  static exportTripsCSV(date: Date) {
+    const dailyData = getDataForDate(date);
+    const csvData = dailyData.trips.entries.map(entry => ({
+      bookingId: entry.bookingId,
+      date: entry.date,
+      hijriDate: entry.hijriDateLabel || '',
+      bookingSource: entry.bookingSource,
+      supplier: entry.supplier,
+      clientName: entry.clientName,
+      driverName: entry.driverName,
+      pickupPoint: entry.pickupPoint,
+      dropoffPoint: entry.dropoffPoint,
+      supervisorName: entry.supervisorName,
+      supervisorRating: entry.supervisorRating,
+      status: entry.status === 'approved' ? 'جاهز' : 'تنبيه',
+    }));
+
+    const headers = [
+      'bookingId',
+      'date',
+      'hijriDate',
+      'bookingSource',
+      'supplier',
+      'clientName',
+      'driverName',
+      'pickupPoint',
+      'dropoffPoint',
+      'supervisorName',
+      'supervisorRating',
+      'status',
+    ];
+    const csv = this.toCSV(csvData, headers);
+    const filename = `trips-${format(date, 'yyyy-MM-dd')}.csv`;
+    this.downloadCSV(filename, csv);
+  }
+
   // Generate comprehensive PDF report
   static async generatePDFReport(date: Date) {
     try {
@@ -176,7 +212,11 @@ export class ExportService {
       
       // Customers summary
       { section: 'العملاء', field: 'إجمالي العملاء', value: data.customers.length, notes: ARABIC_NOTES.CUSTOMER },
-      { section: 'العملاء', field: 'العملاء المتصل بهم', value: data.customers.filter(c => c.contacted).length, notes: ARABIC_NOTES.CUSTOMER }
+      { section: 'العملاء', field: 'العملاء المتصل بهم', value: data.customers.filter(c => c.contacted).length, notes: ARABIC_NOTES.CUSTOMER },
+
+      // Trips summary
+      { section: 'الرحلات', field: 'عدد الرحلات', value: data.trips.entries.length, notes: 'يشمل جميع الرحلات الموثقة' },
+      { section: 'الرحلات', field: 'رحلات بحاجة لمراجعة', value: data.trips.entries.filter(entry => entry.status === 'warning').length, notes: 'تنبيهات قائمة التحقق' }
     ];
 
     const csv = this.toCSV(mergedData, ['section', 'field', 'value', 'notes']);
