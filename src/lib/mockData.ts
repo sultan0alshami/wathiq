@@ -11,7 +11,11 @@ const hijriFormatter = (() => {
   }
 })();
 
-const gregorianFormatter = new Intl.DateTimeFormat('ar-SA', { dateStyle: 'full' });
+const gregorianFormatter = new Intl.DateTimeFormat('en-GB', {
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+});
 
 const normalizeDate = (value: Date | string): Date => {
   if (value instanceof Date) return value;
@@ -30,9 +34,13 @@ export const formatHijriDateLabel = (value: Date | string): string => {
 
 export const formatGregorianDateLabel = (value: Date | string): string => {
   try {
-    return gregorianFormatter.format(normalizeDate(value));
+    return format(normalizeDate(value), 'do MMM yyyy');
   } catch {
-    return normalizeDate(value).toLocaleDateString('ar-SA');
+    return normalizeDate(value).toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
   }
 };
 
@@ -116,6 +124,8 @@ export interface DailyData {
     totalTrips: number;
     entries: TripEntry[];
     pendingSync: number;
+    drafts: TripDraft[];
+    recycleBin: TripRecycleRecord[];
   };
   customers: Customer[];
   suppliers?: Supplier[];
@@ -157,6 +167,22 @@ export interface TripChecklist {
   engineStatus: TripChecklistRating;
 }
 
+export interface TripFormSnapshot {
+  sourceRef: string;
+  bookingSource: string;
+  supplier: string;
+  clientName: string;
+  driverName: string;
+  carType: string;
+  parkingLocation: string;
+  pickupPoint: string;
+  dropoffPoint: string;
+  supervisorName: string;
+  supervisorRating: number;
+  supervisorNotes: string;
+  passengerFeedback: string;
+}
+
 export interface TripAttachment {
   id: string;
   name: string;
@@ -193,6 +219,83 @@ export interface TripEntry {
   syncStatus: TripSyncStatus;
   lastSyncAttempt?: string;
 }
+
+export interface TripDraft {
+  id: string;
+  bookingId: string;
+  date: string;
+  gregorianDateLabel: string;
+  hijriDateLabel: string;
+  savedAt: string;
+  updatedAt: string;
+  form: TripFormSnapshot;
+  checklist: TripChecklist;
+  missingFields: string[];
+  note?: string;
+}
+
+export interface TripRecycleRecord {
+  id: string;
+  bookingId: string;
+  entry: TripEntry;
+  deletedAt: string;
+  purgeAt: string;
+  deletedBy?: string;
+  reason?: string;
+}
+
+export const TRIP_FORM_DEFAULTS: TripFormSnapshot = {
+  sourceRef: '',
+  bookingSource: '',
+  supplier: '',
+  clientName: '',
+  driverName: '',
+  carType: '',
+  parkingLocation: '',
+  pickupPoint: '',
+  dropoffPoint: '',
+  supervisorName: 'هاني بخش',
+  supervisorRating: 5,
+  supervisorNotes: '',
+  passengerFeedback: '',
+};
+
+export const TRIP_CHECKLIST_DEFAULTS: TripChecklist = {
+  externalClean: 'good',
+  internalClean: 'good',
+  carSmell: 'good',
+  driverAppearance: 'good',
+  acStatus: 'good',
+  engineStatus: 'good',
+};
+
+const sanitizeTripDraft = (draft: TripDraft): TripDraft => ({
+  ...draft,
+  form: {
+    ...TRIP_FORM_DEFAULTS,
+    ...draft.form,
+  },
+  checklist: {
+    ...TRIP_CHECKLIST_DEFAULTS,
+    ...draft.checklist,
+  },
+  missingFields: draft.missingFields || [],
+});
+
+const sanitizeRecycleRecord = (
+  record: TripRecycleRecord,
+  fallbackDate: string
+): TripRecycleRecord => ({
+  ...record,
+  entry: {
+    ...record.entry,
+    hijriDateLabel:
+      record.entry.hijriDateLabel || formatHijriDateLabel(record.entry.date || fallbackDate),
+    gregorianDateLabel:
+      record.entry.gregorianDateLabel ||
+      formatGregorianDateLabel(record.entry.date || fallbackDate),
+  },
+});
 
 // Generate mock data for a specific date
 export const generateMockDataForDate = (date: Date): DailyData => {
@@ -394,6 +497,8 @@ export const generateMockDataForDate = (date: Date): DailyData => {
       totalTrips: mockTrips.length,
       pendingSync: 0,
       entries: mockTrips,
+      drafts: [],
+      recycleBin: [],
     },
     customers: [
       {
@@ -487,6 +592,8 @@ export const getEmptyDataForDate = (date: Date): DailyData => {
       totalTrips: 0,
       entries: [],
       pendingSync: 0,
+      drafts: [],
+      recycleBin: [],
     },
     customers: [],
     suppliers: []
@@ -524,6 +631,12 @@ export const getDataForDate = (date: Date): DailyData => {
         hijriDateLabel: entry.hijriDateLabel || formatHijriDateLabel(entry.date || dateStr),
         gregorianDateLabel: entry.gregorianDateLabel || formatGregorianDateLabel(entry.date || dateStr),
       }));
+      data.trips.drafts = (data.trips.drafts || []).map((draft: TripDraft) =>
+        sanitizeTripDraft(draft)
+      );
+      data.trips.recycleBin = (data.trips.recycleBin || []).map((record: TripRecycleRecord) =>
+        sanitizeRecycleRecord(record, dateStr)
+      );
       if (data.suppliers) {
         data.suppliers = data.suppliers.map((supplier: Supplier) => ({
           ...supplier,

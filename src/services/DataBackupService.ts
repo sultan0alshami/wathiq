@@ -217,7 +217,9 @@ export class DataBackupService {
       typeof data.trips !== 'object' ||
       !Array.isArray(data.trips.entries) ||
       typeof data.trips.totalTrips !== 'number' ||
-      typeof data.trips.pendingSync !== 'number'
+      typeof data.trips.pendingSync !== 'number' ||
+      !Array.isArray(data.trips.drafts) ||
+      !Array.isArray(data.trips.recycleBin)
     ) {
       console.warn('Invalid day data: trips section malformed', data);
       return false;
