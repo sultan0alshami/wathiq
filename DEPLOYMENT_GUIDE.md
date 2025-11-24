@@ -1,6 +1,6 @@
 # 🚀 Production Deployment Guide
 
-This guide covers deploying the Abwaab Management System to production environments.
+This guide covers deploying the Wathiq Transport Management System to production environments.
 
 ## 📋 Pre-Deployment Checklist
 
@@ -35,7 +35,7 @@ This guide covers deploying the Abwaab Management System to production environme
 
 #### 2. Configure Service
 ```yaml
-Name: abwaab-management
+Name: wathiq-transport-management
 Environment: Node
 Build Command: npm run build
 Start Command: npm start
@@ -80,13 +80,13 @@ Set in Vercel dashboard:
 
 #### 1. Build Image
 ```bash
-docker build -t abwaab-management .
+docker build -t wathiq-transport .
 ```
 
 #### 2. Run Container
 ```bash
 docker run -d \
-  --name abwaab-app \
+  --name wathiq-app \
   -p 8080:8080 \
   -e VITE_SUPABASE_URL=your_url \
   -e VITE_SUPABASE_ANON_KEY=your_key \
@@ -94,7 +94,7 @@ docker run -d \
   -e SUPABASE_SERVICE_URL=your_url \
   -e SUPABASE_SERVICE_KEY=your_service_role_key \
   -e TRIPS_BUCKET=trip-evidence \
-  abwaab-management
+  wathiq-transport
 ```
 
 #### 3. Docker Compose
@@ -304,7 +304,7 @@ npx vite-bundle-analyzer dist
 ### 3. Caching Strategy
 ```javascript
 // Service Worker for caching
-const CACHE_NAME = 'abwaab-v1';
+const CACHE_NAME = 'wathiq-v1';
 const urlsToCache = [
   '/',
   '/static/js/bundle.js',
@@ -377,13 +377,13 @@ npm run build:prod
 ### Debug Commands
 ```bash
 # Check application logs
-docker logs abwaab-app
+docker logs wathiq-app
 
 # Monitor resource usage
-docker stats abwaab-app
+docker stats wathiq-app
 
 # Access container shell
-docker exec -it abwaab-app sh
+docker exec -it wathiq-app sh
 ```
 
 ## 📞 Support & Maintenance
@@ -424,4 +424,4 @@ tar -czf app_backup_$(date +%Y%m%d).tar.gz /path/to/app
 - [ ] Performance metrics tracked
 - [ ] Backup procedures tested
 
-**🎉 Congratulations! Your Abwaab Management System is now live in production!**
+**🎉 Congratulations! Your Wathiq Transport Management System is now live in production!**

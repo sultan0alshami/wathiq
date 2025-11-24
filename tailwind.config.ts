@@ -14,17 +14,6 @@ export default {
     },
     extend: {
       colors: {
-        // Abwaab Brand Colors (direct HSL values)
-        abwaab: {
-          primary: '188 64% 45%',
-          primaryAlt: '195 91% 36%',
-          secondary: '35 88% 54%',
-          secondaryAlt: '35 89% 62%',
-          success: '142 76% 36%',
-          warning: '36 94% 50%',
-          danger: '0 86% 60%',
-          info: '197 88% 49%',
-        },
         // Wathiq Brand Colors
         "wathiq-primary": "hsl(var(--wathiq-primary))",
         "wathiq-accent": "hsl(var(--wathiq-accent))",

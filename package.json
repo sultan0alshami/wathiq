@@ -1,8 +1,8 @@
 {
-  "name": "abwaab-management",
+  "name": "wathiq-transport-management",
   "private": true,
   "version": "1.0.0",
-  "description": "Abwaab Management System - Comprehensive business management platform",
+  "description": "Wathiq Transport Management System - Comprehensive business management platform",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -111,13 +111,13 @@
     "react",
     "typescript",
     "supabase",
-    "abwaab"
+    "wathiq"
   ],
-  "author": "Abwaab",
+  "author": "Wathiq Transport",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/<your-org-or-user>/abwaab-management.git"
+    "url": "https://github.com/sultan0alshami/wathiq.git"
   },
   "engines": {
     "node": ">=18.0.0",

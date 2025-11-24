@@ -138,7 +138,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
               <Button variant="ghost" size="sm" className="relative" aria-label="الإشعارات" title="الإشعارات">
                 <Bell className="w-5 h-5" />
                 {unreadCount > 0 && (
-                  <span className="absolute -top-1 -left-1 text-white text-xs rounded-full min-w-5 h-5 px-1 flex items-center justify-center" style={{ backgroundColor: 'hsl(var(--abwaab-secondary))' }}>
+                  <span className="absolute -top-1 -left-1 bg-wathiq-accent text-white text-xs rounded-full min-w-5 h-5 px-1 flex items-center justify-center">
                     {unreadCount}
                   </span>
                 )}
@@ -204,13 +204,13 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
           {/* User Menu with Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="flex items-center space-x-3 space-x-reverse" aria-label="قائمة المستخدم" title="قائمة المستخدم" style={{ backgroundColor: 'transparent' }}>
+              <Button variant="ghost" size="sm" className="flex items-center space-x-3 space-x-reverse hover:bg-wathiq-primary/10" aria-label="قائمة المستخدم" title="قائمة المستخدم">
                 <div className="text-right">
                   <p className="text-sm font-medium">{userName || user?.email}</p>
                   <p className="text-xs text-muted-foreground">{getRoleDisplayName(role)}</p>
                 </div>
-                <div className="rounded-full w-8 h-8 flex items-center justify-center" style={{ backgroundColor: 'hsl(var(--abwaab-primary) / 0.2)' }}>
-                  <User className="w-4 h-4" style={{ color: 'hsl(var(--abwaab-primary))' }} />
+                <div className="rounded-full w-8 h-8 bg-wathiq-primary/20 flex items-center justify-center">
+                  <User className="w-4 h-4 text-wathiq-primary" />
                 </div>
               </Button>
             </DropdownMenuTrigger>
