@@ -106,8 +106,18 @@ async function runDailyReportAndSend() {
     const pythonExecutable = process.env.PYTHON_PATH || (process.platform === 'win32' ? 'python' : 'python3');
     const scriptPath = path.join(__dirname, 'generate_pdf.py');
     const dateStr = new Date().toISOString().slice(0, 10);
+    const { gregorian, hijri } = deriveDateLabels(dateStr);
     // Expect the frontend-style payload to be available; fallback to a minimal shape
-    const payload = { date: dateStr, finance: { currentLiquidity: '', entries: [] }, sales: { customersContacted: 0, entries: [] }, operations: { entries: [] }, marketing: { tasks: [] } };
+    const payload = {
+      date: dateStr,
+      gregorianDateLabel: gregorian,
+      hijriDateLabel: hijri,
+      finance: { currentLiquidity: '', entries: [] },
+      sales: { customersContacted: 0, entries: [] },
+      operations: { entries: [] },
+      marketing: { tasks: [] },
+      trips: { entries: [], pendingSync: 0, totalTrips: 0 },
+    };
     const jsonData = JSON.stringify(payload);
     const tempFilePath = path.join(__dirname, `temp_data_${Date.now()}.json`);
     await fs.writeFile(tempFilePath, jsonData);
@@ -140,6 +150,19 @@ cron.schedule('0 18 * * *', () => {
 
 const app = express();
 const port = process.env.PORT || 5000; // Honor Cloud Run/Heroku-style PORT
+
+function deriveDateLabels(dateInput) {
+  const baseDate = dateInput ? new Date(dateInput) : new Date();
+  const safeDate = Number.isNaN(baseDate.getTime()) ? new Date() : baseDate;
+  const gregorian = new Intl.DateTimeFormat('ar-SA', { dateStyle: 'full' }).format(safeDate);
+  let hijri = gregorian;
+  try {
+    hijri = new Intl.DateTimeFormat('ar-SA-u-ca-islamic', { dateStyle: 'full' }).format(safeDate);
+  } catch {
+    // Ignore if hijri calendar isn't available in the current runtime.
+  }
+  return { gregorian, hijri };
+}
 
 const corsOptions = {
   origin: (origin, callback) => {
@@ -191,11 +214,19 @@ function rateLimitMiddleware(req, res, next) {
 
 app.post('/generate-pdf', rateLimitMiddleware, async (req, res) => {
   console.log('Received request to generate PDF');
-  const { data, date } = req.body; // Data from your frontend
+  const { data = {}, date } = req.body; // Data from your frontend
+  const targetDate = date || new Date().toISOString().slice(0, 10);
+  const { gregorian, hijri } = deriveDateLabels(targetDate);
+  const payload = {
+    ...data,
+    date: targetDate,
+    gregorianDateLabel: data.gregorianDateLabel || gregorian,
+    hijriDateLabel: data.hijriDateLabel || hijri,
+  };
 
   const pythonExecutable = process.env.PYTHON_PATH || (process.platform === 'win32' ? 'python' : 'python3');
   const scriptPath = path.join(__dirname, 'generate_pdf.py');
-  const jsonData = JSON.stringify({ ...data, date });
+  const jsonData = JSON.stringify(payload);
 
   let tempFilePath;
 
