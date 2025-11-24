@@ -320,7 +320,7 @@ export const generateMockDataForDate = (date: Date): DailyData => {
     return newDate;
   };
 
-  const mockTrips = [
+  const mockTrips: TripEntry[] = [
     {
       id: `trip-${dateStr}-1`,
       bookingId: `WTH-${format(date, 'yy-MM')}-${Math.floor(1000 + Math.random() * 9000)}`,
