@@ -254,11 +254,11 @@ export const Trips: React.FC = () => {
     [currentDate]
   );
 
-  const updateNextBookingSequence = useCallback(
+  const updateNextBookingSequence = useCallback((
     entriesSnapshot: TripEntry[],
     queueSnapshot: OfflineTripRecord[],
     draftsSnapshot: TripDraft[] = drafts,
-    recycleSnapshot: TripRecycleRecord[] = recycleBin
+    recycleSnapshot: TripRecycleRecord[] = recycleBin,
   ) => {
     const reservedIds = [
       ...draftsSnapshot.map((draft) => draft.bookingId),
@@ -267,9 +267,7 @@ export const Trips: React.FC = () => {
     setBookingSequence(
       computeNextSequence(entriesSnapshot, queueSnapshot, reservedIds)
     );
-  },
-  [drafts, recycleBin]
-);
+  }, [drafts, recycleBin]);
 
   useEffect(() => {
     const loadRemoteTrips = async () => {
