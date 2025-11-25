@@ -10,10 +10,12 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Trash2, Plus, Megaphone, Users, CheckCircle, Clock, CalendarIcon, Loader2, ClipboardList, UserCheck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useDateContext } from '@/contexts/DateContext';
-import { getDataForDate, updateSectionData, type MarketingTask, type Customer } from '@/lib/mockData';
+import { updateSectionData, type MarketingTask, type Customer } from '@/lib/mockData';
 import { KPICardSkeleton, TableSkeleton } from '@/components/ui/loading-skeleton';
 import { MarketingKPICards } from '@/components/ui/mobile-kpi';
 import { ValidationMessage, useFormValidation, ValidationRules } from '@/components/ui/enhanced-form-validation';
+import { useAuth } from '@/contexts/AuthContext';
+import { MarketingService } from '@/services/MarketingService';
 import { DeleteConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
@@ -23,6 +25,7 @@ import { cn } from '@/lib/utils';
 export const Marketing: React.FC = () => {
   const { currentDate } = useDateContext();
   const { toast } = useToast();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true); // Initialize loading to true
   const [deleteTaskId, setDeleteTaskId] = useState<string | null>(null);
   const [deleteCustomerId, setDeleteCustomerId] = useState<string | null>(null);
@@ -84,18 +87,33 @@ export const Marketing: React.FC = () => {
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
-      // Simulate loading delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      const data = getDataForDate(currentDate);
-      setTasks(data.marketing.tasks);
-      setYesterdayTasks(data.marketing.yesterdayDone);
-      setPlannedTasks(data.marketing.plannedTasks);
-      setCustomers(data.customers);
-      setLoading(false);
+      try {
+        if (!user?.id) {
+          throw new Error('يجب تسجيل الدخول للوصول إلى قسم التسويق.');
+        }
+        const [tasksData, yesterday, planned, customersData] = await Promise.all([
+          MarketingService.listTasks(currentDate),
+          MarketingService.listYesterdayTasks(user.id),
+          MarketingService.listPlannedTasks(user.id),
+          MarketingService.listCustomers(),
+        ]);
+        setTasks(tasksData);
+        setYesterdayTasks(yesterday);
+        setPlannedTasks(planned);
+        setCustomers(customersData);
+      } catch (error) {
+        toast({
+          title: 'تعذر تحميل بيانات التسويق',
+          description: error instanceof Error ? error.message : 'حدث خطأ أثناء تحميل البيانات.',
+          variant: 'destructive',
+        });
+      } finally {
+        setLoading(false);
+      }
     };
 
     loadData();
-  }, [currentDate]);
+  }, [currentDate, toast, user]);
 
   const addTask = async () => {
     const isTaskFormValid = newTaskTitleValidation.isValid && newTaskAssigneeValidation.isValid;
@@ -109,15 +127,19 @@ export const Marketing: React.FC = () => {
     }
     setLoading(true);
     try {
-      const task: MarketingTask = {
-        id: Date.now().toString(),
+      if (!user?.id) {
+        throw new Error('يجب تسجيل الدخول لإضافة المهام.');
+      }
+      const task = await MarketingService.createTask(user.id, {
         title: newTaskTitle,
         status: 'planned',
         assignee: newTaskAssignee,
         dueDate: newTaskDate ? new Date(newTaskDate) : new Date(),
         description: newTaskDescription,
         priority: newTaskPriority,
-      };
+        date: currentDate,
+        isCustomerRelated: false,
+      });
       const updatedTasks = [...tasks, task];
       setTasks(updatedTasks);
       
@@ -140,7 +162,7 @@ export const Marketing: React.FC = () => {
     } catch (error) {
       toast({
         title: "خطأ",
-        description: "حدث خطأ أثناء حفظ المهمة",
+        description: error instanceof Error ? error.message : "حدث خطأ أثناء حفظ المهمة",
         variant: "destructive",
       });
     } finally {

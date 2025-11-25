@@ -1,9 +1,9 @@
 # 🚀 Wathiq Transport Management System - Current Status Report
 
-**Date**: October 19, 2025  
+**Date**: November 25, 2025  
 **Status**: ✅ **FULLY OPERATIONAL**  
-**Version**: 1.0.0  
-**Last Updated**: 2025-10-19 14:00 UTC
+**Version**: 1.1.0 (Supabase-first release)  
+**Last Updated**: 2025-11-25 11:00 UTC
 
 ---
 
@@ -27,12 +27,11 @@ The Wathiq Transport Management System is now **fully operational** with all cri
 
 ### 🔧 **Recent Critical Fixes Applied**
 
-1. **✅ Dockerfile Path Issue** - Fixed `server.js` copy path from root to `backend/server.js`
-2. **✅ Missing Terser Dependency** - Added `terser@5.36.0` to devDependencies for Vite builds
-3. **✅ Package Lock Sync** - Updated `package-lock.json` to sync with new dependencies
-4. **✅ Static File Serving** - Added Express static file serving for React app
-5. **✅ Express Routing** - Fixed wildcard route syntax using `app.use()` middleware
-6. **🆕 Trips Module** - Added Wathiq-branded trips section with offline queue + media uploads
+1. **✅ Supabase Safe Scripts** – `005_safe_business_data_tables.sql`, `006_safe_rls_policies.sql`, and `009_finance_schema_updates.sql` now auto-handle legacy tables/columns so migrations can be re-run safely.
+2. **✅ Module Data Migration** – Finance, Sales, Operations, Marketing, Customers, and Suppliers now read/write exclusively from Supabase via dedicated services (no LocalStorage fallbacks).
+3. **✅ Trips Persistence Fix** – Synced trips reload from Supabase after logout/cache clear while drafts/recycle bin remain local; Gregorian dates use the new Arabic formatter.
+4. **✅ Backend Trip Sync Hardening** – `/api/trips/sync` now supports updates, replaces attachments, cleans storage, and fires Supabase notifications in both create/update scenarios.
+5. **✅ Documentation Refresh** – README, API guide, deployment guide, production checklists, and status reports updated to describe the Supabase-first architecture and offline workflow.
 
 ---
 

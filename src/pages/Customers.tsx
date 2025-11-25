@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,20 +15,12 @@ import { DeleteConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { ARABIC_CUSTOMERS_MESSAGES } from '@/lib/arabicCustomersMessages';
 import { TableSkeleton } from '@/components/ui/loading-skeleton';
 import { CustomersKPICards } from '@/components/ui/mobile-kpi';
+import { useToast } from '@/hooks/use-toast';
+import type { CrmCustomer } from '@/types/crmCustomer';
+import { useAuth } from '@/contexts/AuthContext';
+import { CustomersService } from '@/services/CustomersService';
 
-interface Customer {
-  id: string;
-  name: string;
-  email?: string;
-  phone: string;
-  company?: string;
-  status: 'new' | 'contacted' | 'interested' | 'converted' | 'inactive';
-  source: 'website' | 'referral' | 'social_media' | 'direct' | 'other';
-  registrationDate: Date;
-  lastContactDate?: Date;
-  notes: string;
-  estimatedValue?: number;
-}
+type Customer = CrmCustomer;
 
 export const Customers: React.FC = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -36,19 +28,40 @@ export const Customers: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [sourceFilter, setSourceFilter] = useState<string>('all');
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Pagination
   const ITEMS_PER_PAGE = 20;
   const [currentPage, setCurrentPage] = useState(1);
 
-  useEffect(() => {
-    // Simulate fetching data
-    const timer = setTimeout(() => {
-      setCustomers([]); // Initially empty for demo
+  const { toast } = useToast();
+  const { user } = useAuth();
+
+  const loadCustomers = useCallback(async () => {
+    if (!user?.id) {
+      setCustomers([]);
       setIsLoading(false);
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, []);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const list = await CustomersService.list(user.id);
+      setCustomers(list);
+    } catch (error) {
+      toast({
+        title: ARABIC_CUSTOMERS_MESSAGES.TOAST_ERROR_TITLE ?? 'حدث خطأ',
+        description: error instanceof Error ? error.message : 'تعذر تحميل بيانات العملاء.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast, user?.id]);
+
+  useEffect(() => {
+    loadCustomers();
+  }, [loadCustomers]);
 
   // Form states
   const [newName, setNewName] = useState('');
@@ -68,29 +81,39 @@ export const Customers: React.FC = () => {
   const [emailValidation, setEmailValidation] = useState(validateField('', [ValidationRules.email()]));
   const [phoneValidation, setPhoneValidation] = useState(validateField('', [ValidationRules.phone(ARABIC_CUSTOMERS_MESSAGES.VALIDATION_PHONE_INVALID || 'رقم الهاتف غير صالح')]));
 
-  const addCustomer = () => {
+  const addCustomer = async () => {
     const isFormValid = validateForm({
       newName: { value: newName, rules: [ValidationRules.required()] },
       newEmail: { value: newEmail, rules: [ValidationRules.email()] },
       newPhone: { value: newPhone, rules: [] },
     });
 
-    if (isFormValid) {
-      const customer: Customer = {
-        id: Date.now().toString(),
+    if (!isFormValid) {
+      return;
+    }
+
+    if (!user?.id) {
+      toast({
+        title: ARABIC_CUSTOMERS_MESSAGES.TOAST_ERROR_TITLE ?? 'حدث خطأ',
+        description: 'يجب تسجيل الدخول لإضافة العملاء.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await CustomersService.create(user.id, {
         name: newName,
         email: newEmail || undefined,
         phone: newPhone,
-        company: newCompany,
+        company: newCompany || undefined,
         status: newStatus,
         source: newSource,
-        registrationDate: new Date(),
         notes: newNotes,
         estimatedValue: newEstimatedValue ? parseEnglishNumber(newEstimatedValue) : undefined,
-      };
-      setCustomers([...customers, customer]);
-      
-      // Reset form
+      });
+      await loadCustomers();
       setNewName('');
       setNewEmail('');
       setNewPhone('');
@@ -99,6 +122,18 @@ export const Customers: React.FC = () => {
       setNewSource('website');
       setNewNotes('');
       setNewEstimatedValue('');
+      toast({
+        title: ARABIC_CUSTOMERS_MESSAGES.TOAST_ADD_SUCCESS_TITLE ?? 'تمت الإضافة',
+        description: ARABIC_CUSTOMERS_MESSAGES.TOAST_ADD_SUCCESS_DESCRIPTION ?? 'تم حفظ العميل بنجاح.',
+      });
+    } catch (error) {
+      toast({
+        title: ARABIC_CUSTOMERS_MESSAGES.TOAST_ERROR_TITLE ?? 'حدث خطأ',
+        description: error instanceof Error ? error.message : 'تعذر حفظ العميل.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -107,20 +142,45 @@ export const Customers: React.FC = () => {
     setShowDeleteDialog(true);
   };
 
-  const confirmDeleteCustomer = () => {
-    if (customerToDelete) {
-      setCustomers(customers.filter(customer => customer.id !== customerToDelete));
+  const confirmDeleteCustomer = async () => {
+    if (!customerToDelete) return;
+    try {
+      await CustomersService.remove(customerToDelete);
+      await loadCustomers();
+      toast({
+        title: ARABIC_CUSTOMERS_MESSAGES.TOAST_DELETE_SUCCESS_TITLE ?? 'تم الحذف',
+        description: ARABIC_CUSTOMERS_MESSAGES.TOAST_DELETE_SUCCESS_DESCRIPTION ?? 'تم حذف العميل بنجاح.',
+      });
+    } catch (error) {
+      toast({
+        title: ARABIC_CUSTOMERS_MESSAGES.TOAST_ERROR_TITLE ?? 'حدث خطأ',
+        description: error instanceof Error ? error.message : 'تعذر حذف العميل.',
+        variant: 'destructive',
+      });
+    } finally {
       setCustomerToDelete(null);
       setShowDeleteDialog(false);
     }
   };
 
-  const updateCustomerStatus = (id: string, status: Customer['status']) => {
-    setCustomers(customers.map(customer => 
-      customer.id === id 
+  const updateCustomerStatus = async (id: string, status: Customer['status']) => {
+    const previous = customers;
+    const updated = customers.map(customer =>
+      customer.id === id
         ? { ...customer, status, lastContactDate: new Date() }
         : customer
-    ));
+    );
+    setCustomers(updated);
+    try {
+      await CustomersService.updateStatus(id, status);
+    } catch (error) {
+      setCustomers(previous);
+      toast({
+        title: ARABIC_CUSTOMERS_MESSAGES.TOAST_ERROR_TITLE ?? 'حدث خطأ',
+        description: error instanceof Error ? error.message : 'تعذر تحديث حالة العميل.',
+        variant: 'destructive',
+      });
+    }
   };
 
   const getStatusColor = (status: Customer['status']) => {
@@ -307,7 +367,7 @@ export const Customers: React.FC = () => {
               <Button
                 onClick={addCustomer}
                 variant="default"
-                disabled={!nameValidation.isValid}
+                disabled={isSubmitting || !nameValidation.isValid}
               >
                 <Plus className="w-4 h-4 ml-2" />
                 {ARABIC_CUSTOMERS_MESSAGES.ADD_CUSTOMER_BUTTON}
@@ -507,7 +567,7 @@ export const Customers: React.FC = () => {
       <DeleteConfirmationDialog
         open={showDeleteDialog}
         onOpenChange={setShowDeleteDialog}
-        onConfirm={confirmDeleteCustomer}
+        onConfirm={() => { void confirmDeleteCustomer(); }}
         itemName={customerToDelete ? customers.find(c => c.id === customerToDelete)?.name : ARABIC_CUSTOMERS_MESSAGES.DELETE_CONFIRM_ITEM_NAME}
       />
     </div>

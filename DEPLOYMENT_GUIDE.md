@@ -34,15 +34,13 @@ This guide covers deploying the Wathiq Transport Management System to production
 4. Select the `render` branch
 
 #### 2. Configure Service
-```yaml
-Name: wathiq-transport-management
-Environment: Node
-Build Command: npm run build
-Start Command: npm start
-Plan: Starter (or higher for production)
-```
+- **Name**: `wathiq-transport-management`
+- **Environment**: **Docker** (Render auto-detects the root `Dockerfile`)
+- **Plan**: Starter (or higher for production traffic)
+- **Health Check Path**: `/`
+- **Auto Deploy**: Enabled
 
-#### 3. Environment Variables
+#### 3. Environment Variables (used for both Docker build args and runtime)
 ```env
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your_anon_key
@@ -50,8 +48,11 @@ VITE_TRIPS_API_URL=/api/trips/sync
 SUPABASE_SERVICE_URL=https://your-project.supabase.co
 SUPABASE_SERVICE_KEY=your_service_role_key
 TRIPS_BUCKET=trip-evidence
+FRONTEND_URL=https://wathiq-7eby.onrender.com     # optional, used for strict CORS
+VERCEL_URL=<vercel-domain>                        # optional, used for strict CORS
 NODE_ENV=production
 ```
+> Render injects these values during the Docker build (so Vite can embed `VITE_*`) and keeps them available at runtime for the Express server.
 
 #### 4. Advanced Settings
 - **Auto-Deploy**: Enable for automatic deployments
@@ -129,14 +130,23 @@ services:
 -- 2. Notifications
 \i supabase/002_notifications.sql
 
--- 3. Business data tables
+-- 3. Business data tables (safe version)
 \i supabase/005_safe_business_data_tables.sql
 
--- 4. Security policies
+-- 4. Security policies (safe version)
 \i supabase/006_safe_rls_policies.sql
 
 -- 5. Trips schema + RLS
 \i supabase/008_trip_reports.sql
+
+-- 6. Finance schema updates (title/liquidity)
+\i supabase/009_finance_schema_updates.sql
+```
+
+After the migrations complete, run the verification helper to confirm tables exist and RLS is enabled:
+
+```sql
+\i supabase/007_check_existing_tables.sql
 ```
 
 ### 2. User Management

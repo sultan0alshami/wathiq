@@ -1,6 +1,6 @@
 # 🧪 Final Testing Checklist - Wathiq Dashboard
 
-**Last Updated**: January 2025
+**Last Updated**: November 2025
 
 ## 📋 **PRODUCTION READY - Complete Testing Checklist**
 
@@ -8,9 +8,10 @@
 - ✅ Verify all functionality works across different devices and screen sizes
 - ✅ Ensure mobile responsiveness improvements are working
 - ✅ Validate performance optimizations
-- ✅ Confirm branding updates are applied (Enhanced Finance → Finance)
+- ✅ Confirm latest UI flows (Trips archive/recycle + custom confirmations)
 - ✅ Test all critical user flows
 - ✅ Validate database integration and real-time notifications
+- ✅ Confirm Supabase persistence survives logout, cache clear, and redeployments
 
 ---
 
@@ -173,7 +174,7 @@
 ### **✅ Visual and Interaction**
 - [ ] **Branding**
   - [ ] Wathiq logo appears in meta tags
-  - [ ] No Lovable branding visible
+  - [ ] No legacy branding visible
   - [ ] Consistent color scheme
   - [ ] Arabic text displays correctly
 
@@ -271,51 +272,25 @@ Overall Result: ✅ PASS / ❌ FAIL
 
 ---
 
-## **🔄 Recent Updates Testing (January 2025)**
+## **🔄 Recent Updates Testing (November 2025)**
 
-### **✅ Enhanced Finance → Finance Migration**
-- [ ] **Branding Update**
-  - [ ] Page title shows "المالية" instead of "المالية المحسنة"
-  - [ ] Navigation shows "المالية" in sidebar
-  - [ ] All references updated throughout the application
-  - [ ] Component name changed from EnhancedFinance to Finance
+### **✅ Supabase Persistence**
+- [ ] Finance/Sales/Operations/Marketing/Customers/Suppliers load data that was created before clearing cache.
+- [ ] Logging out, clearing browser storage, and logging back in still shows the most recent Supabase records.
+- [ ] Switching devices (desktop ↔ mobile) reflects the same dataset for the signed-in user.
+- [ ] `007_check_existing_tables.sql` reports all modules with `rls_enabled = true`.
 
-- [ ] **File Structure**
-  - [ ] Finance.tsx exists (renamed from EnhancedFinance.tsx)
-  - [ ] arabicFinanceMessages.ts exists (renamed from arabicEnhancedFinanceMessages.ts)
-  - [ ] All imports updated correctly
-  - [ ] No broken references
+### **✅ Trips Offline + Recycle Bin**
+- [ ] Custom confirmation dialog appears for delete and purge actions (no `window.confirm`).
+- [ ] Saving a trip, syncing, logging out, and returning later keeps the trip visible with status "متزامن".
+- [ ] Drafts and recycle bin entries stay local, while synced entries reload from Supabase.
+- [ ] Recycle bin keeps entries for 30 days and `طلب إفراغ المحذوفات` removes them permanently.
 
-### **✅ Mobile UI Overhaul**
-- [ ] **Dropdown Positioning**
-  - [ ] Notification dropdown perfectly centered on mobile
-  - [ ] User menu dropdown perfectly centered on mobile
-  - [ ] No cut-off on left or right sides
-  - [ ] Proper z-index layering
-
-- [ ] **Glassy Background Effects**
-  - [ ] Mobile dropdowns have glassy/backdrop-blur effect
-  - [ ] Professional appearance maintained
-  - [ ] Background blur works across browsers
-
-- [ ] **Mobile Sidebar**
-  - [ ] Overlay appears when sidebar opens
-  - [ ] Sidebar closes when overlay is tapped
-  - [ ] Proper z-index prevents content overlap
-  - [ ] Smooth animations
-
-### **✅ Database Integration**
-- [ ] **Supabase Connection**
-  - [ ] Real-time notifications working
-  - [ ] PDF generation triggers notifications
-  - [ ] Database queries execute successfully
-  - [ ] RLS policies functioning
-
-- [ ] **Data Migration**
-  - [ ] Migration tools available
-  - [ ] Data can be moved from localStorage to Supabase
-  - [ ] No data loss during migration
-  - [ ] Rollback options available
+### **✅ Service Layer Regression**
+- [ ] `FinanceService`, `SalesService`, `OperationsService`, `MarketingService`, `CustomersService`, `SupplierService`, and `TripReportsService` handle insert/update/delete without console errors.
+- [ ] Validation messages are localized and block invalid submissions.
+- [ ] Supabase rate limits are respected (no 429 errors during typical usage).
+- [ ] Notifications fire when `/generate-pdf` or `/api/trips/sync` completes successfully.
 
 ---
 

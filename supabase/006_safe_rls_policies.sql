@@ -67,25 +67,25 @@ CREATE POLICY "Users can update their finance liquidity" ON finance_liquidity
 -- =====================================================
 
 -- Enable RLS on sales tables
-ALTER TABLE sales_meetings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE sales_entries ENABLE ROW LEVEL SECURITY;
 
 -- Drop existing policies if they exist
-DROP POLICY IF EXISTS "Users can view their own sales meetings" ON sales_meetings;
-DROP POLICY IF EXISTS "Users can insert their own sales meetings" ON sales_meetings;
-DROP POLICY IF EXISTS "Users can update their own sales meetings" ON sales_meetings;
-DROP POLICY IF EXISTS "Users can delete their own sales meetings" ON sales_meetings;
+DROP POLICY IF EXISTS "Users can view their own sales entries" ON sales_entries;
+DROP POLICY IF EXISTS "Users can insert their own sales entries" ON sales_entries;
+DROP POLICY IF EXISTS "Users can update their own sales entries" ON sales_entries;
+DROP POLICY IF EXISTS "Users can delete their own sales entries" ON sales_entries;
 
--- Sales meetings policies
-CREATE POLICY "Users can view their own sales meetings" ON sales_meetings
+-- Sales entries policies
+CREATE POLICY "Users can view their own sales entries" ON sales_entries
     FOR SELECT USING (auth.uid() = user_id);
 
-CREATE POLICY "Users can insert their own sales meetings" ON sales_meetings
+CREATE POLICY "Users can insert their own sales entries" ON sales_entries
     FOR INSERT WITH CHECK (auth.uid() = user_id);
 
-CREATE POLICY "Users can update their own sales meetings" ON sales_meetings
+CREATE POLICY "Users can update their own sales entries" ON sales_entries
     FOR UPDATE USING (auth.uid() = user_id);
 
-CREATE POLICY "Users can delete their own sales meetings" ON sales_meetings
+CREATE POLICY "Users can delete their own sales entries" ON sales_entries
     FOR DELETE USING (auth.uid() = user_id);
 
 -- =====================================================
@@ -114,39 +114,57 @@ CREATE POLICY "Users can update their own operations entries" ON operations_entr
 CREATE POLICY "Users can delete their own operations entries" ON operations_entries
     FOR DELETE USING (auth.uid() = user_id);
 
+DO $ops_expect$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.tables
+        WHERE table_schema = 'public'
+        AND table_name = 'operations_expectations'
+    ) THEN
+        EXECUTE 'ALTER TABLE operations_expectations ENABLE ROW LEVEL SECURITY';
+        EXECUTE 'DROP POLICY IF EXISTS "Users can view their operations expectations" ON operations_expectations';
+        EXECUTE 'DROP POLICY IF EXISTS "Users can upsert their operations expectations" ON operations_expectations';
+        EXECUTE 'DROP POLICY IF EXISTS "Users can update their operations expectations" ON operations_expectations';
+        EXECUTE 'CREATE POLICY "Users can view their operations expectations" ON operations_expectations ' ||
+                'FOR SELECT USING (auth.uid() = user_id)';
+        EXECUTE 'CREATE POLICY "Users can upsert their operations expectations" ON operations_expectations ' ||
+                'FOR INSERT WITH CHECK (auth.uid() = user_id)';
+        EXECUTE 'CREATE POLICY "Users can update their operations expectations" ON operations_expectations ' ||
+                'FOR UPDATE USING (auth.uid() = user_id)';
+    END IF;
+END
+$ops_expect$;
+
 -- =====================================================
 -- MARKETING TABLES RLS
 -- =====================================================
 
 -- Enable RLS on marketing tables
-ALTER TABLE marketing_campaigns ENABLE ROW LEVEL SECURITY;
 ALTER TABLE marketing_tasks ENABLE ROW LEVEL SECURITY;
-ALTER TABLE marketing_customer_interactions ENABLE ROW LEVEL SECURITY;
+DO $marketing_rls$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.tables
+        WHERE table_schema = 'public'
+        AND table_name = 'marketing_yesterday_tasks'
+    ) THEN
+        EXECUTE 'ALTER TABLE marketing_yesterday_tasks ENABLE ROW LEVEL SECURITY';
+    END IF;
+    IF EXISTS (
+        SELECT 1 FROM information_schema.tables
+        WHERE table_schema = 'public'
+        AND table_name = 'marketing_planned_tasks'
+    ) THEN
+        EXECUTE 'ALTER TABLE marketing_planned_tasks ENABLE ROW LEVEL SECURITY';
+    END IF;
+END
+$marketing_rls$;
 
 -- Marketing campaigns policies
-DROP POLICY IF EXISTS "Users can view their own marketing campaigns" ON marketing_campaigns;
-DROP POLICY IF EXISTS "Users can insert their own marketing campaigns" ON marketing_campaigns;
-DROP POLICY IF EXISTS "Users can update their own marketing campaigns" ON marketing_campaigns;
-DROP POLICY IF EXISTS "Users can delete their own marketing campaigns" ON marketing_campaigns;
-
-CREATE POLICY "Users can view their own marketing campaigns" ON marketing_campaigns
-    FOR SELECT USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can insert their own marketing campaigns" ON marketing_campaigns
-    FOR INSERT WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can update their own marketing campaigns" ON marketing_campaigns
-    FOR UPDATE USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can delete their own marketing campaigns" ON marketing_campaigns
-    FOR DELETE USING (auth.uid() = user_id);
-
--- Marketing tasks policies
 DROP POLICY IF EXISTS "Users can view their own marketing tasks" ON marketing_tasks;
 DROP POLICY IF EXISTS "Users can insert their own marketing tasks" ON marketing_tasks;
 DROP POLICY IF EXISTS "Users can update their own marketing tasks" ON marketing_tasks;
 DROP POLICY IF EXISTS "Users can delete their own marketing tasks" ON marketing_tasks;
-
 CREATE POLICY "Users can view their own marketing tasks" ON marketing_tasks
     FOR SELECT USING (auth.uid() = user_id);
 
@@ -159,23 +177,41 @@ CREATE POLICY "Users can update their own marketing tasks" ON marketing_tasks
 CREATE POLICY "Users can delete their own marketing tasks" ON marketing_tasks
     FOR DELETE USING (auth.uid() = user_id);
 
--- Marketing customer interactions policies
-DROP POLICY IF EXISTS "Users can view their own marketing interactions" ON marketing_customer_interactions;
-DROP POLICY IF EXISTS "Users can insert their own marketing interactions" ON marketing_customer_interactions;
-DROP POLICY IF EXISTS "Users can update their own marketing interactions" ON marketing_customer_interactions;
-DROP POLICY IF EXISTS "Users can delete their own marketing interactions" ON marketing_customer_interactions;
+DO $marketing_policies$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.tables
+        WHERE table_schema = 'public'
+        AND table_name = 'marketing_yesterday_tasks'
+    ) THEN
+        EXECUTE 'DROP POLICY IF EXISTS "Users can view their own marketing yesterday tasks" ON marketing_yesterday_tasks';
+        EXECUTE 'DROP POLICY IF EXISTS "Users can insert their own marketing yesterday tasks" ON marketing_yesterday_tasks';
+        EXECUTE 'DROP POLICY IF EXISTS "Users can delete their own marketing yesterday tasks" ON marketing_yesterday_tasks';
+        EXECUTE 'CREATE POLICY "Users can view their own marketing yesterday tasks" ON marketing_yesterday_tasks ' ||
+                'FOR SELECT USING (auth.uid() = user_id)';
+        EXECUTE 'CREATE POLICY "Users can insert their own marketing yesterday tasks" ON marketing_yesterday_tasks ' ||
+                'FOR INSERT WITH CHECK (auth.uid() = user_id)';
+        EXECUTE 'CREATE POLICY "Users can delete their own marketing yesterday tasks" ON marketing_yesterday_tasks ' ||
+                'FOR DELETE USING (auth.uid() = user_id)';
+    END IF;
 
-CREATE POLICY "Users can view their own marketing interactions" ON marketing_customer_interactions
-    FOR SELECT USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can insert their own marketing interactions" ON marketing_customer_interactions
-    FOR INSERT WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can update their own marketing interactions" ON marketing_customer_interactions
-    FOR UPDATE USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can delete their own marketing interactions" ON marketing_customer_interactions
-    FOR DELETE USING (auth.uid() = user_id);
+    IF EXISTS (
+        SELECT 1 FROM information_schema.tables
+        WHERE table_schema = 'public'
+        AND table_name = 'marketing_planned_tasks'
+    ) THEN
+        EXECUTE 'DROP POLICY IF EXISTS "Users can view their own marketing planned tasks" ON marketing_planned_tasks';
+        EXECUTE 'DROP POLICY IF EXISTS "Users can insert their own marketing planned tasks" ON marketing_planned_tasks';
+        EXECUTE 'DROP POLICY IF EXISTS "Users can delete their own marketing planned tasks" ON marketing_planned_tasks';
+        EXECUTE 'CREATE POLICY "Users can view their own marketing planned tasks" ON marketing_planned_tasks ' ||
+                'FOR SELECT USING (auth.uid() = user_id)';
+        EXECUTE 'CREATE POLICY "Users can insert their own marketing planned tasks" ON marketing_planned_tasks ' ||
+                'FOR INSERT WITH CHECK (auth.uid() = user_id)';
+        EXECUTE 'CREATE POLICY "Users can delete their own marketing planned tasks" ON marketing_planned_tasks ' ||
+                'FOR DELETE USING (auth.uid() = user_id)';
+    END IF;
+END
+$marketing_policies$;
 
 -- =====================================================
 -- CUSTOMERS TABLES RLS
@@ -183,6 +219,17 @@ CREATE POLICY "Users can delete their own marketing interactions" ON marketing_c
 
 -- Enable RLS on customers tables
 ALTER TABLE customers ENABLE ROW LEVEL SECURITY;
+DO $crm_rls$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.tables
+        WHERE table_schema = 'public'
+        AND table_name = 'crm_customers'
+    ) THEN
+        EXECUTE 'ALTER TABLE crm_customers ENABLE ROW LEVEL SECURITY';
+    END IF;
+END
+$crm_rls$;
 
 -- Drop existing policies if they exist
 DROP POLICY IF EXISTS "Users can view their own customers" ON customers;
@@ -202,6 +249,29 @@ CREATE POLICY "Users can update their own customers" ON customers
 
 CREATE POLICY "Users can delete their own customers" ON customers
     FOR DELETE USING (auth.uid() = user_id);
+
+DO $crm_policies$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.tables
+        WHERE table_schema = 'public'
+        AND table_name = 'crm_customers'
+    ) THEN
+        EXECUTE 'DROP POLICY IF EXISTS "Users can view their CRM customers" ON crm_customers';
+        EXECUTE 'DROP POLICY IF EXISTS "Users can insert their CRM customers" ON crm_customers';
+        EXECUTE 'DROP POLICY IF EXISTS "Users can update their CRM customers" ON crm_customers';
+        EXECUTE 'DROP POLICY IF EXISTS "Users can delete their CRM customers" ON crm_customers';
+        EXECUTE 'CREATE POLICY "Users can view their CRM customers" ON crm_customers ' ||
+                'FOR SELECT USING (auth.uid() = user_id)';
+        EXECUTE 'CREATE POLICY "Users can insert their CRM customers" ON crm_customers ' ||
+                'FOR INSERT WITH CHECK (auth.uid() = user_id)';
+        EXECUTE 'CREATE POLICY "Users can update their CRM customers" ON crm_customers ' ||
+                'FOR UPDATE USING (auth.uid() = user_id)';
+        EXECUTE 'CREATE POLICY "Users can delete their CRM customers" ON crm_customers ' ||
+                'FOR DELETE USING (auth.uid() = user_id)';
+    END IF;
+END
+$crm_policies$;
 
 -- =====================================================
 -- SUPPLIERS TABLES RLS

@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Trash2, Plus, Settings2, CheckCircle, Clock, AlertCircle, Loader2, Gauge } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useDateContext } from '@/contexts/DateContext';
-import { getDataForDate, updateSectionData, type OperationEntry } from '@/lib/mockData';
+import { updateSectionData, type OperationEntry } from '@/lib/mockData';
 import { AuthService } from '@/services/AuthService';
 import { ValidationMessage, useFormValidation, ValidationRules } from '@/components/ui/enhanced-form-validation';
 import { DeleteConfirmationDialog } from '@/components/ui/confirmation-dialog';
@@ -17,6 +17,8 @@ import { KPICardSkeleton, TableSkeleton } from '@/components/ui/loading-skeleton
 import { ARABIC_OPERATIONS_MESSAGES } from '@/lib/arabicOperationsMessages';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { OperationsKPICards } from '@/components/ui/mobile-kpi';
+import { OperationsService } from '@/services/OperationsService';
+import { useAuth } from '@/contexts/AuthContext';
 import { MobileTable } from '@/components/ui/mobile-table';
 
 const OperationUtils = {
@@ -56,6 +58,7 @@ const OperationUtils = {
 
 export const Operations: React.FC = () => {
   const { currentDate } = useDateContext();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const isMobile = useIsMobile();
@@ -105,16 +108,29 @@ export const Operations: React.FC = () => {
 
   // Load data on mount and date change
   useEffect(() => {
-    setLoading(true);
-    // Simulate loading delay
-    new Promise(resolve => setTimeout(resolve, 500)).then(() => {
-      const data = getDataForDate(currentDate);
-      setOperations(data.operations.entries);
-      setExpectedNextDay(data.operations.expectedNextDay);
-      setExpectedNextDayInput(String(data.operations.expectedNextDay));
-      setLoading(false);
-    });
-  }, [currentDate]);
+    const loadOperations = async () => {
+      setLoading(true);
+      try {
+        const [entries, expected] = await Promise.all([
+          OperationsService.list(currentDate),
+          OperationsService.getExpectedNextDay(),
+        ]);
+        setOperations(entries);
+        setExpectedNextDay(expected);
+        setExpectedNextDayInput(String(expected));
+      } catch (error) {
+        toast({
+          title: ARABIC_OPERATIONS_MESSAGES.LOAD_ERROR_TITLE,
+          description: ARABIC_OPERATIONS_MESSAGES.LOAD_ERROR_DESCRIPTION,
+          variant: 'destructive',
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadOperations();
+  }, [currentDate, toast]);
 
   const addOperation = async () => {
     const isFormValid = newTaskValidation.isValid && newOwnerValidation.isValid;
@@ -128,14 +144,17 @@ export const Operations: React.FC = () => {
     }
     setLoading(true);
     try {
-      const operation: OperationEntry = {
-        id: Date.now().toString(),
+      if (!user?.id) {
+        throw new Error('يجب تسجيل الدخول لإضافة عملية.');
+      }
+      const operation = await OperationsService.create(user.id, {
+        date: currentDate,
         task: newTask,
         status: newStatus,
         notes: newNotes,
         owner: newOwner,
         priority: newPriority,
-      };
+      });
       const updatedOperations = [...operations, operation];
       setOperations(updatedOperations);
       
@@ -159,8 +178,9 @@ export const Operations: React.FC = () => {
     } catch (error) {
       toast({
         title: ARABIC_OPERATIONS_MESSAGES.TOAST_ADD_ERROR_TITLE,
-        description: ARABIC_OPERATIONS_MESSAGES.TOAST_ADD_ERROR_DESCRIPTION,
-        variant: "destructive",
+        description:
+          error instanceof Error ? error.message : ARABIC_OPERATIONS_MESSAGES.TOAST_ADD_ERROR_DESCRIPTION,
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
@@ -172,8 +192,9 @@ export const Operations: React.FC = () => {
     try {
       // Server-side authorization check
       await AuthService.requireAccess('operations');
-      
-      const updatedOperations = operations.filter(op => op.id !== id);
+      await OperationsService.remove(id);
+
+      const updatedOperations = operations.filter((op) => op.id !== id);
       setOperations(updatedOperations);
       
       updateSectionData(currentDate, 'operations', {
@@ -209,6 +230,7 @@ export const Operations: React.FC = () => {
     setOperations(updatedOperations);
     
     try {
+      await OperationsService.updateStatus(id, status);
       updateSectionData(currentDate, 'operations', {
         totalOperations: updatedOperations.length,
         entries: updatedOperations,
@@ -221,7 +243,7 @@ export const Operations: React.FC = () => {
     } catch (error) {
       toast({
         title: ARABIC_OPERATIONS_MESSAGES.TOAST_UPDATE_ERROR_TITLE,
-        description: ARABIC_OPERATIONS_MESSAGES.TOAST_UPDATE_ERROR_DESCRIPTION,
+        description: error instanceof Error ? error.message : ARABIC_OPERATIONS_MESSAGES.TOAST_UPDATE_ERROR_DESCRIPTION,
         variant: "destructive",
       });
     }
@@ -238,6 +260,10 @@ export const Operations: React.FC = () => {
       const count = parseInt(value);
       setExpectedNextDay(count);
       try {
+        if (!user?.id) {
+          throw new Error('يجب تسجيل الدخول لتحديث التوقعات.');
+        }
+        await OperationsService.setExpectedNextDay(user.id, count);
         updateSectionData(currentDate, 'operations', {
           totalOperations: operations.length,
           entries: operations,
@@ -246,7 +272,8 @@ export const Operations: React.FC = () => {
       } catch (error) {
         toast({
           title: ARABIC_OPERATIONS_MESSAGES.TOAST_ADD_ERROR_TITLE,
-          description: ARABIC_OPERATIONS_MESSAGES.TOAST_ADD_ERROR_DESCRIPTION,
+          description:
+            error instanceof Error ? error.message : ARABIC_OPERATIONS_MESSAGES.TOAST_ADD_ERROR_DESCRIPTION,
           variant: "destructive",
         });
       }

@@ -151,6 +151,7 @@ export interface Supplier {
   category: string;
   status: 'active' | 'inactive';
   registrationDate: Date;
+  estimatedValue?: number;
   notes: string;
   documents: SupplierDocument[];
 }

@@ -38,6 +38,7 @@ import {
   OfflineTripRecord,
   TripReportInput,
 } from '@/services/TripService';
+import { TripReportsService } from '@/services/TripReportsService';
 import { ARABIC_TRIPS_MESSAGES, ChecklistKey } from '@/lib/arabicTripsMessages';
 import { cn } from '@/lib/utils';
 import {
@@ -253,7 +254,7 @@ export const Trips: React.FC = () => {
     [currentDate]
   );
 
-  const updateNextBookingSequence = (
+  const updateNextBookingSequence = useCallback(
     entriesSnapshot: TripEntry[],
     queueSnapshot: OfflineTripRecord[],
     draftsSnapshot: TripDraft[] = drafts,
@@ -266,23 +267,40 @@ export const Trips: React.FC = () => {
     setBookingSequence(
       computeNextSequence(entriesSnapshot, queueSnapshot, reservedIds)
     );
-  };
+  },
+  [drafts, recycleBin]
+);
 
   useEffect(() => {
-    const data = getDataForDate(currentDate);
-    const entries = data.trips.entries || [];
-    const storedQueue = TripService.loadQueue();
-    const storedDrafts = data.trips.drafts || [];
-    const cleanedRecycle = purgeExpiredRecycle(data.trips.recycleBin || []);
-    setTrips(entries);
-    setQueue(storedQueue);
-    setDrafts(storedDrafts);
-    setRecycleBin(cleanedRecycle);
-    updateNextBookingSequence(entries, storedQueue, storedDrafts, cleanedRecycle);
-    if ((data.trips.recycleBin || []).length !== cleanedRecycle.length) {
-      persistTripsSection(entries, storedQueue.length, storedDrafts, cleanedRecycle);
-    }
-  }, [currentDate]);
+    const loadRemoteTrips = async () => {
+      try {
+        const remoteEntries = await TripReportsService.listByDate(currentDate);
+        const storedData = getDataForDate(currentDate);
+        const storedDrafts = storedData.trips.drafts || [];
+        const cleanedRecycle = purgeExpiredRecycle(storedData.trips.recycleBin || []);
+        setDrafts(storedDrafts);
+        setRecycleBin(cleanedRecycle);
+        const storedQueue = TripService.loadQueue();
+        const queueEntries = storedQueue.map(queueRecordToTripEntry);
+        const combinedEntries = [...remoteEntries, ...queueEntries];
+        setTrips(combinedEntries);
+        setQueue(storedQueue);
+        persistTripsSection(combinedEntries, storedQueue.length, storedDrafts, cleanedRecycle);
+        updateNextBookingSequence(combinedEntries, storedQueue, storedDrafts, cleanedRecycle);
+      } catch (error) {
+        console.error('Failed to load trips from Supabase', error);
+        toast({
+          title: 'تعذر تحميل الرحلات',
+          description: 'حدث خطأ أثناء تحميل الرحلات من قاعدة البيانات. حاول مرة أخرى لاحقاً.',
+          variant: 'destructive',
+        });
+      } finally {
+        /* no-op */
+      }
+    };
+
+    loadRemoteTrips();
+  }, [currentDate, queueRecordToTripEntry, persistTripsSection, toast, updateNextBookingSequence]);
 
   useEffect(() => {
     setForm((prev) => ({
@@ -291,20 +309,58 @@ export const Trips: React.FC = () => {
     }));
   }, [userName]);
 
-  const persistTripsSection = (
-    entries: TripEntry[],
-    pending = queue.length,
-    draftsSnapshot = drafts,
-    recycleSnapshot = recycleBin
-  ) => {
-    updateSectionData(currentDate, 'trips', {
-      totalTrips: entries.length,
-      entries,
-      pendingSync: pending,
-      drafts: draftsSnapshot,
-      recycleBin: recycleSnapshot,
-    });
-  };
+  const persistTripsSection = useCallback(
+    (
+      entries: TripEntry[],
+      pending: number,
+      draftsSnapshot: TripDraft[] = drafts,
+      recycleSnapshot: TripRecycleRecord[] = recycleBin
+    ) => {
+      updateSectionData(currentDate, 'trips', {
+        totalTrips: entries.length,
+        entries,
+        pendingSync: pending,
+        drafts: draftsSnapshot,
+        recycleBin: recycleSnapshot,
+      });
+    },
+    [currentDate, drafts, recycleBin]
+  );
+
+  const queueRecordToTripEntry = useCallback(
+    (record: OfflineTripRecord): TripEntry => ({
+      id: record.id,
+      bookingId: record.payload.bookingId,
+      date: record.payload.date,
+      hijriDateLabel: formatHijriDateLabel(record.payload.date),
+      gregorianDateLabel: formatGregorianDateLabel(record.payload.date),
+      sourceRef: record.payload.sourceRef || '',
+      bookingSource: record.payload.bookingSource || '',
+      supplier: record.payload.supplier || '',
+      clientName: record.payload.clientName || '',
+      driverName: record.payload.driverName || '',
+      carType: record.payload.carType || '',
+      parkingLocation: record.payload.parkingLocation || '',
+      pickupPoint: record.payload.pickupPoint || '',
+      dropoffPoint: record.payload.dropoffPoint || '',
+      supervisorName: record.payload.supervisorName || '',
+      supervisorRating: record.payload.supervisorRating,
+      supervisorNotes: record.payload.supervisorNotes || '',
+      passengerFeedback: record.payload.passengerFeedback || '',
+      status: record.payload.status,
+      checklist: record.payload.checklist || checklistDefaults,
+      attachments: (record.attachments || []).map((attachment) => ({
+        id: attachment.id,
+        name: attachment.name,
+        size: attachment.size,
+        mimeType: attachment.mimeType,
+      })),
+      createdAt: record.createdAt,
+      createdBy: record.payload.createdBy || user?.id,
+      syncStatus: record.status,
+    }),
+    [user?.id]
+  );
 
   const isChecklistClean = Object.values(checklist).every(
     (value) => value === 'good'
@@ -364,7 +420,7 @@ export const Trips: React.FC = () => {
       ? drafts.map((item) => (item.id === draft.id ? draft : item))
       : [...drafts, draft];
     setDrafts(updatedDrafts);
-    persistTripsSection(trips, queue.length, updatedDrafts);
+    persistTripsSection(trips, queue.length, updatedDrafts, recycleBin);
     updateNextBookingSequence(trips, queue, updatedDrafts);
     toast({
       title: isEditing ? 'تم تحديث الأرشيف' : 'تم حفظ الرحلة في الأرشيف',
@@ -391,7 +447,7 @@ export const Trips: React.FC = () => {
   const handleRemoveDraft = (draftId: string) => {
     const nextDrafts = drafts.filter((draft) => draft.id !== draftId);
     setDrafts(nextDrafts);
-    persistTripsSection(trips, queue.length, nextDrafts);
+    persistTripsSection(trips, queue.length, nextDrafts, recycleBin);
     updateNextBookingSequence(trips, queue, nextDrafts);
     if (editingDraftId === draftId) {
       resetForm();
@@ -721,8 +777,8 @@ export const Trips: React.FC = () => {
       setEditingDraftId(null);
     }
     setTrips(updatedEntries);
-    persistTripsSection(updatedEntries, queue.length, activeDrafts);
-    updateNextBookingSequence(updatedEntries, queue, activeDrafts);
+    persistTripsSection(updatedEntries, queue.length, activeDrafts, recycleBin);
+    updateNextBookingSequence(updatedEntries, queue, activeDrafts, recycleBin);
 
     const offlineRecord: OfflineTripRecord = {
       id: updatedEntry.id,
@@ -734,8 +790,8 @@ export const Trips: React.FC = () => {
 
     const commitQueueState = (records: OfflineTripRecord[]) => {
       setQueue(records);
-      persistTripsSection(updatedEntries, records.length, activeDrafts);
-      updateNextBookingSequence(updatedEntries, records, activeDrafts);
+      persistTripsSection(updatedEntries, records.length, activeDrafts, recycleBin);
+      updateNextBookingSequence(updatedEntries, records, activeDrafts, recycleBin);
     };
 
     if (!navigator.onLine) {
@@ -842,8 +898,8 @@ export const Trips: React.FC = () => {
         : { ...entry, syncStatus: 'synced' as TripSyncStatus }
     );
     setTrips(syncedEntries);
-    persistTripsSection(syncedEntries, records.length);
-    updateNextBookingSequence(syncedEntries, records);
+    persistTripsSection(syncedEntries, records.length, drafts, recycleBin);
+    updateNextBookingSequence(syncedEntries, records, drafts, recycleBin);
 
     if (result.failed === 0) {
       toast({

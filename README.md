@@ -37,6 +37,7 @@ A comprehensive business management platform built with React, TypeScript, and S
 - **Multi-language Support**: Arabic interface with RTL support
 - **Role-based Access**: Admin and Manager user roles
 - **Offline Trips Queue**: Capture trips offline and auto-sync when connected
+- **Supabase Service Layer**: Finance, Sales, Operations, Marketing, Customers, Suppliers, and Trips all read/write directly from Supabase via dedicated services
 - **Secure Authentication**: Supabase Auth integration
 - **Database Integration**: Full Supabase backend integration
 
@@ -116,6 +117,9 @@ Run the SQL scripts in the `supabase/` directory in order:
 3. `005_safe_business_data_tables.sql` - Business data tables
 4. `006_safe_rls_policies.sql` - Security policies
 5. `008_trip_reports.sql` - Trips schema (reports/photos/RLS)
+6. `009_finance_schema_updates.sql` - Finance-specific adjustments (title/attachment/liquidity)
+
+After running the migrations, use `007_check_existing_tables.sql` to verify that every table exists and RLS is enabled.
 
 ### 5. Start Development Server
 ```bash

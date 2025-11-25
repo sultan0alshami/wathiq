@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Trash2, Plus, Users, Calendar, FileText, TrendingUp, Loader2, CalendarCheck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useDateContext } from '@/contexts/DateContext';
-import { getDataForDate, updateSectionData, type SalesEntry } from '@/lib/mockData';
+import { updateSectionData, type SalesEntry } from '@/lib/mockData';
 import {
   Select,
   SelectContent,
@@ -28,9 +28,12 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { MobileSalesForm } from '@/components/ui/mobile-form';
 import { MobileSalesTable } from '@/components/ui/mobile-table';
 import { SalesKPICards } from '@/components/ui/mobile-kpi';
+import { SalesService } from '@/services/SalesService';
+import { useAuth } from '@/contexts/AuthContext';
 
 export const Sales: React.FC = () => {
   const { currentDate } = useDateContext();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -71,13 +74,28 @@ export const Sales: React.FC = () => {
 
   // Load data on mount and date change
   useEffect(() => {
-    setLoading(true);
-    const data = getDataForDate(currentDate);
-    setNewCustomersContacted(data.sales.customersContacted);
-    setMeetings(data.sales.entries);
-    setDailySummary(data.sales.dailySummary);
-    setLoading(false);
-  }, [currentDate]);
+    const loadSalesData = async () => {
+      setLoading(true);
+      try {
+        const [entries] = await Promise.all([
+          SalesService.list(currentDate),
+        ]);
+        setMeetings(entries);
+        setDailySummary('');
+        setNewCustomersContacted(0);
+      } catch (error) {
+        toast({
+          title: ARABIC_SALES_MESSAGES.TOAST_LOAD_ERROR_TITLE,
+          description: ARABIC_SALES_MESSAGES.TOAST_LOAD_ERROR_DESCRIPTION,
+          variant: 'destructive',
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadSalesData();
+  }, [currentDate, toast]);
 
   const addMeeting = async () => {
     // Re-validate all fields on submission attempt
@@ -106,8 +124,11 @@ export const Sales: React.FC = () => {
 
     setLoading(true);
     try {
-      const meeting: SalesEntry = {
-        id: Date.now().toString(),
+      if (!user?.id) {
+        throw new Error('يجب تسجيل الدخول لإضافة الاجتماعات.');
+      }
+
+      const meeting = await SalesService.create(user.id, {
         customerName: newMeetingCustomer,
         contactNumber: newMeetingContact,
         phoneNumber: newMeetingPhoneNumber,
@@ -116,10 +137,9 @@ export const Sales: React.FC = () => {
         outcome: newMeetingOutcome,
         notes: newMeetingNotes,
         attachments: [],
-      };
+      });
       const updatedMeetings = [...meetings, meeting];
       setMeetings(updatedMeetings);
-      
       updateSectionData(currentDate, 'sales', {
         customersContacted: newCustomersContacted,
         entries: updatedMeetings,
@@ -147,8 +167,9 @@ export const Sales: React.FC = () => {
     } catch (error) {
       toast({
         title: ARABIC_SALES_MESSAGES.TOAST_ADD_ERROR_TITLE,
-        description: ARABIC_SALES_MESSAGES.TOAST_ADD_ERROR_DESCRIPTION,
-        variant: "destructive",
+        description:
+          error instanceof Error ? error.message : ARABIC_SALES_MESSAGES.TOAST_ADD_ERROR_DESCRIPTION,
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
@@ -169,6 +190,7 @@ export const Sales: React.FC = () => {
       // Server-side authorization check
       await AuthService.requireAccess('sales');
       
+      await SalesService.remove(meetingToDelete);
       const updatedMeetings = meetings.filter(meeting => meeting.id !== meetingToDelete);
       setMeetings(updatedMeetings);
       

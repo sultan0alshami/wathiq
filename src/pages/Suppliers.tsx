@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,9 +23,8 @@ import {
   Users
 } from 'lucide-react';
 import { useDateContext } from '@/contexts/DateContext';
-import { useDataWithDate } from '@/hooks/useLocalStorage';
 import { useToast } from '@/hooks/use-toast';
-import { Supplier, SupplierDocument } from '@/lib/mockData';
+import { Supplier } from '@/lib/mockData';
 import { format } from 'date-fns';
 import { useFormValidation, ValidationMessage, ValidationRules } from '@/components/ui/enhanced-form-validation';
 import { SafeHTML } from '@/components/SafeHTML';
@@ -33,6 +32,8 @@ import { DeleteConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { CardSkeleton, TableSkeleton } from '@/components/ui/loading-skeleton';
 import { SuppliersKPICards } from '@/components/ui/mobile-kpi';
 import { ARABIC_SUPPLIERS_MESSAGES } from '@/lib/arabicSuppliersMessages';
+import { useAuth } from '@/contexts/AuthContext';
+import { SupplierService, SupplierDocumentInput } from '@/services/SupplierService';
 
 export const Suppliers: React.FC = () => {
   const { currentDate } = useDateContext();
@@ -47,14 +48,13 @@ export const Suppliers: React.FC = () => {
   // Pagination
   const ITEMS_PER_PAGE = 20;
   const [currentPage, setCurrentPage] = useState(1);
+  const paginatedSuppliers = React.useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return suppliers.slice(start, start + ITEMS_PER_PAGE);
+  }, [suppliers, currentPage]);
 
-  // Use localStorage for suppliers data
-  const { value: suppliers, setValue: setSuppliers } = useDataWithDate<Supplier[]>(
-    'suppliers',
-    currentDate,
-    [],
-    setDataLoading // Pass setDataLoading to useDataWithDate
-  );
+  const { user } = useAuth();
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -69,6 +69,37 @@ export const Suppliers: React.FC = () => {
   });
 
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+
+  const loadSuppliers = useCallback(async () => {
+    if (!user?.id) {
+      setSuppliers([]);
+      setDataLoading(false);
+      return;
+    }
+
+    setDataLoading(true);
+    try {
+      const list = await SupplierService.list(user.id, currentDate);
+      setSuppliers(list);
+    } catch (error) {
+      toast({
+        title: ARABIC_SUPPLIERS_MESSAGES.TOAST_ERROR_TITLE,
+        description:
+          error instanceof Error ? error.message : ARABIC_SUPPLIERS_MESSAGES.TOAST_ADD_ERROR_DESCRIPTION,
+        variant: 'destructive',
+      });
+    } finally {
+      setDataLoading(false);
+    }
+  }, [currentDate, toast, user?.id]);
+
+  useEffect(() => {
+    loadSuppliers();
+  }, [loadSuppliers]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [currentDate]);
 
   const { validateField, validateForm } = useFormValidation();
 
@@ -106,6 +137,27 @@ export const Suppliers: React.FC = () => {
     return overallFormIsValid;
   };
 
+  const fileToDocumentInput = (file: File): Promise<SupplierDocumentInput> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error('تعذر قراءة الملف المرفوع.'));
+      reader.onload = () => {
+        if (typeof reader.result !== 'string') {
+          reject(new Error('تنسيق الملف غير مدعوم.'));
+          return;
+        }
+        resolve({
+          name: file.name,
+          type: file.type || 'application/octet-stream',
+          url: reader.result,
+          uploadDate: new Date(),
+          description: `مستند ${file.name}`,
+          fileSize: file.size,
+        });
+      };
+      reader.readAsDataURL(file);
+    });
+
   const resetForm = () => {
     setFormData({
       name: '',
@@ -141,57 +193,72 @@ export const Suppliers: React.FC = () => {
       return;
     }
 
+    if (!user?.id) {
+      toast({
+        title: ARABIC_SUPPLIERS_MESSAGES.TOAST_ERROR_TITLE,
+        description: 'يجب تسجيل الدخول لإدارة الموردين.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      // Create documents from uploaded files
-      const documents: SupplierDocument[] = uploadedFiles.map((file, index) => ({
-        id: `doc-${Date.now()}-${index}`,
-        name: file.name,
-        type: file.type,
-        url: URL.createObjectURL(file), // In real app, this would be uploaded to server
-        uploadDate: new Date(),
-        description: `مستند ${file.name}`
-      }));
-
-      const newSupplier: Supplier = {
-        id: editingSupplier ? editingSupplier.id : `supplier-${Date.now()}`,
-        name: formData.name,
-        contactPerson: formData.contactPerson,
-        phone: formData.phone,
-        email: formData.email,
-        address: formData.address,
-        category: formData.category,
-        status: formData.status,
-        registrationDate: editingSupplier ? editingSupplier.registrationDate : new Date(),
-        notes: formData.notes,
-        documents: editingSupplier ? [...editingSupplier.documents, ...documents] : documents
-      };
+      const documentsPayload: SupplierDocumentInput[] = await Promise.all(
+        uploadedFiles.map(fileToDocumentInput)
+      );
 
       if (editingSupplier) {
-        const updatedSuppliers = suppliers.map((sup: Supplier) => 
-          sup.id === editingSupplier.id ? newSupplier : sup
+        await SupplierService.update(
+          editingSupplier.id,
+          {
+            name: formData.name,
+            contactPerson: formData.contactPerson,
+            phone: formData.phone,
+            email: formData.email || undefined,
+            address: formData.address || undefined,
+            category: formData.category,
+            status: formData.status,
+            notes: formData.notes,
+          },
+          documentsPayload
         );
-        setSuppliers(updatedSuppliers);
         toast({
           title: ARABIC_SUPPLIERS_MESSAGES.TOAST_UPDATE_SUCCESS_TITLE,
           description: ARABIC_SUPPLIERS_MESSAGES.TOAST_UPDATE_SUCCESS_DESCRIPTION,
         });
       } else {
-        setSuppliers([...suppliers, newSupplier]);
+        await SupplierService.create(
+          user.id,
+          currentDate,
+          {
+            name: formData.name,
+            contactPerson: formData.contactPerson,
+            phone: formData.phone,
+            email: formData.email || undefined,
+            address: formData.address || undefined,
+            category: formData.category,
+            status: formData.status,
+            notes: formData.notes,
+          },
+          documentsPayload
+        );
         toast({
           title: ARABIC_SUPPLIERS_MESSAGES.TOAST_ADD_SUCCESS_TITLE,
           description: ARABIC_SUPPLIERS_MESSAGES.TOAST_ADD_SUCCESS_DESCRIPTION,
         });
       }
 
+      await loadSuppliers();
       setDialogOpen(false);
       resetForm();
     } catch (error) {
-      console.error('Error adding supplier:', error);
+      console.error('Error saving supplier:', error);
       toast({
         title: ARABIC_SUPPLIERS_MESSAGES.TOAST_ERROR_TITLE,
-        description: ARABIC_SUPPLIERS_MESSAGES.TOAST_ADD_ERROR_DESCRIPTION,
+        description:
+          error instanceof Error ? error.message : ARABIC_SUPPLIERS_MESSAGES.TOAST_ADD_ERROR_DESCRIPTION,
         variant: "destructive",
       });
     } finally {
@@ -228,17 +295,26 @@ export const Suppliers: React.FC = () => {
     setIsDeleteConfirmationOpen(true);
   };
 
-  const confirmDeleteSupplier = () => {
+  const confirmDeleteSupplier = async () => {
     if (!supplierToDelete) return;
-
-    const updatedSuppliers = suppliers.filter((sup: Supplier) => sup.id !== supplierToDelete);
-    setSuppliers(updatedSuppliers);
-    toast({
-      title: ARABIC_SUPPLIERS_MESSAGES.TOAST_DELETE_SUCCESS_TITLE,
-      description: ARABIC_SUPPLIERS_MESSAGES.TOAST_DELETE_SUCCESS_DESCRIPTION,
-    });
-    setIsDeleteConfirmationOpen(false);
-    setSupplierToDelete(null);
+    try {
+      await SupplierService.remove(supplierToDelete);
+      toast({
+        title: ARABIC_SUPPLIERS_MESSAGES.TOAST_DELETE_SUCCESS_TITLE,
+        description: ARABIC_SUPPLIERS_MESSAGES.TOAST_DELETE_SUCCESS_DESCRIPTION,
+      });
+      await loadSuppliers();
+    } catch (error) {
+      toast({
+        title: ARABIC_SUPPLIERS_MESSAGES.TOAST_ERROR_TITLE,
+        description:
+          error instanceof Error ? error.message : ARABIC_SUPPLIERS_MESSAGES.TOAST_DELETE_ERROR_DESCRIPTION,
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDeleteConfirmationOpen(false);
+      setSupplierToDelete(null);
+    }
   };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -448,7 +524,7 @@ export const Suppliers: React.FC = () => {
         <SuppliersKPICards
           totalSuppliers={suppliers.length}
           activeSuppliers={suppliers.filter((s: Supplier) => s.status === 'active').length}
-          pendingSuppliers={suppliers.filter((s: Supplier) => s.status === 'pending').length}
+          pendingSuppliers={suppliers.filter((s: Supplier) => s.status === 'inactive').length}
           totalValue={suppliers.reduce((total: number, supplier: Supplier) => total + (supplier.estimatedValue || 0), 0)}
         />
       )}
@@ -485,7 +561,7 @@ export const Suppliers: React.FC = () => {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  suppliers.slice((currentPage - 1) * ITEMS_PER_PAGE, (currentPage - 1) * ITEMS_PER_PAGE + ITEMS_PER_PAGE).map((supplier: Supplier) => (
+                  paginatedSuppliers.map((supplier: Supplier) => (
                     <TableRow key={supplier.id}>
                       <TableCell>
                         <div>
@@ -523,7 +599,7 @@ export const Suppliers: React.FC = () => {
                       <TableCell>
                         <div className="flex items-center gap-1">
                           <FileText className="w-4 h-4" />
-                          {supplier.documents.length}
+                          {supplier.documents?.length ?? 0}
                         </div>
                       </TableCell>
                       <TableCell>
@@ -594,7 +670,7 @@ export const Suppliers: React.FC = () => {
       <DeleteConfirmationDialog
         open={isDeleteConfirmationOpen}
         onOpenChange={setIsDeleteConfirmationOpen}
-        onConfirm={confirmDeleteSupplier}
+        onConfirm={() => { void confirmDeleteSupplier(); }}
         itemName={ARABIC_SUPPLIERS_MESSAGES.DELETE_CONFIRMATION_ITEM_NAME}
       />
     </div>

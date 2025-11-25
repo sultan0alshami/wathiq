@@ -26,6 +26,8 @@
 - [x] All business data tables created
 - [x] RLS policies implemented
 - [x] Migration scripts ready
+- [x] Safe scripts 005/006/008/009 executed successfully
+- [x] `007_check_existing_tables.sql` passes with `rls_enabled = true`
 - [x] PDF generation service working
 - [x] Real-time notifications functional
 - [x] Backend API endpoints secured
@@ -90,6 +92,7 @@
 - [ ] Notifications functioning
 - [ ] Database queries performing
 - [ ] Real-time updates working
+- [ ] Supabase records persist after logout and cache clear
 
 ### Performance Testing
 - [ ] Page load times acceptable
