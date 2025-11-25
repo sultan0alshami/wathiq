@@ -1,4 +1,4 @@
-import { rolePermissions, type UserPermissions, type UserRole } from '@/lib/supabase';
+import { rolePermissions, type UserPermissions, type UserRole } from '../src/lib/supabase';
 import { readFileSync } from 'fs';
 import path from 'path';
 

@@ -85,8 +85,11 @@ export const Sales: React.FC = () => {
         setNewCustomersContacted(0);
       } catch (error) {
         toast({
-          title: ARABIC_SALES_MESSAGES.TOAST_LOAD_ERROR_TITLE,
-          description: ARABIC_SALES_MESSAGES.TOAST_LOAD_ERROR_DESCRIPTION,
+          title: ARABIC_SALES_MESSAGES.TOAST_ADD_ERROR_TITLE,
+          description:
+            error instanceof Error
+              ? error.message
+              : ARABIC_SALES_MESSAGES.TOAST_ADD_ERROR_DESCRIPTION,
           variant: 'destructive',
         });
       } finally {

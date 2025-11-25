@@ -1,9 +1,10 @@
 import React from 'react';
+import '@testing-library/jest-dom';
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
-import ProtectedRoute from '@/components/ProtectedRoute';
-import * as AuthContext from '@/contexts/AuthContext';
-import type { UserPermissions } from '@/lib/supabase';
+import ProtectedRoute from '../src/components/ProtectedRoute';
+import * as AuthContext from '../src/contexts/AuthContext';
+import { getUserPermissions, type UserRole } from '../src/lib/supabase';
 
 // Mock components for different sections
 const DashboardPage = () => <div>Dashboard Page</div>;
@@ -17,101 +18,8 @@ const UnauthorizedPage = () => <div>غير مصرح - Unauthorized</div>;
 const mockUseAuth = jest.spyOn(AuthContext, 'useAuth');
 
 // Helper to create mock auth return value
-const createMockAuth = (role: string | null, loading = false) => {
-  const rolePermissions: Record<string, UserPermissions> = {
-    admin: {
-      dashboard: true,
-      reports: true,
-      charts: true,
-      finance: true,
-      sales: true,
-      operations: true,
-      marketing: true,
-      customers: true,
-      suppliers: true,
-      canExport: true,
-      canManage: true,
-    },
-    manager: {
-      dashboard: true,
-      reports: true,
-      charts: true,
-      finance: true,
-      sales: true,
-      operations: true,
-      marketing: true,
-      customers: true,
-      suppliers: true,
-      canExport: true,
-      canManage: false,
-    },
-    finance: {
-      dashboard: true,
-      reports: true,
-      charts: true,
-      finance: true,
-      sales: false,
-      operations: false,
-      marketing: false,
-      customers: false,
-      suppliers: true,
-      canExport: false,
-      canManage: false,
-    },
-    sales: {
-      dashboard: true,
-      reports: true,
-      charts: true,
-      finance: false,
-      sales: true,
-      operations: false,
-      marketing: false,
-      customers: true,
-      suppliers: false,
-      canExport: false,
-      canManage: false,
-    },
-    operations: {
-      dashboard: true,
-      reports: true,
-      charts: true,
-      finance: false,
-      sales: false,
-      operations: true,
-      marketing: false,
-      customers: false,
-      suppliers: true,
-      canExport: false,
-      canManage: false,
-    },
-    marketing: {
-      dashboard: true,
-      reports: true,
-      charts: true,
-      finance: false,
-      sales: false,
-      operations: false,
-      marketing: true,
-      customers: true,
-      suppliers: false,
-      canExport: false,
-      canManage: false,
-    },
-  };
-
-  const permissions = role ? rolePermissions[role] : {
-    dashboard: false,
-    reports: false,
-    charts: false,
-    finance: false,
-    sales: false,
-    operations: false,
-    marketing: false,
-    customers: false,
-    suppliers: false,
-    canExport: false,
-    canManage: false,
-  };
+const createMockAuth = (role: UserRole | null, loading = false) => {
+  const permissions = role ? getUserPermissions(role) : getUserPermissions('marketing');
 
   return {
     user: role ? { id: `test-${role}`, email: `${role}@test.com` } as any : null,
@@ -127,7 +35,7 @@ const createMockAuth = (role: string | null, loading = false) => {
 
 // Test wrapper component
 const TestWrapper: React.FC<{
-  role: string | null;
+  role: UserRole | null;
   loading?: boolean;
   initialRoute: string;
   children: React.ReactNode;

@@ -1,8 +1,8 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import ProtectedRoute from '@/components/ProtectedRoute';
-import { UserPermissions, UserRole } from '@/lib/supabase';
+import ProtectedRoute from '../src/components/ProtectedRoute';
+import { UserPermissions, UserRole } from '../src/lib/supabase';
 import { createContext, useContext } from 'react';
 
 // Create a lightweight mock AuthContext matching shape consumed by ProtectedRoute
@@ -10,7 +10,7 @@ const MockAuthContext = createContext<any>(null);
 const useMockAuth = () => useContext(MockAuthContext);
 
 // Shim module import used by ProtectedRoute
-jest.mock('@/contexts/AuthContext', () => ({
+jest.mock('../src/contexts/AuthContext', () => ({
   useAuth: () => useMockAuth(),
 }));
 
@@ -45,6 +45,7 @@ const financePerms: UserPermissions = {
   marketing: false,
   customers: false,
   suppliers: true,
+  trips: true,
   canExport: false,
   canManage: false,
 };

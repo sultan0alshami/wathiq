@@ -120,8 +120,8 @@ export const Operations: React.FC = () => {
         setExpectedNextDayInput(String(expected));
       } catch (error) {
         toast({
-          title: ARABIC_OPERATIONS_MESSAGES.LOAD_ERROR_TITLE,
-          description: ARABIC_OPERATIONS_MESSAGES.LOAD_ERROR_DESCRIPTION,
+          title: ARABIC_OPERATIONS_MESSAGES.FORM_ERROR_TITLE,
+          description: ARABIC_OPERATIONS_MESSAGES.FORM_ERROR_DESCRIPTION,
           variant: 'destructive',
         });
       } finally {

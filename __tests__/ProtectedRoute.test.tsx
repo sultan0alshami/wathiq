@@ -1,8 +1,8 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import ProtectedRoute from '@/components/ProtectedRoute';
-import { AuthProvider } from '@/contexts/AuthContext';
+import ProtectedRoute from '../src/components/ProtectedRoute';
+import { AuthProvider } from '../src/contexts/AuthContext';
 
 // Smoke test to ensure ProtectedRoute renders children when no permissions are required
 describe('ProtectedRoute', () => {

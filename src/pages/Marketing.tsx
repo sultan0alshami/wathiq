@@ -389,7 +389,7 @@ export const Marketing: React.FC = () => {
           totalCampaigns={tasks.length}
           activeCampaigns={tasks.filter(task => task.status === 'in-progress').length}
           completedTasks={yesterdayTasks.length}
-          pendingTasks={tasks.filter(task => task.status === 'pending').length}
+          pendingTasks={tasks.filter(task => task.status === 'planned').length}
         />
       )}
 

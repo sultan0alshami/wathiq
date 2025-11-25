@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -269,44 +269,6 @@ export const Trips: React.FC = () => {
     );
   }, [drafts, recycleBin]);
 
-  useEffect(() => {
-    const loadRemoteTrips = async () => {
-      try {
-        const remoteEntries = await TripReportsService.listByDate(currentDate);
-        const storedData = getDataForDate(currentDate);
-        const storedDrafts = storedData.trips.drafts || [];
-        const cleanedRecycle = purgeExpiredRecycle(storedData.trips.recycleBin || []);
-        setDrafts(storedDrafts);
-        setRecycleBin(cleanedRecycle);
-        const storedQueue = TripService.loadQueue();
-        const queueEntries = storedQueue.map(queueRecordToTripEntry);
-        const combinedEntries = [...remoteEntries, ...queueEntries];
-        setTrips(combinedEntries);
-        setQueue(storedQueue);
-        persistTripsSection(combinedEntries, storedQueue.length, storedDrafts, cleanedRecycle);
-        updateNextBookingSequence(combinedEntries, storedQueue, storedDrafts, cleanedRecycle);
-      } catch (error) {
-        console.error('Failed to load trips from Supabase', error);
-        toast({
-          title: 'تعذر تحميل الرحلات',
-          description: 'حدث خطأ أثناء تحميل الرحلات من قاعدة البيانات. حاول مرة أخرى لاحقاً.',
-          variant: 'destructive',
-        });
-      } finally {
-        /* no-op */
-      }
-    };
-
-    loadRemoteTrips();
-  }, [currentDate, queueRecordToTripEntry, persistTripsSection, toast, updateNextBookingSequence]);
-
-  useEffect(() => {
-    setForm((prev) => ({
-      ...prev,
-      supervisorName: userName || prev.supervisorName || TRIP_FORM_DEFAULTS.supervisorName,
-    }));
-  }, [userName]);
-
   const persistTripsSection = useCallback(
     (
       entries: TripEntry[],
@@ -346,7 +308,7 @@ export const Trips: React.FC = () => {
       supervisorNotes: record.payload.supervisorNotes || '',
       passengerFeedback: record.payload.passengerFeedback || '',
       status: record.payload.status,
-      checklist: record.payload.checklist || checklistDefaults,
+      checklist: record.payload.checklist ?? { ...TRIP_CHECKLIST_DEFAULTS },
       attachments: (record.attachments || []).map((attachment) => ({
         id: attachment.id,
         name: attachment.name,
@@ -359,6 +321,44 @@ export const Trips: React.FC = () => {
     }),
     [user?.id]
   );
+
+  useEffect(() => {
+    const loadRemoteTrips = async () => {
+      try {
+        const remoteEntries = await TripReportsService.listByDate(currentDate);
+        const storedData = getDataForDate(currentDate);
+        const storedDrafts = storedData.trips.drafts || [];
+        const cleanedRecycle = purgeExpiredRecycle(storedData.trips.recycleBin || []);
+        setDrafts(storedDrafts);
+        setRecycleBin(cleanedRecycle);
+        const storedQueue = TripService.loadQueue();
+        const queueEntries = storedQueue.map(queueRecordToTripEntry);
+        const combinedEntries = [...remoteEntries, ...queueEntries];
+        setTrips(combinedEntries);
+        setQueue(storedQueue);
+        persistTripsSection(combinedEntries, storedQueue.length, storedDrafts, cleanedRecycle);
+        updateNextBookingSequence(combinedEntries, storedQueue, storedDrafts, cleanedRecycle);
+      } catch (error) {
+        console.error('Failed to load trips from Supabase', error);
+        toast({
+          title: 'تعذر تحميل الرحلات',
+          description: 'حدث خطأ أثناء تحميل الرحلات من قاعدة البيانات. حاول مرة أخرى لاحقاً.',
+          variant: 'destructive',
+        });
+      } finally {
+        /* no-op */
+      }
+    };
+
+    loadRemoteTrips();
+  }, [currentDate, queueRecordToTripEntry, persistTripsSection, toast, updateNextBookingSequence]);
+
+  useEffect(() => {
+    setForm((prev) => ({
+      ...prev,
+      supervisorName: userName || prev.supervisorName || TRIP_FORM_DEFAULTS.supervisorName,
+    }));
+  }, [userName]);
 
   const isChecklistClean = Object.values(checklist).every(
     (value) => value === 'good'

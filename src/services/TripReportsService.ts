@@ -40,7 +40,7 @@ interface TripReportRow {
 
 const formatDateKey = (date: Date): string => format(date, 'yyyy-MM-dd');
 
-const mapPhotoToAttachment = (photo: TripReportRow['trip_photos'][number]): TripAttachment => ({
+const mapPhotoToAttachment = (photo: NonNullable<TripReportRow['trip_photos']>[number]): TripAttachment => ({
   id: photo.id,
   name: photo.file_name || 'evidence',
   size: photo.file_size || 0,

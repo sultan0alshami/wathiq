@@ -43,6 +43,7 @@ export const ARABIC_SUPPLIERS_MESSAGES = {
   TOAST_ADD_ERROR_DESCRIPTION: 'حدث خطأ أثناء إضافة المورد',
   TOAST_DELETE_SUCCESS_TITLE: 'تم حذف المورد',
   TOAST_DELETE_SUCCESS_DESCRIPTION: 'تم حذف المورد بنجاح',
+  TOAST_DELETE_ERROR_DESCRIPTION: 'حدث خطأ أثناء حذف المورد',
   FORM_VALIDATION_ERROR_TITLE: 'خطأ في النموذج',
   FORM_VALIDATION_ERROR_DESCRIPTION: 'يرجى تصحيح الأخطاء في نموذج إضافة المورد',
   TABLE_HEADER_SUPPLIER: 'المورد',

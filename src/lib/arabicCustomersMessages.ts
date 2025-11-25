@@ -45,4 +45,11 @@ export const ARABIC_CUSTOMERS_MESSAGES = {
   ESTIMATED_VALUE_DISPLAY: (value: string) => `القيمة المقدرة: ${value} ريال`,
   SAVE_NOTE_ALERT: '📝 ملاحظة: لحفظ البيانات بشكل دائم، يتطلب ربط قاعدة البيانات. البيانات الحالية محفوظة مؤقتاً في الجلسة فقط.',
   DELETE_CONFIRM_ITEM_NAME: 'العميل المحدد',
+  TOAST_ADD_SUCCESS_TITLE: 'تمت إضافة العميل',
+  TOAST_ADD_SUCCESS_DESCRIPTION: 'تم حفظ العميل بنجاح.',
+  TOAST_DELETE_SUCCESS_TITLE: 'تم حذف العميل',
+  TOAST_DELETE_SUCCESS_DESCRIPTION: 'تم حذف العميل بنجاح.',
+  TOAST_ERROR_TITLE: 'حدث خطأ',
+  FORM_ERROR_TITLE: 'خطأ في النموذج',
+  FORM_ERROR_DESCRIPTION: 'يرجى التحقق من الحقول المطلوبة.',
 };

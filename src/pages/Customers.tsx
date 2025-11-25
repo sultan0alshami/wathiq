@@ -50,7 +50,7 @@ export const Customers: React.FC = () => {
       setCustomers(list);
     } catch (error) {
       toast({
-        title: ARABIC_CUSTOMERS_MESSAGES.TOAST_ERROR_TITLE ?? 'حدث خطأ',
+        title: 'حدث خطأ',
         description: error instanceof Error ? error.message : 'تعذر تحميل بيانات العملاء.',
         variant: 'destructive',
       });
@@ -94,7 +94,7 @@ export const Customers: React.FC = () => {
 
     if (!user?.id) {
       toast({
-        title: ARABIC_CUSTOMERS_MESSAGES.TOAST_ERROR_TITLE ?? 'حدث خطأ',
+        title: ARABIC_CUSTOMERS_MESSAGES.FORM_ERROR_TITLE,
         description: 'يجب تسجيل الدخول لإضافة العملاء.',
         variant: 'destructive',
       });
@@ -176,7 +176,7 @@ export const Customers: React.FC = () => {
     } catch (error) {
       setCustomers(previous);
       toast({
-        title: ARABIC_CUSTOMERS_MESSAGES.TOAST_ERROR_TITLE ?? 'حدث خطأ',
+        title: 'حدث خطأ',
         description: error instanceof Error ? error.message : 'تعذر تحديث حالة العميل.',
         variant: 'destructive',
       });

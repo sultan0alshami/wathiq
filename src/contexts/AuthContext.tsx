@@ -127,7 +127,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } else {
           console.warn('[AuthContext] Database query failed:', dbError?.message || 'No data found');
         }
-        } catch (dbError) {
+        } catch (unknownError) {
+          const dbError = unknownError instanceof Error ? unknownError : new Error(String(unknownError));
           if (dbError.message === 'Database timeout') {
             console.warn('[AuthContext] Database lookup timed out, using email as fallback');
           } else {

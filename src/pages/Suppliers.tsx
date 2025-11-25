@@ -45,6 +45,9 @@ export const Suppliers: React.FC = () => {
   const [supplierToDelete, setSupplierToDelete] = useState<string | null>(null);
   const [dataLoading, setDataLoading] = useState(true); // New state for data loading
 
+  const { user } = useAuth();
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+
   // Pagination
   const ITEMS_PER_PAGE = 20;
   const [currentPage, setCurrentPage] = useState(1);
@@ -52,9 +55,6 @@ export const Suppliers: React.FC = () => {
     const start = (currentPage - 1) * ITEMS_PER_PAGE;
     return suppliers.slice(start, start + ITEMS_PER_PAGE);
   }, [suppliers, currentPage]);
-
-  const { user } = useAuth();
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
 
   // Form state
   const [formData, setFormData] = useState({
