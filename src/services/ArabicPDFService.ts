@@ -59,15 +59,27 @@ export class ArabicPDFService {
 
       if (!response.ok) {
         let errorDetails = '';
+        let fullError = null;
         try {
           const errorJson = await response.json();
+          fullError = errorJson;
           errorDetails = errorJson.message || errorJson.error || JSON.stringify(errorJson);
-          console.error('[ArabicPDFService] PDF generation error:', errorJson);
+          console.error('[ArabicPDFService] PDF generation error (JSON):', errorJson);
+          console.error('[ArabicPDFService] Full error details:', JSON.stringify(errorJson, null, 2));
         } catch {
           const errorText = await response.text().catch(() => '');
           errorDetails = errorText || response.statusText;
+          console.error('[ArabicPDFService] PDF generation error (text):', errorText);
         }
-        throw new Error(`Failed to generate PDF (${response.status}): ${errorDetails}`);
+        
+        // Show detailed error in alert for debugging
+        const errorMsg = `Failed to generate PDF (${response.status}): ${errorDetails}`;
+        console.error('[ArabicPDFService] Throwing error:', errorMsg);
+        if (fullError) {
+          console.error('[ArabicPDFService] Error details:', fullError.details);
+          console.error('[ArabicPDFService] Error exitCode:', fullError.exitCode);
+        }
+        throw new Error(errorMsg);
       }
 
         return await response.blob();
