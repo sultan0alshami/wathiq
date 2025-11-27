@@ -3,8 +3,10 @@ module.exports = {
   testEnvironment: 'jest-environment-jsdom',
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
   moduleNameMapper: {
-    '^@/(.*)$': '<rootDir>/src/$1',
+    // Map Supabase lib to the test mock BEFORE the generic alias,
+    // so imports like "@/lib/supabase" use the mock (avoids import.meta.env in Jest)
     '^@/lib/supabase$': '<rootDir>/__tests__/__mocks__/supabase.ts',
+    '^@/(.*)$': '<rootDir>/src/$1',
   },
   transform: {
     '^.+\.(ts|tsx)$': [

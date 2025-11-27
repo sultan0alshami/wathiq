@@ -41,20 +41,35 @@ export class ArabicPDFService {
       console.debug('[ArabicPDFService] VITE_BACKEND_URL:', import.meta.env.VITE_BACKEND_URL);
       console.debug('[ArabicPDFService] Using PDF endpoint:', endpoint);
 
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ data, date: format(date, 'yyyy-MM-dd') }),
-      });
+      // Add timeout to prevent hanging requests (30 seconds)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
 
-      if (!response.ok) {
-        const errorText = await response.text().catch(() => '');
-        throw new Error(`Failed to generate PDF: ${response.status} ${response.statusText} ${errorText}`);
+      try {
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ data, date: format(date, 'yyyy-MM-dd') }),
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          const errorText = await response.text().catch(() => '');
+          throw new Error(`Failed to generate PDF: ${response.status} ${response.statusText} ${errorText}`);
+        }
+
+        return await response.blob();
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        if (fetchError instanceof Error && fetchError.name === 'AbortError') {
+          throw new Error('PDF generation request timed out after 30 seconds. Please try again.');
+        }
+        throw fetchError;
       }
-
-      return await response.blob();
     } catch (error) {
       console.error('Error generating enhanced Arabic PDF via backend:', error);
       throw error;
