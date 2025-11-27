@@ -7,29 +7,60 @@ export class ArabicPDFService {
 
   static async createEnhancedArabicPDF(data: DailyData, date: Date): Promise<Blob> {
     try {
-      const response = await fetch('/api/generate-pdf', { // via proxy to backend
+      // Prefer explicit backend URL when provided (e.g. Render), otherwise use Vite dev proxy.
+      // Note: VITE_* env vars must be available at build time for Vite to include them.
+      const backendBase = import.meta.env.VITE_BACKEND_URL?.trim().replace(/\/+$/, '');
+      
+      // Construct endpoint: if backendBase exists, use it directly (no /api prefix needed).
+      // The backend route is /generate-pdf, not /api/generate-pdf.
+      // If backendBase is not available (env var not set at build time), fall back to
+      // /api/generate-pdf which works in dev via Vite proxy, but will fail in production.
+      let endpoint: string;
+      if (backendBase && backendBase.length > 0) {
+        endpoint = `${backendBase}/generate-pdf`;
+      } else {
+        // In production without VITE_BACKEND_URL, try to infer from window.location
+        // This is a fallback for cases where env var wasn't available at build time
+        const isProduction = import.meta.env.PROD;
+        if (isProduction && typeof window !== 'undefined') {
+          // If we're on Render's domain, use the same domain for backend
+          const hostname = window.location.hostname;
+          if (hostname.includes('onrender.com')) {
+            endpoint = `${window.location.protocol}//${hostname}/generate-pdf`;
+          } else {
+            // Fallback: assume backend is on same origin
+            endpoint = '/generate-pdf';
+          }
+        } else {
+          // Dev mode: use Vite proxy
+          endpoint = '/api/generate-pdf';
+        }
+      }
+
+      // Helpful for debugging deployment issues (Vercel/Render)
+      console.debug('[ArabicPDFService] VITE_BACKEND_URL:', import.meta.env.VITE_BACKEND_URL);
+      console.debug('[ArabicPDFService] Using PDF endpoint:', endpoint);
+
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ data, date: format(date, 'yyyy-MM-dd') }), // Send data and formatted date
+        body: JSON.stringify({ data, date: format(date, 'yyyy-MM-dd') }),
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to generate PDF: ${response.statusText} - ${errorText}`);
+        const errorText = await response.text().catch(() => '');
+        throw new Error(`Failed to generate PDF: ${response.status} ${response.statusText} ${errorText}`);
       }
 
-      const pdfBlob = await response.blob();
-      return pdfBlob;
+      return await response.blob();
     } catch (error) {
-      console.error('Error generating PDF:', error);
+      console.error('Error generating enhanced Arabic PDF via backend:', error);
       throw error;
     }
   }
 
-  // Removed all other jsPDF-specific methods (addEnhancedHeader, addDecorativeSeparator,
-  // addFinanceSection, addSalesSection, addOperationsSection, addMarketingSection,
-  // addSectionHeader, addEnhancedFooter, processText) as they are now handled by the backend Python script
-  // and HTML/CSS templating.
+  // All previous jsPDF-specific helpers were removed; backend HTML/CSS + WeasyPrint
+  // is the single source of truth for Arabic PDF formatting.
 }
