@@ -139,18 +139,22 @@ def generate_pdf(data):
                 src: url("$font_regular") format('$font_regular_format');
                 font-weight: normal;
                 font-style: normal;
+                unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF;
             }
             @font-face {
                 font-family: 'Dubai';
                 src: url("$font_bold") format('$font_bold_format');
                 font-weight: bold;
                 font-style: normal;
+                unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF;
             }
             body {
-                font-family: 'Dubai', sans-serif;
+                font-family: 'Dubai', 'Arial Unicode MS', 'Tahoma', sans-serif;
                 margin: 50px;
                 direction: rtl;
                 text-align: right;
+                -webkit-font-feature-settings: "liga" on, "calt" on;
+                font-feature-settings: "liga" on, "calt" on;
             }
             h1, h2 {
                 color: #105962; /* wathiq-primary */
@@ -305,8 +309,20 @@ def generate_pdf(data):
         trips_section=trips_section_html,
     )
 
-    # Create PDF from HTML
-    html = HTML(string=final_html_content, base_url=__file__)
+    # Create PDF from HTML with proper encoding
+    # Use base_url to resolve font file paths correctly
+    # Create PDF from HTML with proper encoding and base_url for font resolution
+    # base_url must be the directory containing the fonts so WeasyPrint can resolve font paths
+    script_dir = path.dirname(path.abspath(__file__))
+    font_dir = path.join(script_dir, 'fonts')
+    
+    # Ensure HTML is UTF-8 encoded
+    html_content_utf8 = final_html_content.encode('utf-8')
+    
+    # Create HTML object with base_url pointing to script directory (fonts are in subdirectory)
+    html = HTML(string=html_content_utf8, base_url=script_dir)
+    
+    # Generate PDF
     pdf_bytes = html.write_pdf()
     return pdf_bytes
 
@@ -361,28 +377,49 @@ if __name__ == '__main__':
             return 'file:///' + abs_path.replace('\\', '/')
         return 'file://' + abs_path
 
-    def font_to_data_uri(font_path: str):
+    def font_to_relative_path(font_path: str, script_dir: str):
+        """Convert absolute font path to relative path from script directory"""
         try:
             if not path.exists(font_path):
                 sys.stderr.write(f"ERROR: Font file not found: {font_path}\n")
                 sys.stderr.flush()
                 raise FileNotFoundError(f"Font file not found: {font_path}")
-            mime = 'font/otf' if font_path.lower().endswith('.otf') else 'font/ttf'
-            with open(font_path, 'rb') as font_file:
-                encoded = base64.b64encode(font_file.read()).decode('utf-8')
-            font_format = 'opentype' if mime == 'font/otf' else 'truetype'
-            return f'data:{mime};base64,{encoded}', font_format
+            
+            # Get relative path from script directory
+            abs_font = path.abspath(font_path)
+            abs_script = path.abspath(script_dir)
+            
+            # Calculate relative path
+            try:
+                rel_path = path.relpath(abs_font, abs_script)
+                # Normalize path separators for URLs
+                rel_path = rel_path.replace('\\', '/')
+            except ValueError:
+                # If paths are on different drives (Windows), use absolute path
+                if os.name == 'nt':
+                    rel_path = abs_font.replace('\\', '/')
+                else:
+                    rel_path = abs_font
+            
+            # Determine format
+            font_format = 'opentype' if font_path.lower().endswith('.otf') else 'truetype'
+            
+            sys.stderr.write(f"INFO: Using font: {rel_path} (format: {font_format})\n")
+            sys.stderr.flush()
+            
+            return rel_path, font_format
         except Exception as e:
-            sys.stderr.write(f"ERROR: Failed to load font {font_path}: {str(e)}\n")
+            sys.stderr.write(f"ERROR: Failed to process font {font_path}: {str(e)}\n")
             sys.stderr.flush()
             raise
 
     try:
-        regular_data_uri, regular_format = font_to_data_uri(font_path_regular)
-        bold_data_uri, bold_format = font_to_data_uri(font_path_bold)
+        # Use relative paths so WeasyPrint can resolve them via base_url
+        regular_rel_path, regular_format = font_to_relative_path(font_path_regular, script_dir)
+        bold_rel_path, bold_format = font_to_relative_path(font_path_bold, script_dir)
 
-        input_data['font_path_regular'] = regular_data_uri
-        input_data['font_path_bold'] = bold_data_uri
+        input_data['font_path_regular'] = regular_rel_path
+        input_data['font_path_bold'] = bold_rel_path
         input_data['font_regular_format'] = regular_format
         input_data['font_bold_format'] = bold_format
         
