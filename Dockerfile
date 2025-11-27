@@ -47,7 +47,9 @@ RUN npm install --omit=dev
 
 # Copy backend source (excluding node_modules)
 COPY backend/server.js ./
+COPY backend/generate_pdf.py ./
 COPY backend/assets/ ./assets/
+COPY backend/fonts/ ./fonts/
 
 # Python deps for WeasyPrint
 RUN pip3 install --no-cache-dir weasyprint==60.2 pydyf==0.10.0
@@ -57,8 +59,5 @@ COPY --from=frontend-builder /app/dist ./public
 
 # Set port
 ENV PORT=8080
-
-# Copy the unified server file
-COPY backend/server.js ./
 
 CMD ["node", "server.js"]

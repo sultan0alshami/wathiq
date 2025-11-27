@@ -104,6 +104,7 @@ async function sendWhatsAppDocument(pdfBuffer, filename) {
 async function runDailyReportAndSend() {
   try {
     const pythonExecutable = process.env.PYTHON_PATH || (process.platform === 'win32' ? 'python' : 'python3');
+    // In Docker/Render, files are in /app/, so generate_pdf.py should be at /app/generate_pdf.py
     const scriptPath = path.join(__dirname, 'generate_pdf.py');
     const dateStr = new Date().toISOString().slice(0, 10);
     const { gregorian, hijri } = deriveDateLabels(dateStr);
