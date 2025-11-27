@@ -245,9 +245,11 @@ app.post('/generate-pdf', rateLimitMiddleware, async (req, res) => {
 
     pythonProcess.stderr.on('data', (chunk) => {
       errorOutput += chunk.toString();
+      console.error('[PDF Generation] Python stderr:', chunk.toString());
     });
 
     pythonProcess.on('close', async (code) => {
+      console.log(`[PDF Generation] Python process exited with code ${code}`);
       if (code === 0) {
         // Fire-and-forget WhatsApp send (if configured)
         sendWhatsAppDocument(pdfBuffer, `wathiq-report-${Date.now()}.pdf`).catch(() => {});
@@ -319,8 +321,18 @@ app.post('/generate-pdf', rateLimitMiddleware, async (req, res) => {
         res.setHeader('Content-Disposition', 'inline; filename="report.pdf"');
         res.send(pdfBuffer);
       } else {
-        console.error(`Python script exited with code ${code}: ${errorOutput}`);
-        res.status(500).send(`Failed to generate PDF: ${errorOutput}`);
+        console.error(`[PDF Generation] Python script failed with code ${code}`);
+        console.error(`[PDF Generation] Error output: ${errorOutput}`);
+        console.error(`[PDF Generation] PDF buffer length: ${pdfBuffer.length}`);
+        
+        // Return detailed error to help debug
+        const errorMessage = errorOutput || 'Unknown error occurred during PDF generation';
+        res.status(500).json({ 
+          error: 'PDF generation failed',
+          message: errorMessage,
+          exitCode: code,
+          details: 'Check backend logs for more information. Common issues: missing fonts, WeasyPrint errors, or invalid data format.'
+        });
       }
       if (tempFilePath) {
         try {
@@ -332,8 +344,14 @@ app.post('/generate-pdf', rateLimitMiddleware, async (req, res) => {
     });
 
     pythonProcess.on('error', async (err) => {
-      console.error('Failed to start Python subprocess:', err);
-      res.status(500).send('Failed to initiate PDF generation process.');
+      console.error('[PDF Generation] Failed to start Python subprocess:', err);
+      console.error('[PDF Generation] Python executable:', pythonExecutable);
+      console.error('[PDF Generation] Script path:', scriptPath);
+      res.status(500).json({ 
+        error: 'Failed to start PDF generation process',
+        message: err.message,
+        details: `Python executable: ${pythonExecutable}, Script: ${scriptPath}`
+      });
       if (tempFilePath) {
         try {
           await fs.rm(tempFilePath, { force: true });
@@ -343,8 +361,13 @@ app.post('/generate-pdf', rateLimitMiddleware, async (req, res) => {
       }
     });
   } catch (err) {
-    console.error('Error in PDF generation process:', err);
-    res.status(500).send('Internal server error during PDF generation.');
+    console.error('[PDF Generation] Exception in PDF generation process:', err);
+    console.error('[PDF Generation] Stack trace:', err.stack);
+    res.status(500).json({ 
+      error: 'Internal server error during PDF generation',
+      message: err.message,
+      details: 'Check backend logs for full stack trace'
+    });
     if (tempFilePath) {
       try {
         await fs.rm(tempFilePath, { force: true });

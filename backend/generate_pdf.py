@@ -9,9 +9,29 @@ from string import Template
 import base64
 
 def generate_pdf(data):
+    # Validate data structure
+    if not isinstance(data, dict):
+        raise ValueError("Data must be a dictionary")
+    
+    # Ensure all required sections exist with defaults
+    finance_data = data.get('finance', {})
+    finance_entries = finance_data.get('entries', []) if isinstance(finance_data, dict) else []
+    
+    sales_data = data.get('sales', {})
+    sales_entries = sales_data.get('entries', []) if isinstance(sales_data, dict) else []
+    
+    operations_data = data.get('operations', {})
+    operations_entries = operations_data.get('entries', []) if isinstance(operations_data, dict) else []
+    
+    marketing_data = data.get('marketing', {})
+    marketing_tasks = marketing_data.get('tasks', []) if isinstance(marketing_data, dict) else []
+    
+    trips_data = data.get('trips', {})
+    trips_entries = trips_data.get('entries', []) if isinstance(trips_data, dict) else []
+    
     # Generate HTML for financial entries
     html_entries = ""
-    for i, entry in enumerate(data['finance']['entries']):
+    for i, entry in enumerate(finance_entries):
         type_text = {'income': 'إيراد', 'expense': 'مصروف', 'deposit': 'إيداع'}[entry['type']]
         amount_formatted = f"{entry['amount']:.2f}"
         html_entries += f"""
@@ -28,7 +48,7 @@ def generate_pdf(data):
     
     # Generate HTML for sales entries
     html_sales_entries = ""
-    for i, entry in enumerate(data['sales']['entries']):
+    for i, entry in enumerate(sales_entries):
         outcome_text = {'positive': 'إيجابي', 'negative': 'سلبي', 'pending': 'في الانتظار'}[entry['outcome']]
         html_sales_entries += f"""
         <div class="item">
@@ -45,7 +65,7 @@ def generate_pdf(data):
 
     # Generate HTML for operations entries
     html_operations_entries = ""
-    for i, entry in enumerate(data['operations']['entries']):
+    for i, entry in enumerate(operations_entries):
         status_text = {'completed': 'مكتمل', 'in-progress': 'قيد التنفيذ', 'pending': 'في الانتظار'}[entry['status']]
         html_operations_entries += f"""
         <div class="item">
@@ -62,7 +82,7 @@ def generate_pdf(data):
 
     # Generate HTML for marketing tasks
     html_marketing_tasks = ""
-    for i, task in enumerate(data['marketing']['tasks']):
+    for i, task in enumerate(marketing_tasks):
         status_text = {'completed': 'مكتمل', 'in-progress': 'قيد التنفيذ', 'planned': 'مخطط'}[task['status']]
         html_marketing_tasks += f"""
         <div class="item">
@@ -76,8 +96,7 @@ def generate_pdf(data):
         """
 
     html_trips_entries = ""
-    trips_data = data.get('trips', {}).get('entries', [])
-    for i, trip in enumerate(trips_data):
+    for i, trip in enumerate(trips_entries):
         status_text = 'جاهز' if trip.get('status') == 'approved' else 'تنبيه'
         status_color = '#16a34a' if trip.get('status') == 'approved' else '#f59e0b'
         html_trips_entries += f"""
@@ -94,13 +113,13 @@ def generate_pdf(data):
         """
 
     trips_section_html = ""
-    if data.get('trips'):
-        trips_meta = data['trips']
+    if trips_data and trips_entries:
+        trips_meta = trips_data if isinstance(trips_data, dict) else {}
         trips_section_html = f"""
         <div class="section">
             <div class="section-title">قسم الرحلات</div>
             <div class="summary">
-                إجمالي الرحلات: {trips_meta.get('totalTrips', len(trips_data))} • المزامنة المعلقة: {trips_meta.get('pendingSync', 0)}
+                إجمالي الرحلات: {trips_meta.get('totalTrips', len(trips_entries))} • المزامنة المعلقة: {trips_meta.get('pendingSync', 0)}
             </div>
             <h3>تفاصيل الرحلات:</h3>
             {html_trips_entries if html_trips_entries else '<p>لا توجد رحلات مسجلة لهذا اليوم.</p>'}
@@ -274,9 +293,9 @@ def generate_pdf(data):
         font_bold=data['font_path_bold'],
         font_regular_format=data['font_regular_format'],
         font_bold_format=data['font_bold_format'],
-        logo_path_bytes=data['logo_path_bytes'],
-        current_liquidity=data['finance']['currentLiquidity'],
-        customers_contacted=data['sales']['customersContacted'],
+        logo_path_bytes=data.get('logo_path_bytes', ''),
+        current_liquidity=finance_data.get('currentLiquidity', '') if isinstance(finance_data, dict) else '',
+        customers_contacted=sales_data.get('customersContacted', 0) if isinstance(sales_data, dict) else 0,
         html_entries=html_entries,
         html_sales_entries=html_sales_entries,
         html_operations_entries=html_operations_entries,
@@ -343,24 +362,49 @@ if __name__ == '__main__':
         return 'file://' + abs_path
 
     def font_to_data_uri(font_path: str):
-        mime = 'font/otf' if font_path.lower().endswith('.otf') else 'font/ttf'
-        with open(font_path, 'rb') as font_file:
-            encoded = base64.b64encode(font_file.read()).decode('utf-8')
-        font_format = 'opentype' if mime == 'font/otf' else 'truetype'
-        return f'data:{mime};base64,{encoded}', font_format
+        try:
+            if not path.exists(font_path):
+                sys.stderr.write(f"ERROR: Font file not found: {font_path}\n")
+                sys.stderr.flush()
+                raise FileNotFoundError(f"Font file not found: {font_path}")
+            mime = 'font/otf' if font_path.lower().endswith('.otf') else 'font/ttf'
+            with open(font_path, 'rb') as font_file:
+                encoded = base64.b64encode(font_file.read()).decode('utf-8')
+            font_format = 'opentype' if mime == 'font/otf' else 'truetype'
+            return f'data:{mime};base64,{encoded}', font_format
+        except Exception as e:
+            sys.stderr.write(f"ERROR: Failed to load font {font_path}: {str(e)}\n")
+            sys.stderr.flush()
+            raise
 
-    regular_data_uri, regular_format = font_to_data_uri(font_path_regular)
-    bold_data_uri, bold_format = font_to_data_uri(font_path_bold)
+    try:
+        regular_data_uri, regular_format = font_to_data_uri(font_path_regular)
+        bold_data_uri, bold_format = font_to_data_uri(font_path_bold)
 
-    input_data['font_path_regular'] = regular_data_uri
-    input_data['font_path_bold'] = bold_data_uri
-    input_data['font_regular_format'] = regular_format
-    input_data['font_bold_format'] = bold_format
-    input_data['logo_path_bytes'] = to_file_uri(logo_path)
+        input_data['font_path_regular'] = regular_data_uri
+        input_data['font_path_bold'] = bold_data_uri
+        input_data['font_regular_format'] = regular_format
+        input_data['font_bold_format'] = bold_format
+        
+        if not path.exists(logo_path):
+            sys.stderr.write(f"WARNING: Logo file not found: {logo_path}\n")
+            sys.stderr.flush()
+            # Use a placeholder or empty string
+            input_data['logo_path_bytes'] = ''
+        else:
+            input_data['logo_path_bytes'] = to_file_uri(logo_path)
 
-    pdf_output = generate_pdf(input_data)
+        pdf_output = generate_pdf(input_data)
 
-    # Output the PDF bytes directly to stdout
-    sys.stdout.buffer.write(pdf_output)
+        # Output the PDF bytes directly to stdout
+        sys.stdout.buffer.write(pdf_output)
+        sys.stdout.buffer.flush()
+    except Exception as e:
+        sys.stderr.write(f"ERROR: PDF generation failed: {str(e)}\n")
+        sys.stderr.write(f"ERROR: Traceback: {type(e).__name__}\n")
+        import traceback
+        sys.stderr.write(traceback.format_exc())
+        sys.stderr.flush()
+        sys.exit(1)
 
 

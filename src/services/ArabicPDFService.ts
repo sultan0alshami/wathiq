@@ -57,10 +57,18 @@ export class ArabicPDFService {
 
         clearTimeout(timeoutId);
 
-        if (!response.ok) {
+      if (!response.ok) {
+        let errorDetails = '';
+        try {
+          const errorJson = await response.json();
+          errorDetails = errorJson.message || errorJson.error || JSON.stringify(errorJson);
+          console.error('[ArabicPDFService] PDF generation error:', errorJson);
+        } catch {
           const errorText = await response.text().catch(() => '');
-          throw new Error(`Failed to generate PDF: ${response.status} ${response.statusText} ${errorText}`);
+          errorDetails = errorText || response.statusText;
         }
+        throw new Error(`Failed to generate PDF (${response.status}): ${errorDetails}`);
+      }
 
         return await response.blob();
       } catch (fetchError) {
