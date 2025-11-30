@@ -898,6 +898,13 @@ export const Trips: React.FC = () => {
     try {
       const response = await TripService.syncRecord(offlineRecord);
       updatedEntry.syncStatus = 'synced';
+      
+      // Update trip ID if Supabase returned a different one
+      if (response.tripId && response.tripId !== updatedEntry.id) {
+        console.log('[Trips] Updating trip ID from', updatedEntry.id, 'to', response.tripId);
+        updatedEntry.id = response.tripId;
+      }
+      
       if (response.photos?.length) {
         updatedEntry.attachments = updatedEntry.attachments.map((attachment) => {
           const remote = response.photos?.find(
