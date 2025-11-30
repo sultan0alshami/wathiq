@@ -220,7 +220,7 @@ export const Trips: React.FC = () => {
   const [pendingDeleteTrip, setPendingDeleteTrip] = useState<TripEntry | null>(null);
   const [purgeDialogOpen, setPurgeDialogOpen] = useState(false);
   const [pendingRecycleRecord, setPendingRecycleRecord] = useState<TripRecycleRecord | null>(null);
-  const [deletedTripIds, setDeletedTripIds] = useState<Set<string>>(new Set());
+  const [deletedTripIds, setDeletedTripIds] = useState<string[]>([]);
 
   const editingTrip = useMemo(
     () => (editingTripId ? trips.find((entry) => entry.id === editingTripId) || null : null),
@@ -365,15 +365,16 @@ export const Trips: React.FC = () => {
         
         // Deduplicate: Remove queue entries that are already synced in remoteEntries
         // Also filter out any trips that have been deleted
+        const deletedSet = new Set(deletedTripIds);
         const remoteIds = new Set(remoteEntries.map(e => e.id));
         const remoteBookingIds = new Set(remoteEntries.map(e => e.bookingId));
         const uniqueQueueEntries = queueEntries.filter(
-          entry => !remoteIds.has(entry.id) && !remoteBookingIds.has(entry.bookingId) && !deletedTripIds.has(entry.id) && !deletedTripIds.has(entry.bookingId)
+          entry => !remoteIds.has(entry.id) && !remoteBookingIds.has(entry.bookingId) && !deletedSet.has(entry.id) && !deletedSet.has(entry.bookingId)
         );
         
         // Filter out deleted trips from remote entries
         const filteredRemoteEntries = remoteEntries.filter(
-          entry => !deletedTripIds.has(entry.id) && !deletedTripIds.has(entry.bookingId)
+          entry => !deletedSet.has(entry.id) && !deletedSet.has(entry.bookingId)
         );
         
         const combinedEntries = [...filteredRemoteEntries, ...uniqueQueueEntries];
@@ -541,8 +542,13 @@ export const Trips: React.FC = () => {
       console.log('[Trips] Trip syncStatus is not synced/pending/failed, skipping Supabase delete:', target.syncStatus);
     }
     
-    // Add to deleted set to prevent it from reappearing
-    setDeletedTripIds(prev => new Set([...prev, target.id, target.bookingId]));
+    // Add to deleted array to prevent it from reappearing
+    setDeletedTripIds(prev => {
+      const newIds = [...prev];
+      if (!newIds.includes(target.id)) newIds.push(target.id);
+      if (!newIds.includes(target.bookingId)) newIds.push(target.bookingId);
+      return newIds;
+    });
     
     // Always remove from local state and queue
     const updatedEntries = trips.filter((entry) => entry.id !== target.id && entry.bookingId !== target.bookingId);
