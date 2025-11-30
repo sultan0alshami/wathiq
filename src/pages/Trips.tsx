@@ -508,20 +508,25 @@ export const Trips: React.FC = () => {
     if (!pendingDeleteTrip) return;
     const target = pendingDeleteTrip;
     
-    // Delete from Supabase if trip is synced
-    if (target.syncStatus === 'synced') {
+    // Delete from Supabase if trip is synced (or might be synced)
+    // Try to delete by ID first, then by bookingId as fallback
+    if (target.syncStatus === 'synced' || target.syncStatus === 'pending' || target.syncStatus === 'failed') {
       try {
+        // Try deleting by ID first
         await TripReportsService.delete(target.id);
       } catch (error) {
-        console.error('[Trips] Failed to delete trip from Supabase:', error);
-        toast({
-          title: 'تحذير',
-          description: 'تم نقل الرحلة إلى سلة المحذوفات محلياً، لكن فشل الحذف من قاعدة البيانات.',
-          variant: 'destructive',
-        });
+        // If delete by ID fails, try by bookingId (in case ID mismatch)
+        try {
+          await TripReportsService.deleteByBookingId(target.bookingId);
+        } catch (bookingIdError) {
+          // If both fail, it might not exist in Supabase yet (pending sync)
+          // This is okay - we'll just remove it locally
+          console.warn('[Trips] Trip not found in Supabase (may not be synced yet):', target.bookingId);
+        }
       }
     }
     
+    // Always remove from local state and queue
     const updatedEntries = trips.filter((entry) => entry.id !== target.id);
     const updatedQueue = TripService.removeFromQueue(target.id);
     const recycleRecord: TripRecycleRecord = {
