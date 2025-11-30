@@ -361,7 +361,16 @@ export const Trips: React.FC = () => {
         const cleanedRecycle = purgeExpiredRecycle(storedData.trips.recycleBin || []);
         const storedQueue = TripService.loadQueue();
         const queueEntries = storedQueue.map(queueRecordToTripEntry);
-        const combinedEntries = [...remoteEntries, ...queueEntries];
+        
+        // Deduplicate: Remove queue entries that are already synced in remoteEntries
+        // Use a Set to track IDs and bookingIds to prevent duplicates
+        const remoteIds = new Set(remoteEntries.map(e => e.id));
+        const remoteBookingIds = new Set(remoteEntries.map(e => e.bookingId));
+        const uniqueQueueEntries = queueEntries.filter(
+          entry => !remoteIds.has(entry.id) && !remoteBookingIds.has(entry.bookingId)
+        );
+        
+        const combinedEntries = [...remoteEntries, ...uniqueQueueEntries];
         
         // Use startTransition for non-urgent update
         startTransition(() => {
@@ -495,9 +504,24 @@ export const Trips: React.FC = () => {
     setDeleteDialogOpen(true);
   };
 
-  const confirmDeleteTrip = () => {
+  const confirmDeleteTrip = async () => {
     if (!pendingDeleteTrip) return;
     const target = pendingDeleteTrip;
+    
+    // Delete from Supabase if trip is synced
+    if (target.syncStatus === 'synced') {
+      try {
+        await TripReportsService.delete(target.id);
+      } catch (error) {
+        console.error('[Trips] Failed to delete trip from Supabase:', error);
+        toast({
+          title: 'تحذير',
+          description: 'تم نقل الرحلة إلى سلة المحذوفات محلياً، لكن فشل الحذف من قاعدة البيانات.',
+          variant: 'destructive',
+        });
+      }
+    }
+    
     const updatedEntries = trips.filter((entry) => entry.id !== target.id);
     const updatedQueue = TripService.removeFromQueue(target.id);
     const recycleRecord: TripRecycleRecord = {
@@ -544,12 +568,40 @@ export const Trips: React.FC = () => {
     setPurgeDialogOpen(true);
   };
 
-  const confirmRecyclePurge = () => {
+  const confirmRecyclePurge = async () => {
     if (!pendingRecycleRecord) return;
+    
+    // Delete from Supabase if trip was synced (it might have been restored and synced)
+    // Check if trip exists in current trips list (meaning it was restored)
+    const tripInList = trips.find(t => t.id === pendingRecycleRecord.id);
+    if (tripInList && tripInList.syncStatus === 'synced') {
+      try {
+        await TripReportsService.delete(pendingRecycleRecord.id);
+      } catch (error) {
+        console.error('[Trips] Failed to permanently delete trip from Supabase:', error);
+        toast({
+          title: 'تحذير',
+          description: 'تم حذف الرحلة محلياً، لكن فشل الحذف النهائي من قاعدة البيانات.',
+          variant: 'destructive',
+        });
+      }
+    }
+    
+    // Also try to delete by booking ID in case the trip was synced before being deleted
+    try {
+      await TripReportsService.deleteByBookingId(pendingRecycleRecord.bookingId);
+    } catch (error) {
+      // Ignore error if trip doesn't exist in Supabase (already deleted or never synced)
+      console.warn('[Trips] Trip not found in Supabase for permanent delete:', error);
+    }
+    
+    // Remove from trips list if it exists there (in case it was restored)
+    const updatedTrips = trips.filter((trip) => trip.id !== pendingRecycleRecord.id);
     const updatedRecycle = recycleBin.filter((item) => item.id !== pendingRecycleRecord.id);
+    setTrips(updatedTrips);
     setRecycleBin(updatedRecycle);
-    persistTripsSection(trips, queue.length, drafts, updatedRecycle);
-    updateNextBookingSequence(trips, queue, drafts, updatedRecycle);
+    persistTripsSection(updatedTrips, queue.length, drafts, updatedRecycle);
+    updateNextBookingSequence(updatedTrips, queue, drafts, updatedRecycle);
     toast({
       title: 'تم حذف الرحلة نهائياً',
       description: `لن تظهر الرحلة ${pendingRecycleRecord.bookingId} في السجلات بعد الآن.`,

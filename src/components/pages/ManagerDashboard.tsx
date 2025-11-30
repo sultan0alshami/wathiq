@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -24,6 +24,7 @@ import { ExportService } from '@/services/ExportService';
 import { useToast } from '@/hooks/use-toast';
 import { formatCurrency, formatChartNumber } from '@/lib/numberUtils';
 import { ReportViewerDialog } from '@/components/ui/report-viewer-dialog';
+import { TripReportsService } from '@/services/TripReportsService';
 import { format, parseISO } from 'date-fns';
 import { ReportSectionType } from '@/pages/Reports';
 
@@ -41,6 +42,9 @@ export const ManagerDashboard: React.FC = () => {
     section: 'finance', 
     date: null 
   });
+  const [currentTrips, setCurrentTrips] = useState<any[]>([]);
+  const [loadingTrips, setLoadingTrips] = useState(true);
+  
   const { 
     liquidityData, 
     incomeVsExpensesData, 
@@ -56,8 +60,28 @@ export const ManagerDashboard: React.FC = () => {
     refresh
   } = useChartData(30);
 
+  // Fetch trips from Supabase for current date
+  useEffect(() => {
+    const loadTrips = async () => {
+      setLoadingTrips(true);
+      try {
+        const trips = await TripReportsService.listByDate(currentDate);
+        setCurrentTrips(trips);
+      } catch (error) {
+        console.error('[ManagerDashboard] Failed to load trips:', error);
+        setCurrentTrips([]);
+      } finally {
+        setLoadingTrips(false);
+      }
+    };
+    loadTrips();
+  }, [currentDate]);
+
   // Get current day data
   const currentData = getDataForDate(currentDate);
+  
+  // Merge Supabase trips with localStorage data (prioritize Supabase)
+  const mergedTrips = currentTrips.length > 0 ? currentTrips : currentData.trips.entries;
 
   // Handle export downloads
   const handleExportDaily = async () => {
@@ -97,7 +121,7 @@ export const ManagerDashboard: React.FC = () => {
     currentData.operations.entries.length > 0,
     currentData.marketing.tasks.length > 0,
     currentData.customers.length > 0,
-    currentData.trips.entries.length > 0
+    mergedTrips.length > 0
   ].filter(Boolean).length;
 
   const totalSections = 6;
@@ -115,8 +139,8 @@ export const ManagerDashboard: React.FC = () => {
     // TODO: Refactor marketingCustomers calculation to use a more robust method (e.g., a dedicated isCustomerRelated flag in task data) instead of string matching on task titles.
     currentData.marketing.tasks.filter(task => task.title.includes('عميل')).length; // Marketing customer tasks
 
-  const tripsApprovedToday = currentData.trips.entries.filter(entry => entry.status === 'approved').length;
-  const tripsWarningToday = currentData.trips.entries.filter(entry => entry.status === 'warning').length;
+  const tripsApprovedToday = mergedTrips.filter(entry => entry.status === 'approved').length;
+  const tripsWarningToday = mergedTrips.filter(entry => entry.status === 'warning').length;
 
   const COLORS = ['hsl(var(--wathiq-primary))', 'hsl(var(--wathiq-accent))', 'hsl(var(--success))', 'hsl(var(--warning))', 'hsl(var(--destructive))'];
 

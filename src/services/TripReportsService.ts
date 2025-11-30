@@ -89,5 +89,27 @@ export const TripReportsService = {
 
     return (data as TripReportRow[] | null)?.map(mapRowToTripEntry) ?? [];
   },
+
+  async delete(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('trip_reports')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+  },
+
+  async deleteByBookingId(bookingId: string): Promise<void> {
+    const { error } = await supabase
+      .from('trip_reports')
+      .delete()
+      .eq('booking_id', bookingId);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+  },
 };
 
