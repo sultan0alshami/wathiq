@@ -27,24 +27,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     console.log('[AuthContext] Initializing authentication...');
     
-    // Add timeout to prevent hanging
+    // Add timeout to prevent hanging (reduced from 10s to 3s for faster initial render)
     const initTimeout = setTimeout(() => {
       console.warn('[AuthContext] Initialization timeout, setting loading to false');
       setLoading(false);
-    }, 10000); // 10 second timeout
+    }, 3000); // 3 second timeout for faster initial render
     
-    // Get initial session
+    // Get initial session - don't wait for role fetch
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       console.log('[AuthContext] Initial session:', session ? 'Found' : 'Not found');
       setSession(session);
       setUser(session?.user ?? null);
-      if (session?.user) {
-        console.log('[AuthContext] Fetching user role for:', session.user.email);
-        await fetchUserRole(session.user.id, session.user.email || undefined);
-      }
+      
+      // Set loading to false immediately after session is retrieved
+      // This allows the UI to render while role is fetched in background
       setLoading(false);
       clearTimeout(initTimeout);
-      console.log('[AuthContext] Initial auth loading complete');
+      console.log('[AuthContext] Initial auth loading complete (session ready)');
+      
+      // Fetch role in background (non-blocking)
+      if (session?.user) {
+        const email = session.user.email || '';
+        const emailRole = inferRoleFromEmail(email);
+        
+        // Set optimistic role immediately from email
+        setRole(emailRole);
+        setUserName(email);
+        setPermissions(getUserPermissions(emailRole));
+        console.log('[AuthContext] Set optimistic role from email:', emailRole);
+        
+        // Then fetch actual role from database in background
+        console.log('[AuthContext] Fetching user role from database (background)...');
+        fetchUserRole(session.user.id, email).catch((error) => {
+          console.warn('[AuthContext] Background role fetch failed, using email-based role:', error);
+        });
+      }
     }).catch((error) => {
       console.error('[AuthContext] Error getting initial session:', error);
       setLoading(false);
@@ -58,7 +75,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        await fetchUserRole(session.user.id, session.user.email || undefined);
+        const email = session.user.email || '';
+        const emailRole = inferRoleFromEmail(email);
+        
+        // Set optimistic role immediately
+        setRole(emailRole);
+        setUserName(email);
+        setPermissions(getUserPermissions(emailRole));
+        
+        // Fetch actual role in background
+        fetchUserRole(session.user.id, email).catch((error) => {
+          console.warn('[AuthContext] Background role fetch failed:', error);
+        });
       } else {
         setRole(null);
         setUserName(null);
@@ -102,8 +130,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
           console.log('[AuthContext] Fetching name from user_roles table using user_id column...');
         
+        // Reduced timeout from 10s to 5s for faster failure
         const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('Database timeout')), 10000); // 10 second timeout
+          setTimeout(() => reject(new Error('Database timeout')), 5000); // 5 second timeout
         });
         
         // Query user_roles table using regular client
@@ -136,21 +165,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         }
       
-      setRole(resolvedRole);
-      setUserName(displayName);
+      // Update role/permissions only if they differ from optimistic values
+      // This prevents unnecessary re-renders
+      setRole(prevRole => {
+        if (prevRole !== resolvedRole) {
+          console.log('[AuthContext] Updating role from', prevRole, 'to', resolvedRole);
+          return resolvedRole;
+        }
+        return prevRole;
+      });
+      setUserName(prevName => {
+        if (prevName !== displayName) {
+          console.log('[AuthContext] Updating name from', prevName, 'to', displayName);
+          return displayName;
+        }
+        return prevName;
+      });
       setPermissions(getUserPermissions(resolvedRole));
-      console.log('[AuthContext] Set role:', resolvedRole, 'Display name:', displayName);
+      console.log('[AuthContext] Background role fetch complete:', resolvedRole, 'Display name:', displayName);
     } catch (error) {
-      console.error('[AuthContext] Error setting email role:', error);
-      // Fallback to admin role
-      const email = emailForInference || user?.email || '';
-      setRole('admin');
-      setUserName(email);
-      setPermissions(getUserPermissions('admin'));
-      console.log('[AuthContext] Fallback to admin role');
-    } finally {
-      setLoading(false);
-      console.log('[AuthContext] fetchUserRole complete, loading set to false');
+      console.error('[AuthContext] Error in background role fetch:', error);
+      // Don't change role/permissions on error - keep optimistic values
     }
   };
 

@@ -48,8 +48,22 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
         return;
       }
 
+      // Try to load from localStorage first for instant display
       try {
-        console.log('[NotificationsContext] Loading notifications for user:', user.id);
+        const cached = localStorage.getItem(STORAGE_KEY);
+        if (cached) {
+          const cachedItems = JSON.parse(cached) as NotificationItem[];
+          setNotifications(cachedItems);
+          console.log('[NotificationsContext] Loaded', cachedItems.length, 'notifications from cache');
+          setLoading(false); // Set loading false immediately after cache load
+        }
+      } catch (err) {
+        console.warn('[NotificationsContext] Failed to load from cache:', err);
+      }
+
+      // Then fetch from Supabase in background
+      try {
+        console.log('[NotificationsContext] Loading notifications from Supabase for user:', user.id);
 
         // Fetch notifications for this user + broadcasts
         const { data, error } = await supabase

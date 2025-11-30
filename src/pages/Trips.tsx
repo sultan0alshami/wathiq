@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState, startTransition } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -210,6 +210,7 @@ export const Trips: React.FC = () => {
   const [recycleBin, setRecycleBin] = useState<TripRecycleRecord[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [loadingTrips, setLoadingTrips] = useState(true);
   const [editingTripId, setEditingTripId] = useState<string | null>(null);
   const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
   const [persistedAttachments, setPersistedAttachments] = useState<TripAttachment[]>([]);
@@ -324,20 +325,53 @@ export const Trips: React.FC = () => {
 
   useEffect(() => {
     const loadRemoteTrips = async () => {
+      setLoadingTrips(true);
+      
+      // Load cached data first for instant display
+      try {
+        const storedData = getDataForDate(currentDate);
+        const storedDrafts = storedData.trips.drafts || [];
+        const cleanedRecycle = purgeExpiredRecycle(storedData.trips.recycleBin || []);
+        const storedQueue = TripService.loadQueue();
+        const queueEntries = storedQueue.map(queueRecordToTripEntry);
+        
+        // Show cached trips immediately
+        if (storedData.trips.entries && storedData.trips.entries.length > 0) {
+          const cachedEntries = storedData.trips.entries as TripEntry[];
+          setTrips([...cachedEntries, ...queueEntries]);
+          setDrafts(storedDrafts);
+          setRecycleBin(cleanedRecycle);
+          setQueue(storedQueue);
+          setLoadingTrips(false); // Show UI immediately with cached data
+        } else {
+          setTrips(queueEntries);
+          setDrafts(storedDrafts);
+          setRecycleBin(cleanedRecycle);
+          setQueue(storedQueue);
+        }
+      } catch (err) {
+        console.warn('[Trips] Failed to load cached data:', err);
+      }
+      
+      // Then fetch fresh data from Supabase in background
       try {
         const remoteEntries = await TripReportsService.listByDate(currentDate);
         const storedData = getDataForDate(currentDate);
         const storedDrafts = storedData.trips.drafts || [];
         const cleanedRecycle = purgeExpiredRecycle(storedData.trips.recycleBin || []);
-        setDrafts(storedDrafts);
-        setRecycleBin(cleanedRecycle);
         const storedQueue = TripService.loadQueue();
         const queueEntries = storedQueue.map(queueRecordToTripEntry);
         const combinedEntries = [...remoteEntries, ...queueEntries];
-        setTrips(combinedEntries);
-        setQueue(storedQueue);
-        persistTripsSection(combinedEntries, storedQueue.length, storedDrafts, cleanedRecycle);
-        updateNextBookingSequence(combinedEntries, storedQueue, storedDrafts, cleanedRecycle);
+        
+        // Use startTransition for non-urgent update
+        startTransition(() => {
+          setTrips(combinedEntries);
+          setDrafts(storedDrafts);
+          setRecycleBin(cleanedRecycle);
+          setQueue(storedQueue);
+          persistTripsSection(combinedEntries, storedQueue.length, storedDrafts, cleanedRecycle);
+          updateNextBookingSequence(combinedEntries, storedQueue, storedDrafts, cleanedRecycle);
+        });
       } catch (error) {
         console.error('Failed to load trips from Supabase', error);
         toast({
@@ -346,7 +380,7 @@ export const Trips: React.FC = () => {
           variant: 'destructive',
         });
       } finally {
-        /* no-op */
+        setLoadingTrips(false);
       }
     };
 
