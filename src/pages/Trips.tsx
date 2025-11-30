@@ -551,7 +551,14 @@ export const Trips: React.FC = () => {
     });
     
     // Always remove from local state and queue
-    const updatedEntries = trips.filter((entry) => entry.id !== target.id && entry.bookingId !== target.bookingId);
+    // Remove if either id OR bookingId matches (to catch duplicates)
+    const updatedEntries = trips.filter((entry) => {
+      const shouldRemove = entry.id === target.id || entry.bookingId === target.bookingId;
+      if (shouldRemove) {
+        console.log('[Trips] Filtering out trip:', entry.id, entry.bookingId, 'matches target:', target.id, target.bookingId);
+      }
+      return !shouldRemove;
+    });
     const updatedQueue = TripService.removeFromQueue(target.id);
     const recycleRecord: TripRecycleRecord = {
       id: target.id,
