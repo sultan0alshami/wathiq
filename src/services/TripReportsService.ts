@@ -91,24 +91,44 @@ export const TripReportsService = {
   },
 
   async delete(id: string): Promise<void> {
-    const { error } = await supabase
+    console.log('[TripReportsService] Attempting to delete trip by ID:', id);
+    const { data, error } = await supabase
       .from('trip_reports')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .select();
 
     if (error) {
+      console.error('[TripReportsService] Delete error:', error);
       throw new Error(error.message);
+    }
+    
+    console.log('[TripReportsService] Delete result:', data);
+    // If no rows were deleted, the trip might not exist or user doesn't have permission
+    if (!data || data.length === 0) {
+      console.warn('[TripReportsService] No rows deleted - trip may not exist or permission denied');
+      throw new Error('Trip not found or permission denied');
     }
   },
 
   async deleteByBookingId(bookingId: string): Promise<void> {
-    const { error } = await supabase
+    console.log('[TripReportsService] Attempting to delete trip by bookingId:', bookingId);
+    const { data, error } = await supabase
       .from('trip_reports')
       .delete()
-      .eq('booking_id', bookingId);
+      .eq('booking_id', bookingId)
+      .select();
 
     if (error) {
+      console.error('[TripReportsService] Delete by bookingId error:', error);
       throw new Error(error.message);
+    }
+    
+    console.log('[TripReportsService] Delete by bookingId result:', data);
+    // If no rows were deleted, the trip might not exist or user doesn't have permission
+    if (!data || data.length === 0) {
+      console.warn('[TripReportsService] No rows deleted by bookingId - trip may not exist or permission denied');
+      throw new Error('Trip not found or permission denied');
     }
   },
 };

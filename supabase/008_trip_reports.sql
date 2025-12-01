@@ -73,6 +73,18 @@ create policy "Trips supervisors can read all reports" on public.trip_reports
   for select
   using (public.has_trip_supervision());
 
+-- Delete policies
+drop policy if exists "Trips owners can delete their reports" on public.trip_reports;
+drop policy if exists "Trips supervisors can delete reports" on public.trip_reports;
+
+create policy "Trips owners can delete their reports" on public.trip_reports
+  for delete
+  using (auth.uid() = created_by);
+
+create policy "Trips supervisors can delete reports" on public.trip_reports
+  for delete
+  using (public.has_trip_supervision());
+
 -- Trip photos policies
 drop policy if exists "Trips owners can manage photos" on public.trip_photos;
 drop policy if exists "Trips supervisors can read photos" on public.trip_photos;

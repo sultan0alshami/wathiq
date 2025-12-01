@@ -554,23 +554,54 @@ export const Trips: React.FC = () => {
     // Delete from Supabase if trip is synced (or might be synced)
     // Try to delete by ID first, then by bookingId as fallback
     let deletedFromSupabase = false;
-    if (target.syncStatus === 'synced' || target.syncStatus === 'pending' || target.syncStatus === 'failed') {
+    // Always try to delete from Supabase if we have a valid UUID (trip might be synced even if status says otherwise)
+    if (target.id && target.id.length === 36) { // UUIDs are 36 characters
       try {
         // Try deleting by ID first
         await TripReportsService.delete(target.id);
         deletedFromSupabase = true;
         console.log('[Trips] Successfully deleted trip from Supabase by ID:', target.id);
-      } catch (error) {
-        console.warn('[Trips] Failed to delete by ID, trying bookingId:', error);
+      } catch (error: any) {
+        console.warn('[Trips] Failed to delete by ID, trying bookingId:', error?.message || error);
         // If delete by ID fails, try by bookingId (in case ID mismatch)
         try {
           await TripReportsService.deleteByBookingId(target.bookingId);
           deletedFromSupabase = true;
           console.log('[Trips] Successfully deleted trip from Supabase by bookingId:', target.bookingId);
-        } catch (bookingIdError) {
-          // If both fail, it might not exist in Supabase yet (pending sync)
-          // This is okay - we'll just remove it locally
-          console.warn('[Trips] Trip not found in Supabase (may not be synced yet):', target.bookingId, bookingIdError);
+        } catch (bookingIdError: any) {
+          // If both fail, check if it's a permission error
+          const errorMsg = bookingIdError?.message || String(bookingIdError);
+          if (errorMsg.includes('permission') || errorMsg.includes('denied') || errorMsg.includes('policy') || errorMsg.includes('RLS')) {
+            console.error('[Trips] Permission denied when deleting trip:', errorMsg);
+            toast({
+              title: 'خطأ في الصلاحيات',
+              description: 'ليس لديك صلاحية لحذف هذه الرحلة. يرجى الاتصال بالمدير.',
+              variant: 'destructive',
+            });
+          } else {
+            // If both fail, it might not exist in Supabase yet (pending sync)
+            // This is okay - we'll just remove it locally
+            console.warn('[Trips] Trip not found in Supabase (may not be synced yet):', target.bookingId, errorMsg);
+          }
+        }
+      }
+    } else if (target.syncStatus === 'synced' || target.syncStatus === 'pending' || target.syncStatus === 'failed') {
+      // Fallback: try by bookingId if we don't have a proper UUID
+      try {
+        await TripReportsService.deleteByBookingId(target.bookingId);
+        deletedFromSupabase = true;
+        console.log('[Trips] Successfully deleted trip from Supabase by bookingId:', target.bookingId);
+      } catch (error: any) {
+        const errorMsg = error?.message || String(error);
+        if (errorMsg.includes('permission') || errorMsg.includes('denied') || errorMsg.includes('policy') || errorMsg.includes('RLS')) {
+          console.error('[Trips] Permission denied when deleting trip:', errorMsg);
+          toast({
+            title: 'خطأ في الصلاحيات',
+            description: 'ليس لديك صلاحية لحذف هذه الرحلة. يرجى الاتصال بالمدير.',
+            variant: 'destructive',
+          });
+        } else {
+          console.warn('[Trips] Trip not found in Supabase (may not be synced yet):', target.bookingId, errorMsg);
         }
       }
     } else {
