@@ -221,6 +221,7 @@ export const Trips: React.FC = () => {
   const [purgeDialogOpen, setPurgeDialogOpen] = useState(false);
   const [pendingRecycleRecord, setPendingRecycleRecord] = useState<TripRecycleRecord | null>(null);
   const [deletedTripIds, setDeletedTripIds] = useState<string[]>([]);
+  const isDeletingRef = React.useRef(false);
 
   const editingTrip = useMemo(
     () => (editingTripId ? trips.find((entry) => entry.id === editingTripId) || null : null),
@@ -336,25 +337,43 @@ export const Trips: React.FC = () => {
         const storedQueue = TripService.loadQueue();
         const queueEntries = storedQueue.map(queueRecordToTripEntry);
         
-        // Show cached trips immediately
+        // Show cached trips immediately, but filter out deleted ones
+        const deletedSet = new Set(deletedTripIds);
         if (storedData.trips.entries && storedData.trips.entries.length > 0) {
           const cachedEntries = storedData.trips.entries as TripEntry[];
-          setTrips([...cachedEntries, ...queueEntries]);
+          // Filter out deleted trips from cache
+          const filteredCached = cachedEntries.filter(
+            entry => !deletedSet.has(entry.id) && !deletedSet.has(entry.bookingId)
+          );
+          // Also filter queue entries
+          const filteredQueueEntries = queueEntries.filter(
+            entry => !deletedSet.has(entry.id) && !deletedSet.has(entry.bookingId)
+          );
+          const combinedCached = [...filteredCached, ...filteredQueueEntries];
+          setTrips(combinedCached);
           setDrafts(storedDrafts);
           setRecycleBin(cleanedRecycle);
           setQueue(storedQueue);
+          // Update booking sequence immediately from cached data
+          updateNextBookingSequence(combinedCached, storedQueue, storedDrafts, cleanedRecycle);
           setLoadingTrips(false); // Show UI immediately with cached data
         } else {
-          setTrips(queueEntries);
+          const filteredQueueEntries = queueEntries.filter(
+            entry => !deletedSet.has(entry.id) && !deletedSet.has(entry.bookingId)
+          );
+          setTrips(filteredQueueEntries);
           setDrafts(storedDrafts);
           setRecycleBin(cleanedRecycle);
           setQueue(storedQueue);
+          // Update booking sequence immediately
+          updateNextBookingSequence(filteredQueueEntries, storedQueue, storedDrafts, cleanedRecycle);
         }
       } catch (err) {
         console.warn('[Trips] Failed to load cached data:', err);
       }
       
       // Then fetch fresh data from Supabase in background
+      // Only fetch if we're not in the middle of a delete operation
       try {
         const remoteEntries = await TripReportsService.listByDate(currentDate);
         const storedData = getDataForDate(currentDate);
@@ -381,20 +400,33 @@ export const Trips: React.FC = () => {
         
         // Use startTransition for non-urgent update
         startTransition(() => {
-          setTrips(combinedEntries);
-          setDrafts(storedDrafts);
-          setRecycleBin(cleanedRecycle);
-          setQueue(storedQueue);
-          persistTripsSection(combinedEntries, storedQueue.length, storedDrafts, cleanedRecycle);
-          updateNextBookingSequence(combinedEntries, storedQueue, storedDrafts, cleanedRecycle);
+          // Only update if we have valid data and not in the middle of a delete operation
+          if (!deleteDialogOpen && !purgeDialogOpen && !isDeletingRef.current) {
+            setTrips(combinedEntries);
+            setDrafts(storedDrafts);
+            setRecycleBin(cleanedRecycle);
+            setQueue(storedQueue);
+            persistTripsSection(combinedEntries, storedQueue.length, storedDrafts, cleanedRecycle);
+            updateNextBookingSequence(combinedEntries, storedQueue, storedDrafts, cleanedRecycle);
+          }
         });
-      } catch (error) {
-        console.error('Failed to load trips from Supabase', error);
-        toast({
-          title: 'تعذر تحميل الرحلات',
-          description: 'حدث خطأ أثناء تحميل الرحلات من قاعدة البيانات. حاول مرة أخرى لاحقاً.',
-          variant: 'destructive',
-        });
+      } catch (error: any) {
+        // Handle network errors gracefully
+        const isNetworkError = error?.message?.includes('network') || 
+                              error?.message?.includes('ERR_NETWORK') ||
+                              error?.code === 'ERR_NETWORK_CHANGED';
+        
+        if (isNetworkError) {
+          console.warn('[Trips] Network error loading trips, using cached data:', error);
+          // Don't show error toast for network issues, just use cached data
+        } else {
+          console.error('Failed to load trips from Supabase', error);
+          toast({
+            title: 'تعذر تحميل الرحلات',
+            description: 'حدث خطأ أثناء تحميل الرحلات من قاعدة البيانات. حاول مرة أخرى لاحقاً.',
+            variant: 'destructive',
+          });
+        }
       } finally {
         setLoadingTrips(false);
       }
@@ -516,6 +548,9 @@ export const Trips: React.FC = () => {
     const target = pendingDeleteTrip;
     console.log('[Trips] Deleting trip:', target.id, target.bookingId, 'syncStatus:', target.syncStatus);
     
+    // Set flag to prevent useEffect from overwriting state
+    isDeletingRef.current = true;
+    
     // Delete from Supabase if trip is synced (or might be synced)
     // Try to delete by ID first, then by bookingId as fallback
     let deletedFromSupabase = false;
@@ -543,12 +578,10 @@ export const Trips: React.FC = () => {
     }
     
     // Add to deleted array to prevent it from reappearing
-    setDeletedTripIds(prev => {
-      const newIds = [...prev];
-      if (!newIds.includes(target.id)) newIds.push(target.id);
-      if (!newIds.includes(target.bookingId)) newIds.push(target.bookingId);
-      return newIds;
-    });
+    const newDeletedIds = [...deletedTripIds];
+    if (!newDeletedIds.includes(target.id)) newDeletedIds.push(target.id);
+    if (!newDeletedIds.includes(target.bookingId)) newDeletedIds.push(target.bookingId);
+    setDeletedTripIds(newDeletedIds);
     
     // Always remove from local state and queue
     // Remove if either id OR bookingId matches (to catch duplicates)
@@ -568,14 +601,17 @@ export const Trips: React.FC = () => {
       purgeAt: addDays(new Date(), RECYCLE_RETENTION_DAYS).toISOString(),
       deletedBy: user?.id,
     };
-    const updatedRecycle = [...recycleBin.filter((item) => item.id !== target.id), recycleRecord];
+    const updatedRecycle = [...recycleBin.filter((item) => item.id !== target.id && item.bookingId !== target.bookingId), recycleRecord];
     
     console.log('[Trips] Updating state - trips before:', trips.length, 'after:', updatedEntries.length);
+    // Update state immediately
     setTrips(updatedEntries);
     setQueue(updatedQueue);
     setRecycleBin(updatedRecycle);
-    persistTripsSection(updatedEntries, updatedQueue.length, drafts, updatedRecycle);
+    // Update booking sequence immediately
     updateNextBookingSequence(updatedEntries, updatedQueue, drafts, updatedRecycle);
+    // Persist to localStorage
+    persistTripsSection(updatedEntries, updatedQueue.length, drafts, updatedRecycle);
     
     if (editingTripId === target.id) {
       resetForm();
@@ -589,6 +625,11 @@ export const Trips: React.FC = () => {
     
     setPendingDeleteTrip(null);
     setDeleteDialogOpen(false);
+    
+    // Reset flag after a short delay to allow state to settle
+    setTimeout(() => {
+      isDeletingRef.current = false;
+    }, 1000);
   };
 
   const handleRestoreTrip = (record: TripRecycleRecord) => {
@@ -611,6 +652,9 @@ export const Trips: React.FC = () => {
 
   const confirmRecyclePurge = async () => {
     if (!pendingRecycleRecord) return;
+    
+    // Set flag to prevent useEffect from overwriting state
+    isDeletingRef.current = true;
     
     // Delete from Supabase if trip was synced (it might have been restored and synced)
     // Check if trip exists in current trips list (meaning it was restored)
@@ -636,13 +680,26 @@ export const Trips: React.FC = () => {
       console.warn('[Trips] Trip not found in Supabase for permanent delete:', error);
     }
     
+    // Add to deleted array to prevent it from reappearing
+    const newDeletedIds = [...deletedTripIds];
+    if (!newDeletedIds.includes(pendingRecycleRecord.id)) newDeletedIds.push(pendingRecycleRecord.id);
+    if (!newDeletedIds.includes(pendingRecycleRecord.bookingId)) newDeletedIds.push(pendingRecycleRecord.bookingId);
+    setDeletedTripIds(newDeletedIds);
+    
     // Remove from trips list if it exists there (in case it was restored)
-    const updatedTrips = trips.filter((trip) => trip.id !== pendingRecycleRecord.id);
-    const updatedRecycle = recycleBin.filter((item) => item.id !== pendingRecycleRecord.id);
+    // Filter by both id and bookingId to catch duplicates
+    const updatedTrips = trips.filter((trip) => 
+      trip.id !== pendingRecycleRecord.id && trip.bookingId !== pendingRecycleRecord.bookingId
+    );
+    const updatedRecycle = recycleBin.filter((item) => 
+      item.id !== pendingRecycleRecord.id && item.bookingId !== pendingRecycleRecord.bookingId
+    );
     setTrips(updatedTrips);
     setRecycleBin(updatedRecycle);
-    persistTripsSection(updatedTrips, queue.length, drafts, updatedRecycle);
+    // Update booking sequence immediately
     updateNextBookingSequence(updatedTrips, queue, drafts, updatedRecycle);
+    // Persist to localStorage
+    persistTripsSection(updatedTrips, queue.length, drafts, updatedRecycle);
     toast({
       title: 'تم حذف الرحلة نهائياً',
       description: `لن تظهر الرحلة ${pendingRecycleRecord.bookingId} في السجلات بعد الآن.`,
@@ -650,6 +707,11 @@ export const Trips: React.FC = () => {
     });
     setPendingRecycleRecord(null);
     setPurgeDialogOpen(false);
+    
+    // Reset flag after a short delay
+    setTimeout(() => {
+      isDeletingRef.current = false;
+    }, 1000);
   };
 
   const handleEditTrip = (trip: TripEntry) => {
@@ -902,8 +964,10 @@ export const Trips: React.FC = () => {
       setEditingDraftId(null);
     }
     setTrips(updatedEntries);
-    persistTripsSection(updatedEntries, queue.length, activeDrafts, recycleBin);
+    // Update booking sequence immediately (before async operations)
     updateNextBookingSequence(updatedEntries, queue, activeDrafts, recycleBin);
+    // Persist to localStorage
+    persistTripsSection(updatedEntries, queue.length, activeDrafts, recycleBin);
 
     const offlineRecord: OfflineTripRecord = {
       id: updatedEntry.id,
