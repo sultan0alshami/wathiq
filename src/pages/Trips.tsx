@@ -1636,23 +1636,7 @@ export const Trips: React.FC = () => {
                           variant="ghost"
                           size="icon"
                           title="حذف الرحلة"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            console.log('[Trips] ========== DELETE BUTTON CLICKED ==========');
-                            console.log('[Trips] Delete button clicked for trip:', {
-                              id: trip.id,
-                              bookingId: trip.bookingId,
-                              syncStatus: trip.syncStatus,
-                              fullTrip: trip
-                            });
-                            try {
-                              triggerDeleteTrip(trip);
-                              console.log('[Trips] triggerDeleteTrip called successfully');
-                            } catch (err) {
-                              console.error('[Trips] Error calling triggerDeleteTrip:', err);
-                            }
-                          }}
+                          onClick={() => triggerDeleteTrip(trip)}
                         >
                           <Trash2 className="w-4 h-4 text-destructive" />
                         </Button>
