@@ -328,17 +328,16 @@ export const Trips: React.FC = () => {
     [user?.id]
   );
 
-  useEffect(() => {
-    const loadRemoteTrips = async (forceReload = false) => {
-      // Cancel any previous request
-      if (fetchAbortControllerRef.current) {
-        fetchAbortControllerRef.current.abort();
-      }
-      
-      // Create new abort controller
-      fetchAbortControllerRef.current = new AbortController();
-      const signal = fetchAbortControllerRef.current.signal;
-      setLoadingTrips(true);
+  const loadRemoteTrips = useCallback(async (forceReload = false) => {
+    // Cancel any previous request
+    if (fetchAbortControllerRef.current) {
+      fetchAbortControllerRef.current.abort();
+    }
+    
+    // Create new abort controller
+    fetchAbortControllerRef.current = new AbortController();
+    const signal = fetchAbortControllerRef.current.signal;
+    setLoadingTrips(true);
       
       // Load cached data first for instant display
       try {
@@ -460,10 +459,19 @@ export const Trips: React.FC = () => {
       } finally {
         setLoadingTrips(false);
       }
-    };
+  }, [currentDate, queueRecordToTripEntry, persistTripsSection, toast, updateNextBookingSequence, deletedTripIds, deleteDialogOpen, purgeDialogOpen]);
 
+  useEffect(() => {
     loadRemoteTrips();
-  }, [currentDate, queueRecordToTripEntry, persistTripsSection, toast, updateNextBookingSequence]);
+    
+    return () => {
+      // Cleanup: abort any in-flight requests when component unmounts or date changes
+      if (fetchAbortControllerRef.current) {
+        fetchAbortControllerRef.current.abort();
+        fetchAbortControllerRef.current = null;
+      }
+    };
+  }, [currentDate, loadRemoteTrips]);
 
   useEffect(() => {
     setForm((prev) => ({
