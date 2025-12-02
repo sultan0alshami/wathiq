@@ -1786,7 +1786,12 @@ export const Trips: React.FC = () => {
                           variant="ghost"
                           size="icon"
                           title="حذف الرحلة"
-                          onClick={() => triggerDeleteTrip(trip)}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            console.log('[Trips] Delete button clicked for trip:', trip.id, trip.bookingId);
+                            triggerDeleteTrip(trip);
+                          }}
                         >
                           <Trash2 className="w-4 h-4 text-destructive" />
                         </Button>
@@ -1964,9 +1969,15 @@ export const Trips: React.FC = () => {
             ? `سيتم نقل الرحلة ${pendingDeleteTrip.bookingId} إلى سلة المحذوفات لمدة 30 يوماً مع إمكانية الاستعادة.`
             : 'سيتم نقل الرحلة إلى سلة المحذوفات لمدة 30 يوماً.'
         }
-        onConfirm={() => {
-          console.log('[Trips] ConfirmationDialog onConfirm triggered');
-          confirmDeleteTrip();
+        onConfirm={async () => {
+          console.log('[Trips] ========== CONFIRMATION DIALOG CONFIRMED ==========');
+          console.log('[Trips] onConfirm triggered, pendingDeleteTrip:', pendingDeleteTrip);
+          try {
+            await confirmDeleteTrip();
+            console.log('[Trips] confirmDeleteTrip completed');
+          } catch (error) {
+            console.error('[Trips] Error in confirmDeleteTrip:', error);
+          }
         }}
         cancelText="إلغاء"
         confirmText="نقل إلى السلة"

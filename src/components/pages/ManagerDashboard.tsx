@@ -63,11 +63,15 @@ export const ManagerDashboard: React.FC = () => {
   // Fetch trips from Supabase for current date
   useEffect(() => {
     let isMounted = true;
+    let retryTimeout: NodeJS.Timeout | null = null;
     let retryCount = 0;
-    const MAX_RETRIES = 2;
+    const MAX_RETRIES = 1; // Reduced to 1 retry only
     
     const loadTrips = async () => {
-      if (!isMounted) return;
+      if (!isMounted) {
+        console.log('[ManagerDashboard] Component unmounted, aborting load');
+        return;
+      }
       
       setLoadingTrips(true);
       try {
@@ -75,8 +79,11 @@ export const ManagerDashboard: React.FC = () => {
         if (isMounted) {
           setCurrentTrips(trips);
           retryCount = 0; // Reset on success
+          console.log('[ManagerDashboard] Successfully loaded trips:', trips.length);
         }
       } catch (error: any) {
+        if (!isMounted) return;
+        
         const isNetworkError = error?.message?.includes('network') || 
                               error?.message?.includes('ERR_NETWORK') ||
                               error?.message?.includes('ERR_INSUFFICIENT_RESOURCES') ||
@@ -84,22 +91,30 @@ export const ManagerDashboard: React.FC = () => {
         
         if (isNetworkError && retryCount < MAX_RETRIES) {
           retryCount++;
-          console.warn(`[ManagerDashboard] Network error loading trips (retry ${retryCount}/${MAX_RETRIES}), will retry...`, error);
-          // Retry after a short delay
-          setTimeout(() => {
-            if (isMounted) {
+          console.warn(`[ManagerDashboard] Network error (retry ${retryCount}/${MAX_RETRIES}), will retry once...`, error);
+          
+          // Clear any existing timeout
+          if (retryTimeout) {
+            clearTimeout(retryTimeout);
+          }
+          
+          // Retry only once after a delay
+          retryTimeout = setTimeout(() => {
+            if (isMounted && retryCount <= MAX_RETRIES) {
               loadTrips();
             }
-          }, 1000 * retryCount); // Exponential backoff
+          }, 2000); // 2 second delay
           return;
         }
         
-        console.error('[ManagerDashboard] Failed to load trips:', error);
+        // Max retries reached or non-network error - stop trying
+        console.error('[ManagerDashboard] Failed to load trips, stopping retries:', error);
         if (isMounted) {
           setCurrentTrips([]);
+          setLoadingTrips(false);
         }
       } finally {
-        if (isMounted) {
+        if (isMounted && retryCount >= MAX_RETRIES) {
           setLoadingTrips(false);
         }
       }
@@ -109,6 +124,11 @@ export const ManagerDashboard: React.FC = () => {
     
     return () => {
       isMounted = false;
+      if (retryTimeout) {
+        clearTimeout(retryTimeout);
+        retryTimeout = null;
+      }
+      console.log('[ManagerDashboard] Cleanup: stopped all retries');
     };
   }, [currentDate]);
 
