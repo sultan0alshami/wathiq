@@ -627,25 +627,6 @@ export const Trips: React.FC = () => {
         }
       }
     } else {
-      // Fallback: try by bookingId if we don't have a proper UUID
-      try {
-        await TripReportsService.deleteByBookingId(target.bookingId);
-        deletedFromSupabase = true;
-        console.log('[Trips] Successfully deleted trip from Supabase by bookingId:', target.bookingId);
-      } catch (error: any) {
-        const errorMsg = error?.message || String(error);
-        if (errorMsg.includes('permission') || errorMsg.includes('denied') || errorMsg.includes('policy') || errorMsg.includes('RLS')) {
-          console.error('[Trips] Permission denied when deleting trip:', errorMsg);
-          toast({
-            title: 'خطأ في الصلاحيات',
-            description: 'ليس لديك صلاحية لحذف هذه الرحلة. يرجى الاتصال بالمدير.',
-            variant: 'destructive',
-          });
-        } else {
-          console.warn('[Trips] Trip not found in Supabase (may not be synced yet):', target.bookingId, errorMsg);
-        }
-      }
-    } else {
       console.log('[Trips] Trip appears to be local-only, skipping Supabase delete. ID:', target.id, 'syncStatus:', target.syncStatus);
     }
     
