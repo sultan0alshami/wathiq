@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState, startTransition } from 'react';
+import React, { useCallback, useEffect, useMemo, useState, useRef, startTransition } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -222,6 +222,9 @@ export const Trips: React.FC = () => {
   const [pendingRecycleRecord, setPendingRecycleRecord] = useState<TripRecycleRecord | null>(null);
   const [deletedTripIds, setDeletedTripIds] = useState<string[]>([]);
   const isDeletingRef = React.useRef(false);
+  const retryCountRef = React.useRef(0);
+  const lastErrorRef = React.useRef<Error | null>(null);
+  const fetchAbortControllerRef = React.useRef<AbortController | null>(null);
 
   const editingTrip = useMemo(
     () => (editingTripId ? trips.find((entry) => entry.id === editingTripId) || null : null),
