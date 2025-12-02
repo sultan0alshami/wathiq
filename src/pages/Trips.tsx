@@ -774,15 +774,36 @@ export const Trips: React.FC = () => {
   };
 
   const requestRecyclePurge = (record: TripRecycleRecord) => {
+    console.log('[Trips] ========== REQUEST PERMANENT DELETE ==========');
+    console.log('[Trips] requestRecyclePurge called for record:', {
+      id: record.id,
+      bookingId: record.bookingId
+    });
     setPendingRecycleRecord(record);
     setPurgeDialogOpen(true);
+    console.log('[Trips] Purge dialog opened');
   };
 
   const confirmRecyclePurge = async () => {
-    if (!pendingRecycleRecord) return;
+    console.log('[Trips] ========== PERMANENT DELETE FROM RECYCLE BIN STARTED ==========');
+    console.log('[Trips] confirmRecyclePurge called');
+    console.log('[Trips] pendingRecycleRecord:', pendingRecycleRecord);
+    
+    if (!pendingRecycleRecord) {
+      console.error('[Trips] ❌ ERROR: No pendingRecycleRecord, aborting permanent delete');
+      toast({
+        title: 'خطأ',
+        description: 'لم يتم العثور على الرحلة المراد حذفها نهائياً.',
+        variant: 'destructive',
+      });
+      setPurgeDialogOpen(false);
+      setPendingRecycleRecord(null);
+      return;
+    }
     
     // Set flag to prevent useEffect from overwriting state
     isDeletingRef.current = true;
+    console.log('[Trips] isDeletingRef set to true');
     
     // Delete from Supabase if trip was synced (it might have been restored and synced)
     // Check if trip exists in current trips list (meaning it was restored)
@@ -2091,8 +2112,10 @@ export const Trips: React.FC = () => {
       <ConfirmationDialog
         open={purgeDialogOpen}
         onOpenChange={(open) => {
+          console.log('[Trips] Purge dialog onOpenChange called, open:', open);
           setPurgeDialogOpen(open);
           if (!open) {
+            console.log('[Trips] Purge dialog closed, clearing pendingRecycleRecord');
             setPendingRecycleRecord(null);
           }
         }}
@@ -2102,7 +2125,22 @@ export const Trips: React.FC = () => {
             ? `لن تتمكن من استعادة الرحلة ${pendingRecycleRecord.bookingId} بعد هذا الإجراء.`
             : 'لن تتمكن من استعادة هذه الرحلة بعد الحذف النهائي.'
         }
-        onConfirm={confirmRecyclePurge}
+        onConfirm={async () => {
+          console.log('[Trips] ========== PERMANENT DELETE DIALOG CONFIRMED ==========');
+          console.log('[Trips] Permanent delete dialog confirmed');
+          console.log('[Trips] pendingRecycleRecord:', pendingRecycleRecord);
+          try {
+            await confirmRecyclePurge();
+            console.log('[Trips] ✅ confirmRecyclePurge completed');
+          } catch (error) {
+            console.error('[Trips] ❌ Error in confirmRecyclePurge:', error);
+            toast({
+              title: 'خطأ',
+              description: 'حدث خطأ أثناء الحذف النهائي للرحلة.',
+              variant: 'destructive',
+            });
+          }
+        }}
         cancelText="إلغاء"
         confirmText="حذف نهائي"
         variant="destructive"

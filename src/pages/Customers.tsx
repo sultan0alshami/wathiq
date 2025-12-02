@@ -37,6 +37,8 @@ export const Customers: React.FC = () => {
   const { toast } = useToast();
   const { user } = useAuth();
 
+  const abortControllerRef = React.useRef<AbortController | null>(null);
+
   const loadCustomers = useCallback(async () => {
     if (!user?.id) {
       setCustomers([]);
@@ -44,23 +46,55 @@ export const Customers: React.FC = () => {
       return;
     }
 
+    // Cancel any previous request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    // Create new abort controller
+    abortControllerRef.current = new AbortController();
+    const signal = abortControllerRef.current.signal;
+
     setIsLoading(true);
     try {
       const list = await CustomersService.list(user.id);
-      setCustomers(list);
-    } catch (error) {
+      if (!signal.aborted) {
+        setCustomers(list);
+      }
+    } catch (error: any) {
+      if (signal.aborted) return;
+      
+      // NEVER retry on ERR_INSUFFICIENT_RESOURCES - it causes infinite loops
+      const isInsufficientResources = error?.message?.includes('ERR_INSUFFICIENT_RESOURCES') ||
+                                     error?.code === 'ERR_INSUFFICIENT_RESOURCES';
+      
+      if (isInsufficientResources) {
+        console.error('[Customers] ERR_INSUFFICIENT_RESOURCES detected - stopping immediately:', error);
+        setCustomers([]);
+        return;
+      }
+      
       toast({
         title: 'حدث خطأ',
         description: error instanceof Error ? error.message : 'تعذر تحميل بيانات العملاء.',
         variant: 'destructive',
       });
     } finally {
-      setIsLoading(false);
+      if (!signal.aborted) {
+        setIsLoading(false);
+      }
     }
   }, [toast, user?.id]);
 
   useEffect(() => {
     loadCustomers();
+    
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
+    };
   }, [loadCustomers]);
 
   // Form states
@@ -557,12 +591,6 @@ export const Customers: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Save Note */}
-      <Alert>
-        <AlertDescription>
-          {ARABIC_CUSTOMERS_MESSAGES.SAVE_NOTE_ALERT}
-        </AlertDescription>
-      </Alert>
 
       <DeleteConfirmationDialog
         open={showDeleteDialog}

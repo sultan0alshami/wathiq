@@ -145,16 +145,19 @@ export const ManagerDashboard: React.FC = () => {
     loadTrips();
     
     return () => {
+      console.log('[ManagerDashboard] ========== CLEANUP STARTED ==========');
       isMounted = false;
       if (retryTimeout) {
         clearTimeout(retryTimeout);
         retryTimeout = null;
+        console.log('[ManagerDashboard] Cleanup: cleared retry timeout');
       }
       if (abortController) {
         abortController.abort();
         abortController = null;
+        console.log('[ManagerDashboard] Cleanup: aborted in-flight request');
       }
-      console.log('[ManagerDashboard] Cleanup: stopped all retries and aborted requests');
+      console.log('[ManagerDashboard] ========== CLEANUP COMPLETE: stopped all retries and aborted requests ==========');
     };
   }, [currentDate]);
 

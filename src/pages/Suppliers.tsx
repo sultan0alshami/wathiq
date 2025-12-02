@@ -70,6 +70,8 @@ export const Suppliers: React.FC = () => {
 
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
 
+  const abortControllerRef = React.useRef<AbortController | null>(null);
+
   const loadSuppliers = useCallback(async () => {
     if (!user?.id) {
       setSuppliers([]);
@@ -77,11 +79,34 @@ export const Suppliers: React.FC = () => {
       return;
     }
 
+    // Cancel any previous request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    // Create new abort controller
+    abortControllerRef.current = new AbortController();
+    const signal = abortControllerRef.current.signal;
+
     setDataLoading(true);
     try {
       const list = await SupplierService.list(user.id, currentDate);
-      setSuppliers(list);
-    } catch (error) {
+      if (!signal.aborted) {
+        setSuppliers(list);
+      }
+    } catch (error: any) {
+      if (signal.aborted) return;
+      
+      // NEVER retry on ERR_INSUFFICIENT_RESOURCES - it causes infinite loops
+      const isInsufficientResources = error?.message?.includes('ERR_INSUFFICIENT_RESOURCES') ||
+                                     error?.code === 'ERR_INSUFFICIENT_RESOURCES';
+      
+      if (isInsufficientResources) {
+        console.error('[Suppliers] ERR_INSUFFICIENT_RESOURCES detected - stopping immediately:', error);
+        setSuppliers([]);
+        return;
+      }
+      
       toast({
         title: ARABIC_SUPPLIERS_MESSAGES.TOAST_ERROR_TITLE,
         description:
@@ -89,12 +114,21 @@ export const Suppliers: React.FC = () => {
         variant: 'destructive',
       });
     } finally {
-      setDataLoading(false);
+      if (!signal.aborted) {
+        setDataLoading(false);
+      }
     }
   }, [currentDate, toast, user?.id]);
 
   useEffect(() => {
     loadSuppliers();
+    
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
+    };
   }, [loadSuppliers]);
 
   useEffect(() => {
