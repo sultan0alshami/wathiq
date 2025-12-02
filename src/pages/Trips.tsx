@@ -549,10 +549,21 @@ export const Trips: React.FC = () => {
   };
 
   const triggerDeleteTrip = (trip: TripEntry) => {
-    console.log('[Trips] triggerDeleteTrip called for trip:', trip.id, trip.bookingId);
-    setPendingDeleteTrip(trip);
-    setDeleteDialogOpen(true);
-    console.log('[Trips] Delete dialog opened, pendingDeleteTrip set');
+    console.log('[Trips] ========== TRIGGER DELETE TRIP CALLED ==========');
+    console.log('[Trips] triggerDeleteTrip called for trip:', {
+      id: trip.id,
+      bookingId: trip.bookingId,
+      syncStatus: trip.syncStatus
+    });
+    try {
+      setPendingDeleteTrip(trip);
+      console.log('[Trips] pendingDeleteTrip state updated');
+      setDeleteDialogOpen(true);
+      console.log('[Trips] Delete dialog opened, deleteDialogOpen set to true');
+      console.log('[Trips] Dialog should now be visible');
+    } catch (err) {
+      console.error('[Trips] Error in triggerDeleteTrip:', err);
+    }
   };
 
   const confirmDeleteTrip = async () => {
