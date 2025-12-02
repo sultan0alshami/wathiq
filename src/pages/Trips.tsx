@@ -436,7 +436,7 @@ export const Trips: React.FC = () => {
     };
 
     loadRemoteTrips();
-  }, [currentDate, queueRecordToTripEntry, persistTripsSection, toast, updateNextBookingSequence, deletedTripIds]);
+  }, [currentDate, queueRecordToTripEntry, persistTripsSection, toast, updateNextBookingSequence]);
 
   useEffect(() => {
     setForm((prev) => ({
