@@ -542,14 +542,25 @@ export const Trips: React.FC = () => {
   };
 
   const triggerDeleteTrip = (trip: TripEntry) => {
+    console.log('[Trips] triggerDeleteTrip called for trip:', trip.id, trip.bookingId);
     setPendingDeleteTrip(trip);
     setDeleteDialogOpen(true);
+    console.log('[Trips] Delete dialog opened, pendingDeleteTrip set');
   };
 
   const confirmDeleteTrip = async () => {
-    if (!pendingDeleteTrip) return;
+    console.log('[Trips] confirmDeleteTrip called, pendingDeleteTrip:', pendingDeleteTrip);
+    if (!pendingDeleteTrip) {
+      console.error('[Trips] No pendingDeleteTrip, aborting deletion');
+      return;
+    }
     const target = pendingDeleteTrip;
-    console.log('[Trips] Deleting trip:', target.id, target.bookingId, 'syncStatus:', target.syncStatus);
+    console.log('[Trips] Starting deletion process for trip:', {
+      id: target.id,
+      bookingId: target.bookingId,
+      syncStatus: target.syncStatus,
+      fullTrip: target
+    });
     
     // Set flag to prevent useEffect from overwriting state
     isDeletingRef.current = true;

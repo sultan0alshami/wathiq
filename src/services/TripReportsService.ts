@@ -91,24 +91,34 @@ export const TripReportsService = {
   },
 
   async delete(id: string): Promise<void> {
-    console.log('[TripReportsService] Attempting to delete trip by ID:', id);
+    console.log('[TripReportsService] delete() called with ID:', id);
+    console.log('[TripReportsService] Supabase client:', supabase ? 'available' : 'missing');
+    
     const { data, error } = await supabase
       .from('trip_reports')
       .delete()
       .eq('id', id)
       .select();
 
+    console.log('[TripReportsService] Delete query completed. Data:', data, 'Error:', error);
+
     if (error) {
-      console.error('[TripReportsService] Delete error:', error);
+      console.error('[TripReportsService] Delete error details:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      });
       throw new Error(error.message);
     }
     
-    console.log('[TripReportsService] Delete result:', data);
     // If no rows were deleted, the trip might not exist or user doesn't have permission
     if (!data || data.length === 0) {
-      console.warn('[TripReportsService] No rows deleted - trip may not exist or permission denied');
+      console.warn('[TripReportsService] No rows deleted - trip may not exist or permission denied. ID:', id);
       throw new Error('Trip not found or permission denied');
     }
+    
+    console.log('[TripReportsService] Successfully deleted trip:', data);
   },
 
   async deleteByBookingId(bookingId: string): Promise<void> {
