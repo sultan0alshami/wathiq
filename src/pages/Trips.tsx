@@ -549,21 +549,35 @@ export const Trips: React.FC = () => {
   };
 
   const confirmDeleteTrip = async () => {
-    console.log('[Trips] confirmDeleteTrip called, pendingDeleteTrip:', pendingDeleteTrip);
+    console.log('[Trips] ========== CONFIRM DELETE TRIP STARTED ==========');
+    console.log('[Trips] confirmDeleteTrip function called');
+    console.log('[Trips] pendingDeleteTrip state:', pendingDeleteTrip);
+    console.log('[Trips] deleteDialogOpen state:', deleteDialogOpen);
+    
     if (!pendingDeleteTrip) {
-      console.error('[Trips] No pendingDeleteTrip, aborting deletion');
+      console.error('[Trips] ❌ ERROR: No pendingDeleteTrip, aborting deletion');
+      toast({
+        title: 'خطأ',
+        description: 'لم يتم العثور على الرحلة المراد حذفها.',
+        variant: 'destructive',
+      });
       return;
     }
+    
     const target = pendingDeleteTrip;
-    console.log('[Trips] Starting deletion process for trip:', {
+    console.log('[Trips] ✅ Target trip found:', {
       id: target.id,
       bookingId: target.bookingId,
       syncStatus: target.syncStatus,
+      hasId: !!target.id,
+      idLength: target.id?.length,
+      isUUID: target.id?.length === 36,
       fullTrip: target
     });
     
     // Set flag to prevent useEffect from overwriting state
     isDeletingRef.current = true;
+    console.log('[Trips] isDeletingRef set to true');
     
     // Delete from Supabase if trip is synced (or might be synced)
     // Try to delete by ID first, then by bookingId as fallback
