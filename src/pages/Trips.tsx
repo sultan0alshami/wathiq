@@ -329,7 +329,15 @@ export const Trips: React.FC = () => {
   );
 
   useEffect(() => {
-    const loadRemoteTrips = async () => {
+    const loadRemoteTrips = async (forceReload = false) => {
+      // Cancel any previous request
+      if (fetchAbortControllerRef.current) {
+        fetchAbortControllerRef.current.abort();
+      }
+      
+      // Create new abort controller
+      fetchAbortControllerRef.current = new AbortController();
+      const signal = fetchAbortControllerRef.current.signal;
       setLoadingTrips(true);
       
       // Load cached data first for instant display
@@ -377,8 +385,20 @@ export const Trips: React.FC = () => {
       
       // Then fetch fresh data from Supabase in background
       // Only fetch if we're not in the middle of a delete operation
+      // Skip if request was aborted
+      if (signal.aborted) {
+        console.log('[Trips] Request aborted, skipping Supabase fetch');
+        return;
+      }
+      
       try {
         const remoteEntries = await TripReportsService.listByDate(currentDate);
+        
+        // Check if request was aborted during fetch
+        if (signal.aborted) {
+          console.log('[Trips] Request aborted during fetch, ignoring results');
+          return;
+        }
         const storedData = getDataForDate(currentDate);
         const storedDrafts = storedData.trips.drafts || [];
         const cleanedRecycle = purgeExpiredRecycle(storedData.trips.recycleBin || []);
@@ -566,23 +586,27 @@ export const Trips: React.FC = () => {
     }
   };
 
-  const confirmDeleteTrip = async () => {
+  const confirmDeleteTrip = async (tripToDelete?: TripEntry) => {
     console.log('[Trips] ========== CONFIRM DELETE TRIP STARTED ==========');
-    console.log('[Trips] confirmDeleteTrip function called');
+    console.log('[Trips] confirmDeleteTrip function called at:', new Date().toISOString());
+    console.log('[Trips] tripToDelete parameter:', tripToDelete);
     console.log('[Trips] pendingDeleteTrip state:', pendingDeleteTrip);
     console.log('[Trips] deleteDialogOpen state:', deleteDialogOpen);
     
-    if (!pendingDeleteTrip) {
-      console.error('[Trips] ❌ ERROR: No pendingDeleteTrip, aborting deletion');
+    // Use parameter if provided, otherwise fall back to state
+    const target = tripToDelete || pendingDeleteTrip;
+    
+    if (!target) {
+      console.error('[Trips] ❌ ERROR: No trip to delete, aborting deletion');
       toast({
         title: 'خطأ',
         description: 'لم يتم العثور على الرحلة المراد حذفها.',
         variant: 'destructive',
       });
+      setDeleteDialogOpen(false);
+      setPendingDeleteTrip(null);
       return;
     }
-    
-    const target = pendingDeleteTrip;
     console.log('[Trips] ✅ Target trip found:', {
       id: target.id,
       bookingId: target.bookingId,
@@ -1132,6 +1156,13 @@ export const Trips: React.FC = () => {
         title: isEditing ? 'تم تحديث رحلة' : 'رحلة جديدة مسجلة',
         message: `تم اعتماد رحلة رقم ${updatedEntry.bookingId} بنجاح.`,
       });
+      
+      // Reload trips from Supabase to ensure we have the latest data
+      // Use a small delay to allow Supabase to process the insert
+      setTimeout(() => {
+        console.log('[Trips] Reloading trips after successful submission');
+        loadRemoteTrips(true);
+      }, 500);
     } catch (error) {
       const failedQueue = TripService.upsertRecord({
         ...offlineRecord,
@@ -2014,12 +2045,34 @@ export const Trips: React.FC = () => {
         }
         onConfirm={async () => {
           console.log('[Trips] ========== CONFIRMATION DIALOG CONFIRMED ==========');
-          console.log('[Trips] onConfirm triggered, pendingDeleteTrip:', pendingDeleteTrip);
+          console.log('[Trips] onConfirm triggered at:', new Date().toISOString());
+          console.log('[Trips] pendingDeleteTrip at confirm time:', pendingDeleteTrip);
+          console.log('[Trips] deleteDialogOpen at confirm time:', deleteDialogOpen);
+          
+          // Store pendingDeleteTrip in a local variable to avoid stale closure
+          const tripToDelete = pendingDeleteTrip;
+          if (!tripToDelete) {
+            console.error('[Trips] ❌ CRITICAL: pendingDeleteTrip is null in onConfirm!');
+            toast({
+              title: 'خطأ',
+              description: 'لم يتم العثور على الرحلة المراد حذفها.',
+              variant: 'destructive',
+            });
+            setDeleteDialogOpen(false);
+            return;
+          }
+          
           try {
-            await confirmDeleteTrip();
-            console.log('[Trips] confirmDeleteTrip completed');
+            console.log('[Trips] Calling confirmDeleteTrip with trip:', tripToDelete.id, tripToDelete.bookingId);
+            await confirmDeleteTrip(tripToDelete);
+            console.log('[Trips] ✅ confirmDeleteTrip completed successfully');
           } catch (error) {
-            console.error('[Trips] Error in confirmDeleteTrip:', error);
+            console.error('[Trips] ❌ Error in confirmDeleteTrip:', error);
+            toast({
+              title: 'خطأ',
+              description: 'حدث خطأ أثناء حذف الرحلة. يرجى المحاولة مرة أخرى.',
+              variant: 'destructive',
+            });
           }
         }}
         cancelText="إلغاء"

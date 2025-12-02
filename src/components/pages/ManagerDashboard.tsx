@@ -65,6 +65,7 @@ export const ManagerDashboard: React.FC = () => {
     let isMounted = true;
     let retryTimeout: NodeJS.Timeout | null = null;
     let retryCount = 0;
+    let abortController: AbortController | null = null;
     const MAX_RETRIES = 1; // Reduced to 1 retry only
     
     const loadTrips = async () => {
@@ -73,16 +74,25 @@ export const ManagerDashboard: React.FC = () => {
         return;
       }
       
+      // Cancel any previous request
+      if (abortController) {
+        abortController.abort();
+      }
+      
+      // Create new abort controller for this request
+      abortController = new AbortController();
+      const signal = abortController.signal;
+      
       setLoadingTrips(true);
       try {
         const trips = await TripReportsService.listByDate(currentDate);
-        if (isMounted) {
+        if (isMounted && !signal.aborted) {
           setCurrentTrips(trips);
           retryCount = 0; // Reset on success
           console.log('[ManagerDashboard] Successfully loaded trips:', trips.length);
         }
       } catch (error: any) {
-        if (!isMounted) return;
+        if (!isMounted || signal.aborted) return;
         
         const isInsufficientResources = error?.message?.includes('ERR_INSUFFICIENT_RESOURCES') ||
                                        error?.code === 'ERR_INSUFFICIENT_RESOURCES';
@@ -140,7 +150,11 @@ export const ManagerDashboard: React.FC = () => {
         clearTimeout(retryTimeout);
         retryTimeout = null;
       }
-      console.log('[ManagerDashboard] Cleanup: stopped all retries');
+      if (abortController) {
+        abortController.abort();
+        abortController = null;
+      }
+      console.log('[ManagerDashboard] Cleanup: stopped all retries and aborted requests');
     };
   }, [currentDate]);
 
