@@ -84,11 +84,23 @@ export const ManagerDashboard: React.FC = () => {
       } catch (error: any) {
         if (!isMounted) return;
         
+        const isInsufficientResources = error?.message?.includes('ERR_INSUFFICIENT_RESOURCES') ||
+                                       error?.code === 'ERR_INSUFFICIENT_RESOURCES';
         const isNetworkError = error?.message?.includes('network') || 
                               error?.message?.includes('ERR_NETWORK') ||
-                              error?.message?.includes('ERR_INSUFFICIENT_RESOURCES') ||
                               error?.code === 'ERR_NETWORK_CHANGED';
         
+        // NEVER retry on ERR_INSUFFICIENT_RESOURCES - it causes infinite loops
+        if (isInsufficientResources) {
+          console.error('[ManagerDashboard] ERR_INSUFFICIENT_RESOURCES detected - stopping immediately, no retries:', error);
+          if (isMounted) {
+            setCurrentTrips([]);
+            setLoadingTrips(false);
+          }
+          return; // Stop immediately, no retries
+        }
+        
+        // For other network errors, allow one retry
         if (isNetworkError && retryCount < MAX_RETRIES) {
           retryCount++;
           console.warn(`[ManagerDashboard] Network error (retry ${retryCount}/${MAX_RETRIES}), will retry once...`, error);
@@ -114,7 +126,7 @@ export const ManagerDashboard: React.FC = () => {
           setLoadingTrips(false);
         }
       } finally {
-        if (isMounted && retryCount >= MAX_RETRIES) {
+        if (isMounted) {
           setLoadingTrips(false);
         }
       }

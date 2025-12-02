@@ -415,11 +415,18 @@ export const Trips: React.FC = () => {
         });
       } catch (error: any) {
         // Handle network errors gracefully
+        const isInsufficientResources = error?.message?.includes('ERR_INSUFFICIENT_RESOURCES') ||
+                                       error?.code === 'ERR_INSUFFICIENT_RESOURCES';
         const isNetworkError = error?.message?.includes('network') || 
                               error?.message?.includes('ERR_NETWORK') ||
                               error?.code === 'ERR_NETWORK_CHANGED';
         
-        if (isNetworkError) {
+        // NEVER retry on ERR_INSUFFICIENT_RESOURCES - it causes infinite loops
+        if (isInsufficientResources) {
+          console.error('[Trips] ERR_INSUFFICIENT_RESOURCES detected - using cached data only, no retries:', error);
+          // Don't show error toast, just use cached data silently
+          // The trips from localStorage will be shown
+        } else if (isNetworkError) {
           console.warn('[Trips] Network error loading trips, using cached data:', error);
           // Don't show error toast for network issues, just use cached data
         } else {
@@ -1803,8 +1810,19 @@ export const Trips: React.FC = () => {
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            console.log('[Trips] Delete button clicked for trip:', trip.id, trip.bookingId);
-                            triggerDeleteTrip(trip);
+                            console.log('[Trips] ========== DELETE BUTTON CLICKED ==========');
+                            console.log('[Trips] Delete button clicked for trip:', {
+                              id: trip.id,
+                              bookingId: trip.bookingId,
+                              syncStatus: trip.syncStatus,
+                              fullTrip: trip
+                            });
+                            try {
+                              triggerDeleteTrip(trip);
+                              console.log('[Trips] triggerDeleteTrip called successfully');
+                            } catch (err) {
+                              console.error('[Trips] Error calling triggerDeleteTrip:', err);
+                            }
                           }}
                         >
                           <Trash2 className="w-4 h-4 text-destructive" />
