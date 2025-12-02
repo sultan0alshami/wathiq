@@ -78,37 +78,39 @@ const mapRowToTripEntry = (row: TripReportRow): TripEntry => ({
 export const TripReportsService = {
   async listByDate(date: Date, signal?: AbortSignal): Promise<TripEntry[]> {
     // Create a timeout promise to prevent hanging requests
+    let timeoutId: NodeJS.Timeout | null = null;
     const timeoutPromise = new Promise<never>((_, reject) => {
-      const timeout = setTimeout(() => {
-        reject(new Error('Request timeout - ERR_INSUFFICIENT_RESOURCES'));
+      timeoutId = setTimeout(() => {
+        reject(new Error('ERR_INSUFFICIENT_RESOURCES'));
       }, 10000); // 10 second timeout
-      
-      // Clear timeout if signal is aborted
-      if (signal) {
-        signal.addEventListener('abort', () => {
-          clearTimeout(timeout);
-          reject(new Error('Request aborted'));
-        });
-      }
     });
 
+    // Clear timeout if signal is aborted
+    if (signal) {
+      signal.addEventListener('abort', () => {
+        if (timeoutId) clearTimeout(timeoutId);
+      });
+    }
+
     try {
-      const query = supabase
+      const queryPromise = supabase
         .from('trip_reports')
         .select('*, trip_photos(*)')
         .eq('day_date', formatDateKey(date))
         .order('created_at', { ascending: false });
 
       // Race between the query and timeout
-      const { data, error } = await Promise.race([
-        query,
-        timeoutPromise
-      ]) as { data: TripReportRow[] | null; error: any };
+      const result = await Promise.race([queryPromise, timeoutPromise]);
+      
+      // Clear timeout if query completed
+      if (timeoutId) clearTimeout(timeoutId);
 
       // Check if request was aborted
       if (signal?.aborted) {
         throw new Error('Request aborted');
       }
+
+      const { data, error } = result as { data: TripReportRow[] | null; error: any };
 
       if (error) {
         // Check for insufficient resources error
@@ -121,6 +123,9 @@ export const TripReportsService = {
 
       return (data as TripReportRow[] | null)?.map(mapRowToTripEntry) ?? [];
     } catch (err: any) {
+      // Clear timeout on error
+      if (timeoutId) clearTimeout(timeoutId);
+      
       // Re-throw with proper error message
       if (err.message === 'ERR_INSUFFICIENT_RESOURCES' || 
           err.message?.includes('ERR_INSUFFICIENT_RESOURCES')) {
