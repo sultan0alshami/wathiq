@@ -1964,7 +1964,10 @@ export const Trips: React.FC = () => {
             ? `سيتم نقل الرحلة ${pendingDeleteTrip.bookingId} إلى سلة المحذوفات لمدة 30 يوماً مع إمكانية الاستعادة.`
             : 'سيتم نقل الرحلة إلى سلة المحذوفات لمدة 30 يوماً.'
         }
-        onConfirm={confirmDeleteTrip}
+        onConfirm={() => {
+          console.log('[Trips] ConfirmationDialog onConfirm triggered');
+          confirmDeleteTrip();
+        }}
         cancelText="إلغاء"
         confirmText="نقل إلى السلة"
         variant="warning"
