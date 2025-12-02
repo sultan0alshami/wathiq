@@ -62,19 +62,54 @@ export const ManagerDashboard: React.FC = () => {
 
   // Fetch trips from Supabase for current date
   useEffect(() => {
+    let isMounted = true;
+    let retryCount = 0;
+    const MAX_RETRIES = 2;
+    
     const loadTrips = async () => {
+      if (!isMounted) return;
+      
       setLoadingTrips(true);
       try {
         const trips = await TripReportsService.listByDate(currentDate);
-        setCurrentTrips(trips);
-      } catch (error) {
+        if (isMounted) {
+          setCurrentTrips(trips);
+          retryCount = 0; // Reset on success
+        }
+      } catch (error: any) {
+        const isNetworkError = error?.message?.includes('network') || 
+                              error?.message?.includes('ERR_NETWORK') ||
+                              error?.message?.includes('ERR_INSUFFICIENT_RESOURCES') ||
+                              error?.code === 'ERR_NETWORK_CHANGED';
+        
+        if (isNetworkError && retryCount < MAX_RETRIES) {
+          retryCount++;
+          console.warn(`[ManagerDashboard] Network error loading trips (retry ${retryCount}/${MAX_RETRIES}), will retry...`, error);
+          // Retry after a short delay
+          setTimeout(() => {
+            if (isMounted) {
+              loadTrips();
+            }
+          }, 1000 * retryCount); // Exponential backoff
+          return;
+        }
+        
         console.error('[ManagerDashboard] Failed to load trips:', error);
-        setCurrentTrips([]);
+        if (isMounted) {
+          setCurrentTrips([]);
+        }
       } finally {
-        setLoadingTrips(false);
+        if (isMounted) {
+          setLoadingTrips(false);
+        }
       }
     };
+    
     loadTrips();
+    
+    return () => {
+      isMounted = false;
+    };
   }, [currentDate]);
 
   // Get current day data

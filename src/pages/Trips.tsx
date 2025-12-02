@@ -558,14 +558,29 @@ export const Trips: React.FC = () => {
     // Try to delete by ID first, then by bookingId as fallback
     let deletedFromSupabase = false;
     // Always try to delete from Supabase if we have a valid UUID (trip might be synced even if status says otherwise)
-    if (target.id && target.id.length === 36) { // UUIDs are 36 characters
+    // Check if ID looks like a UUID (36 chars with dashes) or if syncStatus indicates it's synced
+    const isLikelySynced = (target.id && target.id.length === 36) || 
+                          target.syncStatus === 'synced' || 
+                          target.syncStatus === 'pending' || 
+                          target.syncStatus === 'failed';
+    
+    if (isLikelySynced) {
       try {
-        // Try deleting by ID first
-        await TripReportsService.delete(target.id);
-        deletedFromSupabase = true;
-        console.log('[Trips] Successfully deleted trip from Supabase by ID:', target.id);
+        // Try deleting by ID first if we have a UUID
+        if (target.id && target.id.length === 36) {
+          await TripReportsService.delete(target.id);
+          deletedFromSupabase = true;
+          console.log('[Trips] Successfully deleted trip from Supabase by ID:', target.id);
+        } else {
+          // If no UUID, try by bookingId
+          await TripReportsService.deleteByBookingId(target.bookingId);
+          deletedFromSupabase = true;
+          console.log('[Trips] Successfully deleted trip from Supabase by bookingId:', target.bookingId);
+        }
       } catch (error: any) {
-        console.warn('[Trips] Failed to delete by ID, trying bookingId:', error?.message || error);
+        const errorMsg = error?.message || String(error);
+        console.warn('[Trips] Failed to delete by ID, trying bookingId:', errorMsg);
+        
         // If delete by ID fails, try by bookingId (in case ID mismatch)
         try {
           await TripReportsService.deleteByBookingId(target.bookingId);
@@ -573,22 +588,45 @@ export const Trips: React.FC = () => {
           console.log('[Trips] Successfully deleted trip from Supabase by bookingId:', target.bookingId);
         } catch (bookingIdError: any) {
           // If both fail, check if it's a permission error
-          const errorMsg = bookingIdError?.message || String(bookingIdError);
-          if (errorMsg.includes('permission') || errorMsg.includes('denied') || errorMsg.includes('policy') || errorMsg.includes('RLS')) {
-            console.error('[Trips] Permission denied when deleting trip:', errorMsg);
+          const bookingErrorMsg = bookingIdError?.message || String(bookingIdError);
+          console.error('[Trips] Both delete attempts failed:', {
+            id: target.id,
+            bookingId: target.bookingId,
+            error: errorMsg,
+            bookingError: bookingErrorMsg
+          });
+          
+          if (bookingErrorMsg.includes('permission') || 
+              bookingErrorMsg.includes('denied') || 
+              bookingErrorMsg.includes('policy') || 
+              bookingErrorMsg.includes('RLS') ||
+              bookingErrorMsg.includes('row-level security')) {
+            console.error('[Trips] Permission denied when deleting trip:', bookingErrorMsg);
             toast({
               title: 'خطأ في الصلاحيات',
-              description: 'ليس لديك صلاحية لحذف هذه الرحلة. يرجى الاتصال بالمدير.',
+              description: 'ليس لديك صلاحية لحذف هذه الرحلة. يرجى التأكد من تطبيق سياسات الحذف في Supabase أو الاتصال بالمدير.',
               variant: 'destructive',
             });
+            // Don't continue with local deletion if permission denied
+            isDeletingRef.current = false;
+            setPendingDeleteTrip(null);
+            setDeleteDialogOpen(false);
+            return;
+          } else if (bookingErrorMsg.includes('not found') || bookingErrorMsg.includes('Trip not found')) {
+            // Trip doesn't exist in Supabase - this is okay, continue with local deletion
+            console.warn('[Trips] Trip not found in Supabase (may not be synced yet):', target.bookingId);
           } else {
-            // If both fail, it might not exist in Supabase yet (pending sync)
-            // This is okay - we'll just remove it locally
-            console.warn('[Trips] Trip not found in Supabase (may not be synced yet):', target.bookingId, errorMsg);
+            // Other error - show warning but continue with local deletion
+            console.warn('[Trips] Error deleting from Supabase, will delete locally only:', bookingErrorMsg);
+            toast({
+              title: 'تحذير',
+              description: 'فشل حذف الرحلة من قاعدة البيانات. سيتم حذفها محلياً فقط.',
+              variant: 'destructive',
+            });
           }
         }
       }
-    } else if (target.syncStatus === 'synced' || target.syncStatus === 'pending' || target.syncStatus === 'failed') {
+    } else {
       // Fallback: try by bookingId if we don't have a proper UUID
       try {
         await TripReportsService.deleteByBookingId(target.bookingId);
@@ -608,7 +646,7 @@ export const Trips: React.FC = () => {
         }
       }
     } else {
-      console.log('[Trips] Trip syncStatus is not synced/pending/failed, skipping Supabase delete:', target.syncStatus);
+      console.log('[Trips] Trip appears to be local-only, skipping Supabase delete. ID:', target.id, 'syncStatus:', target.syncStatus);
     }
     
     // Add to deleted array to prevent it from reappearing
