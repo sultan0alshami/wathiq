@@ -76,18 +76,58 @@ const mapRowToTripEntry = (row: TripReportRow): TripEntry => ({
 });
 
 export const TripReportsService = {
-  async listByDate(date: Date): Promise<TripEntry[]> {
-    const { data, error } = await supabase
-      .from('trip_reports')
-      .select('*, trip_photos(*)')
-      .eq('day_date', formatDateKey(date))
-      .order('created_at', { ascending: false });
+  async listByDate(date: Date, signal?: AbortSignal): Promise<TripEntry[]> {
+    // Create a timeout promise to prevent hanging requests
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error('Request timeout - ERR_INSUFFICIENT_RESOURCES'));
+      }, 10000); // 10 second timeout
+      
+      // Clear timeout if signal is aborted
+      if (signal) {
+        signal.addEventListener('abort', () => {
+          clearTimeout(timeout);
+          reject(new Error('Request aborted'));
+        });
+      }
+    });
 
-    if (error) {
-      throw new Error(error.message);
+    try {
+      const query = supabase
+        .from('trip_reports')
+        .select('*, trip_photos(*)')
+        .eq('day_date', formatDateKey(date))
+        .order('created_at', { ascending: false });
+
+      // Race between the query and timeout
+      const { data, error } = await Promise.race([
+        query,
+        timeoutPromise
+      ]) as { data: TripReportRow[] | null; error: any };
+
+      // Check if request was aborted
+      if (signal?.aborted) {
+        throw new Error('Request aborted');
+      }
+
+      if (error) {
+        // Check for insufficient resources error
+        if (error.message?.includes('ERR_INSUFFICIENT_RESOURCES') || 
+            error.code === 'ERR_INSUFFICIENT_RESOURCES') {
+          throw new Error('ERR_INSUFFICIENT_RESOURCES');
+        }
+        throw new Error(error.message);
+      }
+
+      return (data as TripReportRow[] | null)?.map(mapRowToTripEntry) ?? [];
+    } catch (err: any) {
+      // Re-throw with proper error message
+      if (err.message === 'ERR_INSUFFICIENT_RESOURCES' || 
+          err.message?.includes('ERR_INSUFFICIENT_RESOURCES')) {
+        throw new Error('ERR_INSUFFICIENT_RESOURCES');
+      }
+      throw err;
     }
-
-    return (data as TripReportRow[] | null)?.map(mapRowToTripEntry) ?? [];
   },
 
   async delete(id: string): Promise<void> {

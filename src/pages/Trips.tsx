@@ -221,6 +221,7 @@ export const Trips: React.FC = () => {
   const [purgeDialogOpen, setPurgeDialogOpen] = useState(false);
   const [pendingRecycleRecord, setPendingRecycleRecord] = useState<TripRecycleRecord | null>(null);
   const fetchAbortControllerRef = React.useRef<AbortController | null>(null);
+  const isFetchingRef = React.useRef(false);
 
   const editingTrip = useMemo(
     () => (editingTripId ? trips.find((entry) => entry.id === editingTripId) || null : null),
@@ -325,6 +326,14 @@ export const Trips: React.FC = () => {
   );
 
   const loadRemoteTrips = useCallback(async (forceReload = false) => {
+    // Prevent concurrent requests
+    if (isFetchingRef.current && !forceReload) {
+      console.log('[Trips] Already fetching, skipping duplicate request');
+      return;
+    }
+    
+    isFetchingRef.current = true;
+    
     // Cancel any previous request
     if (fetchAbortControllerRef.current) {
       fetchAbortControllerRef.current.abort();
@@ -375,7 +384,7 @@ export const Trips: React.FC = () => {
       }
       
       try {
-        const remoteEntries = await TripReportsService.listByDate(currentDate);
+        const remoteEntries = await TripReportsService.listByDate(currentDate, signal);
         
         // Check if request was aborted during fetch
         if (signal.aborted) {
@@ -419,6 +428,9 @@ export const Trips: React.FC = () => {
           console.error('[Trips] ERR_INSUFFICIENT_RESOURCES detected - using cached data only, no retries:', error);
           // Don't show error toast, just use cached data silently
           // The trips from localStorage will be shown
+          // CRITICAL: Stop all further requests to prevent infinite loop
+          isFetchingRef.current = false;
+          return;
         } else if (isNetworkError) {
           console.warn('[Trips] Network error loading trips, using cached data:', error);
           // Don't show error toast for network issues, just use cached data
@@ -432,6 +444,7 @@ export const Trips: React.FC = () => {
         }
       } finally {
         setLoadingTrips(false);
+        isFetchingRef.current = false;
       }
   }, [currentDate, queueRecordToTripEntry, persistTripsSection, toast, updateNextBookingSequence]);
 
@@ -444,6 +457,7 @@ export const Trips: React.FC = () => {
         fetchAbortControllerRef.current.abort();
         fetchAbortControllerRef.current = null;
       }
+      isFetchingRef.current = false;
     };
   }, [currentDate, loadRemoteTrips]);
 

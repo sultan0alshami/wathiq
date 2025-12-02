@@ -85,7 +85,7 @@ export const ManagerDashboard: React.FC = () => {
       
       setLoadingTrips(true);
       try {
-        const trips = await TripReportsService.listByDate(currentDate);
+        const trips = await TripReportsService.listByDate(currentDate, signal);
         if (isMounted && !signal.aborted) {
           setCurrentTrips(trips);
           retryCount = 0; // Reset on success
